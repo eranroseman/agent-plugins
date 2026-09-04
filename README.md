@@ -1,6 +1,7 @@
-# software-development
+# agent-plugins
 
-A plugin marketplace for Claude Code and Codex, named `eranroseman`. It hosts:
+The source repository for the `eranroseman` plugin marketplace, which serves
+both Claude Code and Codex. It hosts three plugins:
 
 - `software-development`: the glue plugin. obra/superpowers' `brainstorming`
   skill vendored with a narrowed description, plus a SessionStart hook.
