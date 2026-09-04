@@ -185,7 +185,6 @@ Installing `software-development@eranroseman` installs both dependencies at the 
   "license": "MIT",
   "keywords": ["software-development", "superpowers", "skills", "workflow"],
   "skills": "./skills/",
-  "hooks": "./hooks/hooks.json",
   "interface": {
     "displayName": "Software Development",
     "shortDescription": "Curated software-development harness",
@@ -199,7 +198,7 @@ Installing `software-development@eranroseman` installs both dependencies at the 
 }
 ```
 
-`interface.displayName`, `shortDescription`, `longDescription`, `developerName`, `category` and `defaultPrompt` are required by Codex's own validator. The validator rejects `hooks`, yet `ponytail` ships `"hooks": "./hooks/claude-codex-hooks.json"` in its Codex manifest and Codex loads those hooks on this machine after a trust prompt. Whether our hook loads is gate G4 (§10.2).
+`interface.displayName`, `shortDescription`, `longDescription`, `developerName`, `category` and `defaultPrompt` are required by Codex's own validator. The manifest declares no `hooks` key: the validator rejects the key when present, and Codex's loader falls back to `hooks/hooks.json` at the plugin root when it is absent (`codex-rs/core-plugins/src/loader.rs`, `load_plugin_hooks`, `DEFAULT_HOOKS_CONFIG_FILE`, at openai/codex `f3f6922`). An empty object `"hooks": {}` would suppress that fallback, which is what upstream superpowers does to keep its Claude hook off Codex. Whether the fallback loads our hook is gate G4 (§10.2).
 
 ### 6.3 `plugins/sensemaking/`
 
@@ -318,7 +317,7 @@ Every gate is checked on the live machine after cutover. Each has a recorded fal
 | G1 Claude catalog | `superpowers:brainstorming` is absent; the 13 `superpowers:*` skills, `software-development:brainstorming`, and `sensemaking:rethink-audit` are present (`claude plugin details`, then a session's skill list) | Fork `obra/superpowers` with `brainstorming` deleted and depend on the fork (the map's approach) |
 | G2 Codex names | `$writing-plans` invokes from the symlink; an SDD-shaped prompt on Codex follows the `superpowers:test-driven-development` mention rather than stalling on it | Codex plugin install of upstream (§9.2) |
 | G3 Claude hook | Our payload appears once at startup, `/clear`, and `/compact`; no upstream injection | Investigate; there is no design alternative, only a defect |
-| G4 Codex hook | Codex either loads our hook after trust or ignores `hooks` in the manifest; either outcome is recorded and sub-project 3 designs against it | None needed; the outcome is an input |
+| G4 Codex hook | Codex either loads `hooks/hooks.json` by manifest fallback after the trust prompt (a `software-development@eranroseman:hooks/hooks.json:session_start:0:0` entry appears under `[hooks.state]` in `~/.codex/config.toml` and the payload appears once in a session) or does not; either outcome is recorded and sub-project 3 designs against it | None needed; the outcome is an input |
 | G5 Front door | `/brainstorming` resolves on Claude to ours; its terminal step reaches `superpowers:writing-plans` | Defect, fix in place |
 
 Fresh-machine reproducibility is not a gate here. It belongs to sub-project 2.
@@ -326,7 +325,7 @@ Fresh-machine reproducibility is not a gate here. It belongs to sub-project 2.
 ### 10.3 Static checks, in CI from the first commit
 
 - `claude plugin validate --strict` on `.claude-plugin/marketplace.json` and both plugin manifests. This checks schema, not scan behaviour; it does not substitute for G1.
-- `python3 ~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py plugins/<name>` on both plugins. Expect a `hooks` rejection for `software-development`; CI treats that one message as known until G4 says otherwise.
+- `python3 ~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py plugins/<name>` on both plugins; both pass. CI fetches the same script from openai/codex at a pinned sha.
 - JSON well-formedness for all four manifests.
 - A shallow clone of `obra/superpowers` at the pinned sha, asserting that every directory listed in §5.1 exists and that `brainstorming` is not listed.
 
@@ -391,11 +390,12 @@ Not reversed: `sensemaking` exists and is shared by both products; the map's mea
 | mattpocock ships a Claude plugin (25 skills) and no Codex manifest; 11 of 25 are model-invocable | `gh api repos/mattpocock/skills/contents/.claude-plugin/plugin.json`; per-skill frontmatter and `agents/openai.yaml` at HEAD `6654f6b6` |
 | `eroseman` is taken; `eranroseman/{sensemaking,superpowers,research-vault}` do not exist; `knowledge-harness` is private | `gh api users/eroseman`; `gh repo view` |
 | `sensemaking` collides with nothing across 373 marketplace entries | grep over `~/.claude/plugins/marketplaces/*/marketplace.json` |
+| Codex loads `hooks/hooks.json` when the manifest has no `hooks` key; `{}` suppresses it; the hook-file parser accepts `timeout`, `async`, `statusMessage` and ignores `shell` | `codex-rs/core-plugins/src/loader.rs` line 1230 and `codex-rs/config/src/hook_config.rs` at openai/codex `f3f6922519fa38487c8250c2b8a670a39a2cf9ff`; upstream superpowers `tests/codex/test-marketplace-manifest.sh` |
 
 ## 13. Open items carried forward
 
 - G1 and G2 are the two mechanism claims this design could not settle statically (§10.2).
-- Whether Codex honours `hooks` in a plugin manifest for our plugin (G4).
+- Whether Codex loads `hooks/hooks.json` by manifest fallback for our plugin (G4).
 - The exact list format that setup reads for the 13 superpowers names and the mattpocock subset (sub-project 2).
 - The hook payload beyond the tracer's like-for-like text (sub-project 3).
 - `adhd`, `archify`, `diagnosing-bugs` gating, and every other roster question (sub-project 5).
