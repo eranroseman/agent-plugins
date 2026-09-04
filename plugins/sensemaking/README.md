@@ -12,12 +12,12 @@ Skills shared by `software-development` and, later, `research-vault`.
 Claude Code: installing `software-development@eranroseman` pulls this plugin
 in as a dependency. To install it alone:
 
-    claude plugin marketplace add eranroseman/software-development
+    claude plugin marketplace add eranroseman/agent-plugins
     claude plugin install sensemaking@eranroseman
 
 Codex has no dependency concept, so install it explicitly:
 
-    codex plugin marketplace add https://github.com/eranroseman/software-development.git
+    codex plugin marketplace add https://github.com/eranroseman/agent-plugins.git
     codex plugin add sensemaking@eranroseman
 
 ## License

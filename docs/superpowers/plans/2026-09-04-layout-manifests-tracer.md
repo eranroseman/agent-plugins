@@ -210,8 +210,8 @@ Expected: `FAIL: no manifests found`, `FAIL: no plugin manifests under plugins/`
   "version": "0.1.0",
   "description": "Skills shared by software-development and research-vault.",
   "author": { "name": "Eran Roseman", "url": "https://github.com/eranroseman" },
-  "homepage": "https://github.com/eranroseman/software-development",
-  "repository": "https://github.com/eranroseman/software-development",
+  "homepage": "https://github.com/eranroseman/agent-plugins",
+  "repository": "https://github.com/eranroseman/agent-plugins",
   "license": "MIT",
   "keywords": ["sensemaking", "skills", "design-audit"]
 }
@@ -260,12 +260,12 @@ Skills shared by `software-development` and, later, `research-vault`.
 Claude Code: installing `software-development@eranroseman` pulls this plugin
 in as a dependency. To install it alone:
 
-    claude plugin marketplace add eranroseman/software-development
+    claude plugin marketplace add eranroseman/agent-plugins
     claude plugin install sensemaking@eranroseman
 
 Codex has no dependency concept, so install it explicitly:
 
-    codex plugin marketplace add https://github.com/eranroseman/software-development.git
+    codex plugin marketplace add https://github.com/eranroseman/agent-plugins.git
     codex plugin add sensemaking@eranroseman
 
 ## License
@@ -358,8 +358,8 @@ If either differs, `~/harness-backup` moved on since 2026-09-04; stop and report
   "version": "0.1.0",
   "description": "Skills shared by software-development and research-vault.",
   "author": { "name": "Eran Roseman", "url": "https://github.com/eranroseman" },
-  "homepage": "https://github.com/eranroseman/software-development",
-  "repository": "https://github.com/eranroseman/software-development",
+  "homepage": "https://github.com/eranroseman/agent-plugins",
+  "repository": "https://github.com/eranroseman/agent-plugins",
   "license": "MIT",
   "keywords": ["sensemaking", "skills", "design-audit"],
   "skills": "./skills/",
@@ -370,7 +370,7 @@ If either differs, `~/harness-backup` moved on since 2026-09-04; stop and report
     "developerName": "Eran Roseman",
     "category": "Productivity",
     "capabilities": ["Instructions"],
-    "websiteURL": "https://github.com/eranroseman/software-development",
+    "websiteURL": "https://github.com/eranroseman/agent-plugins",
     "defaultPrompt": ["Run a clean-slate redesign audit of this module."]
   }
 }
@@ -636,8 +636,8 @@ Expected: `FAIL: software-development: plugins/software-development has no .clau
   "version": "0.1.0",
   "description": "Glue over superpowers and mattpocock/skills for Claude Code and Codex.",
   "author": { "name": "Eran Roseman", "url": "https://github.com/eranroseman" },
-  "homepage": "https://github.com/eranroseman/software-development",
-  "repository": "https://github.com/eranroseman/software-development",
+  "homepage": "https://github.com/eranroseman/agent-plugins",
+  "repository": "https://github.com/eranroseman/agent-plugins",
   "license": "MIT",
   "keywords": ["software-development", "superpowers", "skills", "workflow"],
   "dependencies": ["sensemaking", "superpowers"]
@@ -652,8 +652,8 @@ Expected: `FAIL: software-development: plugins/software-development has no .clau
   "version": "0.1.0",
   "description": "Glue over superpowers and mattpocock/skills for Claude Code and Codex.",
   "author": { "name": "Eran Roseman", "url": "https://github.com/eranroseman" },
-  "homepage": "https://github.com/eranroseman/software-development",
-  "repository": "https://github.com/eranroseman/software-development",
+  "homepage": "https://github.com/eranroseman/agent-plugins",
+  "repository": "https://github.com/eranroseman/agent-plugins",
   "license": "MIT",
   "keywords": ["software-development", "superpowers", "skills", "workflow"],
   "skills": "./skills/",
@@ -664,7 +664,7 @@ Expected: `FAIL: software-development: plugins/software-development has no .clau
     "developerName": "Eran Roseman",
     "category": "Developer Tools",
     "capabilities": ["Instructions", "Lifecycle hooks"],
-    "websiteURL": "https://github.com/eranroseman/software-development",
+    "websiteURL": "https://github.com/eranroseman/agent-plugins",
     "defaultPrompt": ["Let's build a feature.", "Design this change before we implement it."]
   }
 }
@@ -753,13 +753,13 @@ What it depends on (Claude Code installs both automatically):
 
 Claude Code:
 
-    claude plugin marketplace add eranroseman/software-development
+    claude plugin marketplace add eranroseman/agent-plugins
     claude plugin install software-development@eranroseman
 
 Codex (no dependency concept; superpowers arrives by symlink, see the
 repository README):
 
-    codex plugin marketplace add https://github.com/eranroseman/software-development.git
+    codex plugin marketplace add https://github.com/eranroseman/agent-plugins.git
     codex plugin add software-development@eranroseman
     codex plugin add sensemaking@eranroseman
 
@@ -1319,7 +1319,7 @@ A plugin marketplace for Claude Code and Codex, named `eranroseman`. It hosts:
 
 ## Claude Code
 
-    claude plugin marketplace add eranroseman/software-development
+    claude plugin marketplace add eranroseman/agent-plugins
     claude plugin install software-development@eranroseman
 
 That one install pulls in `sensemaking` and the curated `superpowers`.
@@ -1330,7 +1330,7 @@ Codex has no dependency concept and cannot subset a plugin's skills, so the
 two local plugins install explicitly and `superpowers` arrives by symlink
 from a clone pinned to the same commit:
 
-    codex plugin marketplace add https://github.com/eranroseman/software-development.git
+    codex plugin marketplace add https://github.com/eranroseman/agent-plugins.git
     codex plugin add software-development@eranroseman
     codex plugin add sensemaking@eranroseman
 
@@ -1547,7 +1547,7 @@ EOF
 - [ ] **Step 3: Add the marketplace and install (spec §10.1 steps 3 to 4)**
 
 ```bash
-claude plugin marketplace add eranroseman/software-development
+claude plugin marketplace add eranroseman/agent-plugins
 claude plugin install software-development@eranroseman
 claude plugin list
 ```
@@ -1656,7 +1656,7 @@ Expected: `no superpowers-dev entries remain`. Rollback: `codex plugin marketpla
 - [ ] **Step 2: Install our plugins (spec §9.1)**
 
 ```bash
-codex plugin marketplace add https://github.com/eranroseman/software-development.git
+codex plugin marketplace add https://github.com/eranroseman/agent-plugins.git
 codex plugin add software-development@eranroseman
 codex plugin add sensemaking@eranroseman
 codex plugin list | grep -i 'eranroseman'

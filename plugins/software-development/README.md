@@ -24,13 +24,13 @@ What it depends on (Claude Code installs both automatically):
 
 Claude Code:
 
-    claude plugin marketplace add eranroseman/software-development
+    claude plugin marketplace add eranroseman/agent-plugins
     claude plugin install software-development@eranroseman
 
 Codex (no dependency concept; superpowers arrives by symlink, see the
 repository README):
 
-    codex plugin marketplace add https://github.com/eranroseman/software-development.git
+    codex plugin marketplace add https://github.com/eranroseman/agent-plugins.git
     codex plugin add software-development@eranroseman
     codex plugin add sensemaking@eranroseman
 

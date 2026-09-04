@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "description": "Skills shared by software-development and research-vault.",
   "author": { "name": "Eran Roseman", "url": "https://github.com/eranroseman" },
-  "homepage": "https://github.com/eranroseman/software-development",
-  "repository": "https://github.com/eranroseman/software-development",
+  "homepage": "https://github.com/eranroseman/agent-plugins",
+  "repository": "https://github.com/eranroseman/agent-plugins",
   "license": "MIT",
   "keywords": ["sensemaking", "skills", "design-audit"],
   "skills": "./skills/",
@@ -15,7 +15,7 @@
     "developerName": "Eran Roseman",
     "category": "Productivity",
     "capabilities": ["Instructions"],
-    "websiteURL": "https://github.com/eranroseman/software-development",
+    "websiteURL": "https://github.com/eranroseman/agent-plugins",
     "defaultPrompt": ["Run a clean-slate redesign audit of this module."]
   }
 }

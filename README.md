@@ -13,7 +13,7 @@ A plugin marketplace for Claude Code and Codex, named `eranroseman`. It hosts:
 
 ## Claude Code
 
-    claude plugin marketplace add eranroseman/software-development
+    claude plugin marketplace add eranroseman/agent-plugins
     claude plugin install software-development@eranroseman
 
 That one install pulls in `sensemaking` and the curated `superpowers`.
@@ -24,7 +24,7 @@ Codex has no dependency concept and cannot subset a plugin's skills, so the
 two local plugins install explicitly and `superpowers` arrives by symlink
 from a clone pinned to the same commit:
 
-    codex plugin marketplace add https://github.com/eranroseman/software-development.git
+    codex plugin marketplace add https://github.com/eranroseman/agent-plugins.git
     codex plugin add software-development@eranroseman
     codex plugin add sensemaking@eranroseman
 

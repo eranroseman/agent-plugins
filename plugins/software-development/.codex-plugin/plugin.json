@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "description": "Glue over superpowers and mattpocock/skills for Claude Code and Codex.",
   "author": { "name": "Eran Roseman", "url": "https://github.com/eranroseman" },
-  "homepage": "https://github.com/eranroseman/software-development",
-  "repository": "https://github.com/eranroseman/software-development",
+  "homepage": "https://github.com/eranroseman/agent-plugins",
+  "repository": "https://github.com/eranroseman/agent-plugins",
   "license": "MIT",
   "keywords": ["software-development", "superpowers", "skills", "workflow"],
   "skills": "./skills/",
@@ -15,7 +15,7 @@
     "developerName": "Eran Roseman",
     "category": "Developer Tools",
     "capabilities": ["Instructions", "Lifecycle hooks"],
-    "websiteURL": "https://github.com/eranroseman/software-development",
+    "websiteURL": "https://github.com/eranroseman/agent-plugins",
     "defaultPrompt": ["Let's build a feature.", "Design this change before we implement it."]
   }
 }

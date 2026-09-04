@@ -6,7 +6,7 @@ Merge back to main locally and push main to origin in the same motion. Fetch bef
 
 ### Issue tracker
 
-GitHub Issues (github.com/eranroseman/software-development), via `gh` CLI. See `docs/agents/issue-tracker.md`.
+GitHub Issues (github.com/eranroseman/agent-plugins), via `gh` CLI. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

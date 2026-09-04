@@ -1,7 +1,7 @@
 # software-development: repository layout, manifests, and tracer bullet
 
 **Status:** approved design, 2026-09-04. Sub-project 1 of 7 (see §11).
-**Scope:** the public repository `eranroseman/software-development` as a marketplace hosting two plugins, the curated upstream `superpowers` entry, the Codex route, and the tracer bullet that proves the layout on both harnesses.
+**Scope:** the public repository `eranroseman/agent-plugins` as a marketplace hosting two plugins, the curated upstream `superpowers` entry, the Codex route, and the tracer bullet that proves the layout on both harnesses.
 **Not in scope:** setup automation, hook payload redesign, drift monitoring, roster decisions, harness-backup retirement, research-vault integration. Each is its own sub-project (§11).
 
 ## 1. Evidence standard
@@ -38,7 +38,7 @@ Ship one public repository that installs, on Claude Code and Codex, a curated so
 ## 4. Repository layout
 
 ```text
-eranroseman/software-development
+eranroseman/agent-plugins
 ├── .claude-plugin/marketplace.json        Claude marketplace (§5.1)
 ├── .agents/plugins/marketplace.json       Codex marketplace (§5.2)
 ├── plugins/
@@ -165,8 +165,8 @@ Codex has no dependency concept and cannot subset a plugin's `skills/` directory
   "version": "0.1.0",
   "description": "Glue over superpowers and mattpocock/skills for Claude Code and Codex.",
   "author": { "name": "Eran Roseman", "url": "https://github.com/eranroseman" },
-  "homepage": "https://github.com/eranroseman/software-development",
-  "repository": "https://github.com/eranroseman/software-development",
+  "homepage": "https://github.com/eranroseman/agent-plugins",
+  "repository": "https://github.com/eranroseman/agent-plugins",
   "license": "MIT",
   "keywords": ["software-development", "superpowers", "skills", "workflow"],
   "dependencies": ["sensemaking", "superpowers"]
@@ -183,8 +183,8 @@ Installing `software-development@eranroseman` installs both dependencies at the 
   "version": "0.1.0",
   "description": "Glue over superpowers and mattpocock/skills for Claude Code and Codex.",
   "author": { "name": "Eran Roseman", "url": "https://github.com/eranroseman" },
-  "homepage": "https://github.com/eranroseman/software-development",
-  "repository": "https://github.com/eranroseman/software-development",
+  "homepage": "https://github.com/eranroseman/agent-plugins",
+  "repository": "https://github.com/eranroseman/agent-plugins",
   "license": "MIT",
   "keywords": ["software-development", "superpowers", "skills", "workflow"],
   "skills": "./skills/",
@@ -195,7 +195,7 @@ Installing `software-development@eranroseman` installs both dependencies at the 
     "developerName": "Eran Roseman",
     "category": "Developer Tools",
     "capabilities": ["Instructions", "Lifecycle hooks"],
-    "websiteURL": "https://github.com/eranroseman/software-development",
+    "websiteURL": "https://github.com/eranroseman/agent-plugins",
     "defaultPrompt": ["Let's build a feature.", "Design this change before we implement it."]
   }
 }
@@ -266,7 +266,7 @@ Claude Code concatenates every matching SessionStart hook's `additionalContext` 
 ### 9.1 Our plugins
 
 ```bash
-codex plugin marketplace add https://github.com/eranroseman/software-development.git
+codex plugin marketplace add https://github.com/eranroseman/agent-plugins.git
 codex plugin add software-development@eranroseman
 codex plugin add sensemaking@eranroseman
 ```
@@ -311,7 +311,7 @@ Claude Code:
 
 1. `claude plugin uninstall superpowers@superpowers-dev` at user scope.
 2. From `/home/eranr/memoria-vault`, `claude plugin uninstall superpowers@superpowers-dev --scope project`. That project-scope entry (same `installPath`, different sha `3dcbd5c4`) is a second install and survives step 1.
-3. `claude plugin marketplace add eranroseman/software-development`.
+3. `claude plugin marketplace add eranroseman/agent-plugins`.
 4. `claude plugin install software-development@eranroseman`. This pulls `sensemaking` and the curated `superpowers`.
 5. Delete `skillOverrides.grilling` from `~/.claude/settings.json`, then refresh the `harness-backup` copy.
 6. Leave the `superpowers-dev` marketplace registered until every gate passes; remove it afterwards.
