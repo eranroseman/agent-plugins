@@ -1,0 +1,42 @@
+name: validate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # `claude plugin validate` needs no login or onboarding: verified
+      # 2026-09-04 by running it with an empty HOME. Pinned to the version the
+      # design was measured against.
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code@2.1.220
+
+      # Codex ships validate_plugin.py inside the CLI's system skills, which a
+      # fresh runner does not have. The same two files live in openai/codex
+      # (Apache-2.0); fetch them at a pinned sha. md5 matched the local copy
+      # on 2026-09-04: 57d8f21fd3416e97c624f46aa090868f.
+      - name: Fetch the Codex plugin validator
+        run: |
+          pip install pyyaml
+          mkdir -p "$RUNNER_TEMP/codex-validator"
+          for f in validate_plugin.py identifier_validation.py; do
+            curl -sfL "https://raw.githubusercontent.com/openai/codex/f3f6922519fa38487c8250c2b8a670a39a2cf9ff/codex-rs/skills/src/assets/samples/plugin-creator/scripts/$f" \
+              -o "$RUNNER_TEMP/codex-validator/$f"
+          done
+          echo "CODEX_PLUGIN_VALIDATOR=$RUNNER_TEMP/codex-validator/validate_plugin.py" >> "$GITHUB_ENV"
+
+      - name: Run static checks
+        run: tests/run.sh
