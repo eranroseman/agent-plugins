@@ -1,0 +1,5 @@
+interface:
+  display_name: "Rethink Audit"
+  short_description: "Clean-slate redesign audit of an existing subsystem"
+policy:
+  allow_implicit_invocation: true

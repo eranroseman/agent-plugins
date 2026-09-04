@@ -1,0 +1,21 @@
+{
+  "name": "sensemaking",
+  "version": "0.1.0",
+  "description": "Skills shared by software-development and research-vault.",
+  "author": { "name": "Eran Roseman", "url": "https://github.com/eranroseman" },
+  "homepage": "https://github.com/eranroseman/software-development",
+  "repository": "https://github.com/eranroseman/software-development",
+  "license": "MIT",
+  "keywords": ["sensemaking", "skills", "design-audit"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Sensemaking",
+    "shortDescription": "Skills shared by software-development and research-vault",
+    "longDescription": "Clean-slate redesign audits and other sensemaking skills shared across Eran Roseman's software-development and research-vault harnesses.",
+    "developerName": "Eran Roseman",
+    "category": "Productivity",
+    "capabilities": ["Instructions"],
+    "websiteURL": "https://github.com/eranroseman/software-development",
+    "defaultPrompt": ["Run a clean-slate redesign audit of this module."]
+  }
+}
