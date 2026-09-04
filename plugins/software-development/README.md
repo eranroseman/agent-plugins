@@ -34,7 +34,11 @@ repository README):
     codex plugin add software-development@eranroseman
     codex plugin add sensemaking@eranroseman
 
-Codex prompts once to trust the SessionStart hook.
+Codex does not currently load this plugin's SessionStart hook. The hook files
+ship, and the Codex manifest omits the `hooks` key so that Codex's documented
+fallback to `hooks/hooks.json` can pick them up, but on codex-cli 0.147.0 no
+trust prompt appears and nothing is registered. Measured 2026-09-04; see gate
+G4 in the design spec's tracer results.
 
 ## Environment
 
