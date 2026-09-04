@@ -1,0 +1,10 @@
+{
+  "name": "sensemaking",
+  "version": "0.1.0",
+  "description": "Skills shared by software-development and research-vault.",
+  "author": { "name": "Eran Roseman", "url": "https://github.com/eranroseman" },
+  "homepage": "https://github.com/eranroseman/software-development",
+  "repository": "https://github.com/eranroseman/software-development",
+  "license": "MIT",
+  "keywords": ["sensemaking", "skills", "design-audit"]
+}
