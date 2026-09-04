@@ -33,6 +33,7 @@ from a clone pinned to the same commit:
     CLONE=~/.local/share/software-development/upstream/superpowers
     git clone https://github.com/obra/superpowers.git "$CLONE" && git -C "$CLONE" checkout "$SHA"
     for s in $(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$REPO/.claude-plugin/marketplace.json" | sed 's#^\./##'); do
+      [ -e ~/.codex/skills/"$s" ] && { echo "ALREADY EXISTS: ~/.codex/skills/$s"; continue; }
       ln -s "$CLONE/skills/$s" ~/.codex/skills/"$s"
     done
 
