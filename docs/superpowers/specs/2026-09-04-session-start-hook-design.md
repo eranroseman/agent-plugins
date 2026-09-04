@@ -24,7 +24,7 @@ No misfire of the current injection is on record. Nothing here rests on one.
 | Payload base | Upstream `skills/using-superpowers/SKILL.md` at the pinned sha, in upstream's `<EXTREMELY_IMPORTANT>` frame, with the one line-30 edit. Byte-identical to today's `hooks/payload.md`. |
 | Payload appendix | One rule, worktree cleanup, moved out of the author's `~/.claude/CLAUDE.md`. Nothing else. |
 | What was not admitted | The lean router, the two bridge rules and the three Iron Laws proposed on #61, and the task-reports rule. Reason in §10. |
-| Admission rule for future additions | A rule enters the payload only when it solves a problem the author has met, and holds for every installer, which means it depends on nothing beyond this plugin and its declared dependencies. Both conditions, not either. |
+| Admission rule for future additions | A rule enters the payload only when it solves a problem for which there is evidence that it exists. Where an admitted rule lives follows from what it depends on: a rule that holds for every installer, depending on nothing beyond this plugin and its declared dependencies, goes in the payload; one that holds only on this machine goes in the user file. |
 | Assembly | Two files. `hooks/payload.md` is regenerated from the pinned clone and tested byte-equal. `hooks/payload-rules.md` is authored. `hooks/session-start` concatenates them. |
 | Codex | No hook, by construction: no file exists at the path Codex's fallback reads. |
 | Claude hook file | `hooks/hooks.json` becomes `hooks/claude-hooks.json`, declared in the Claude manifest. Content and matcher unchanged. |
@@ -54,7 +54,7 @@ Exactly: `cat payload.md; printf '\n'; cat payload-rules.md`. `payload.md` alrea
 **Worktree cleanup.** `EnterWorktree` places worktrees under `.claude/worktrees/`. `superpowers:finishing-a-development-branch` recognises only `.worktrees/` and `worktrees/` as its own and declines to remove anything else. Once the branch is merged or abandoned, run `git worktree remove <path>` from the main checkout, then `git worktree prune`.
 ```
 
-That is the whole file. It carries the one rule the author has needed, and it holds for every installer: `EnterWorktree` is Claude Code's, and `finishing-a-development-branch` arrives through the curated `superpowers` dependency.
+That is the whole file. It carries the one rule with evidence behind it, and it holds for every installer: `EnterWorktree` is Claude Code's, and `finishing-a-development-branch` arrives through the curated `superpowers` dependency.
 
 ### 4.3 Size
 
@@ -143,15 +143,15 @@ Rollback: revert the commit on `main`, push, and repeat the same refresh steps; 
 
 ## 10. Positions on the map and #61 not adopted
 
-Each was proposed by AI triage on the knowledge-harness tracker and never accepted. The author ruled on them 2026-09-04.
+Each was proposed by AI triage on the knowledge-harness tracker and never accepted. The author ruled on them 2026-09-04: besides worktree cleanup, none addresses a problem with evidence behind it, and each repeats a rule superpowers already carries.
 
 | Proposal | Disposition | Reason |
 | --- | --- | --- |
 | Replace upstream's text with a lean router | Not adopted | The text G3 proved is kept whole. No misfire is on record, and the persuasion in it is the only enforcement superpowers has. |
-| Bridge rule: a `ready-for-agent` issue is the spec, execution enters only via `writing-plans` | Not adopted | Restates `brainstorming`'s gate through the tracker, and as worded would force a plan document on bounded work that the vendored `brainstorming` sends straight to TDD. The author has not met the problem it addresses. |
-| Iron Laws in the payload | Not adopted | Restate lines owned by `test-driven-development`, `systematic-debugging`, and `verification-before-completion`. The author has not met the problem. |
-| Task-reports rule in the payload | Not adopted | Same: the author has not met the problem. The paragraph stays in the user file until sub-project 2 decides its fate. |
-| Content classes and the "true for every installer" admission test | Adopted in part | The installer test is one half of the admission rule in §3; the other half, a problem the author has met, is the one #61 lacked. |
+| Bridge rule: a `ready-for-agent` issue is the spec, execution enters only via `writing-plans` | Not adopted | Restates `brainstorming`'s gate through the tracker, and as worded would force a plan document on bounded work that the vendored `brainstorming` sends straight to TDD. No evidence that the problem it addresses exists. |
+| Iron Laws in the payload | Not adopted | Restate lines owned by `test-driven-development`, `systematic-debugging`, and `verification-before-completion`. No evidence that the problem exists. |
+| Task-reports rule in the payload | Not adopted | Same: no evidence that the problem exists. The paragraph stays in the user file until sub-project 2 decides its fate. |
+| Content classes and the "true for every installer" admission test | Adopted in part | The installer test decides where an admitted rule lives (§3). Admission itself needs evidence that the problem exists, which #61's test never asked for. |
 | Codex hook posture "designed against IGNORED" | Superseded | No hook is offered at all; §6. |
 
 ## 11. Open items carried forward
