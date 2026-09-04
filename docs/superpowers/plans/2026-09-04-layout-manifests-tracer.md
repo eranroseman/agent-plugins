@@ -1170,7 +1170,7 @@ for i in 0 1; do
   [ -f "$manifest" ] || fail "$name: $path has no .codex-plugin/plugin.json"
   [ "$(jq -r '.name' "$manifest")" = "$name" ] || fail "$name: manifest name differs"
   [ "$(jq -c ".plugins[$i].policy" "$M")" = '{"installation":"AVAILABLE","authentication":"ON_INSTALL"}' ] || fail "$name: policy"
-  [ -n "$(jq -r ".plugins[$i].category" "$M")" ] || fail "$name: category"
+  jq -e ".plugins[$i].category | type==\"string\" and length>0" "$M" >/dev/null || fail "$name: category"
 done
 
 if jq -e '.plugins[] | select(.name == "superpowers")' "$M" >/dev/null; then
@@ -1256,6 +1256,7 @@ from a clone pinned to the same commit:
     CLONE=~/.local/share/software-development/upstream/superpowers
     git clone https://github.com/obra/superpowers.git "$CLONE" && git -C "$CLONE" checkout "$SHA"
     for s in $(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$REPO/.claude-plugin/marketplace.json" | sed 's#^\./##'); do
+      [ -e ~/.codex/skills/"$s" ] && { echo "ALREADY EXISTS: ~/.codex/skills/$s"; continue; }
       ln -s "$CLONE/skills/$s" ~/.codex/skills/"$s"
     done
 
