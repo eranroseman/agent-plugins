@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Schema-check every plugin manifest with Claude Code's own validator.
+# Schema-check the marketplace manifest and every plugin manifest with Claude
+# Code's own validator.
 # --strict turns warnings (unknown fields, missing metadata) into failures.
 . "$(dirname "$0")/lib.sh"
 

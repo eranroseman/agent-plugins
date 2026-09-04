@@ -8,7 +8,7 @@ V="$REPO_ROOT/plugins/software-development/skills/brainstorming"
 [ -d "$V" ] || fail "missing $V"
 UP="$(fetch_upstream)" || fail "could not fetch upstream at $(upstream_sha)"
 U="$UP/skills/brainstorming"
-sha="$(upstream_sha)"
+sha="$(upstream_sha)" || fail "could not read the pinned sha from $MARKETPLACE"
 
 # Same file set.
 diff <(cd "$U" && find . -type f | sort) <(cd "$V" && find . -type f | sort) \

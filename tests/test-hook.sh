@@ -6,6 +6,15 @@
 # just the common five. Needs network access for (1).
 . "$(dirname "$0")/lib.sh"
 
+# fail() exits immediately, so temporaries have to be freed from a trap or a
+# failing assertion leaks them.
+cleanup() {
+  [ -n "${expected:-}" ] && rm -f "$expected"
+  [ -n "${T:-}" ] && rm -rf "$T"
+  return 0
+}
+trap cleanup EXIT
+
 H="$REPO_ROOT/plugins/software-development/hooks"
 [ -f "$H/payload.md" ] || fail "missing $H/payload.md"
 [ -f "$H/hooks.json" ] || fail "missing $H/hooks.json"
@@ -25,11 +34,14 @@ expected="$(mktemp)"
   printf '</EXTREMELY_IMPORTANT>\n'
 } > "$expected"
 diff "$expected" "$H/payload.md" || fail "payload.md != upstream using-superpowers inside upstream's frame with one edit"
-rm -f "$expected"
 [ "$(grep -c 'software-development:brainstorming' "$H/payload.md")" -eq 1 ] || fail "expected exactly one software-development:brainstorming"
 if grep -q 'superpowers:brainstorming' "$H/payload.md"; then fail "a superpowers:brainstorming reference survived"; fi
 
 # (2) envelope round-trip
+# CLAUDE_PLUGIN_ROOT mirrors how hooks.json invokes the script; session-start
+# itself resolves payload.md via dirname "$0" and never reads the variable, so
+# the ${CLAUDE_PLUGIN_ROOT} expansion asserted in section 3 is checked as a
+# string and not exercised as an expansion.
 out="$(CLAUDE_PLUGIN_ROOT="$REPO_ROOT/plugins/software-development" "$H/session-start")"
 printf '%s' "$out" | jq -e '.hookSpecificOutput.hookEventName == "SessionStart"' >/dev/null \
   || fail "output is not the SessionStart envelope: $out"
@@ -52,6 +64,5 @@ out="$("$T/session-start")"
 printf '%s' "$out" | jq -e . >/dev/null || fail "control characters produced invalid JSON"
 [ "$(printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext')" = "$sample" ] \
   || fail "control characters did not round-trip"
-rm -rf "$T"
 
 echo "hook: payload exact, envelope round-trips, wiring correct, control characters escaped"
