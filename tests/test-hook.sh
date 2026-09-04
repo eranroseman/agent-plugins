@@ -17,7 +17,7 @@ trap cleanup EXIT
 
 H="$REPO_ROOT/plugins/software-development/hooks"
 [ -f "$H/payload.md" ] || fail "missing $H/payload.md"
-[ -f "$H/hooks.json" ] || fail "missing $H/hooks.json"
+[ -f "$H/claude-hooks.json" ] || fail "missing $H/claude-hooks.json"
 [ -x "$H/session-start" ] || fail "$H/session-start missing or not executable"
 
 # (1) payload exactness
@@ -49,11 +49,20 @@ printf '%s' "$out" | jq -e '.hookSpecificOutput.hookEventName == "SessionStart"'
 diff <(printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext') "$H/payload.md" \
   || fail "additionalContext does not round-trip to payload.md"
 
-# (3) wiring
-[ "$(jq -r '.hooks.SessionStart[0].matcher' "$H/hooks.json")" = 'startup|clear|compact' ] || fail "matcher"
-[ "$(jq -r '.hooks.SessionStart[0].hooks[0].type' "$H/hooks.json")" = 'command' ] || fail "hook type"
-[ "$(jq -r '.hooks.SessionStart[0].hooks[0].command' "$H/hooks.json")" = '"${CLAUDE_PLUGIN_ROOT}/hooks/session-start"' ] || fail "hook command"
-[ "$(jq -r 'keys | join(",")' "$H/hooks.json")" = 'hooks' ] || fail "hooks.json top level must contain only 'hooks' (Codex rejects unknown top-level keys)"
+# (3) wiring: the Claude manifest declares the hook file, and nothing sits at
+# the path Codex loads by fallback when its manifest has no hooks key.
+PLUGIN="$REPO_ROOT/plugins/software-development"
+HJ="$H/claude-hooks.json"
+[ ! -e "$H/hooks.json" ] || fail "hooks/hooks.json must not exist: Codex loads that path by fallback"
+[ "$(jq -r '.hooks.SessionStart[0].matcher' "$HJ")" = 'startup|clear|compact' ] || fail "matcher"
+[ "$(jq -r '.hooks.SessionStart[0].hooks[0].type' "$HJ")" = 'command' ] || fail "hook type"
+[ "$(jq -r '.hooks.SessionStart[0].hooks[0].command' "$HJ")" = '"${CLAUDE_PLUGIN_ROOT}/hooks/session-start"' ] || fail "hook command"
+[ "$(jq -r 'keys | join(",")' "$HJ")" = 'hooks' ] || fail "claude-hooks.json top level must contain only 'hooks'"
+[ "$(jq -r '.hooks' "$PLUGIN/.claude-plugin/plugin.json")" = './hooks/claude-hooks.json' ] || fail "Claude manifest must declare hooks: ./hooks/claude-hooks.json"
+[ "$(jq -r '.version' "$PLUGIN/.claude-plugin/plugin.json")" = '0.2.0' ] || fail "Claude manifest version must be 0.2.0"
+[ "$(jq -r '.version' "$PLUGIN/.codex-plugin/plugin.json")" = '0.2.0' ] || fail "Codex manifest version must be 0.2.0"
+[ "$(jq 'has("hooks")' "$PLUGIN/.codex-plugin/plugin.json")" = 'false' ] || fail "Codex manifest must not declare hooks"
+[ "$(jq '.interface.capabilities | index("Lifecycle hooks")' "$PLUGIN/.codex-plugin/plugin.json")" = 'null' ] || fail "Codex manifest must not claim Lifecycle hooks"
 
 # (4) the encoder escapes control characters, not just the common five
 T="$(mktemp -d)"

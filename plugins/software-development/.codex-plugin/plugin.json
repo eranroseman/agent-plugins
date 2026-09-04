@@ -1,6 +1,6 @@
 {
   "name": "software-development",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Glue over superpowers and mattpocock/skills for Claude Code and Codex.",
   "author": { "name": "Eran Roseman", "url": "https://github.com/eranroseman" },
   "homepage": "https://github.com/eranroseman/agent-plugins",
@@ -14,7 +14,7 @@
     "longDescription": "Narrowed brainstorming front door plus session-start bridge rules over the superpowers spine and mattpocock's engineering skills.",
     "developerName": "Eran Roseman",
     "category": "Developer Tools",
-    "capabilities": ["Instructions", "Lifecycle hooks"],
+    "capabilities": ["Instructions"],
     "websiteURL": "https://github.com/eranroseman/agent-plugins",
     "defaultPrompt": ["Let's build a feature.", "Design this change before we implement it."]
   }
