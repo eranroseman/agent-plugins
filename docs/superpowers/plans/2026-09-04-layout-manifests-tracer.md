@@ -27,7 +27,7 @@
 
 ## Deviation From Spec
 
-Spec §6.2 puts `"hooks": "./hooks/hooks.json"` in the Codex manifest and §10.3 tells CI to tolerate the validator's rejection of that key. This plan **omits the `hooks` key** from `plugins/software-development/.codex-plugin/plugin.json`. Reason: `codex-rs/core-plugins/src/loader.rs` at openai/codex `f3f6922519fa38487c8250c2b8a670a39a2cf9ff`, function `load_plugin_hooks`, line 1230: when the manifest has no `hooks` field, Codex loads `hooks/hooks.json` from the plugin root (`DEFAULT_HOOKS_CONFIG_FILE`). Upstream superpowers' own `tests/codex/test-marketplace-manifest.sh` documents the same fallback. The Codex validator therefore passes cleanly and the hook still loads by fallback. Gate G4 measures that fallback. Task 4 amends spec §6.2, §10.2, §10.3 and §12 so spec and repository agree.
+Spec §6.2 puts `"hooks": "./hooks/hooks.json"` in the Codex manifest and §10.3 tells CI to tolerate the validator's rejection of that key. This plan **omits the `hooks` key** from `plugins/software-development/.codex-plugin/plugin.json`. Reason: `codex-rs/core-plugins/src/loader.rs` at openai/codex `f3f6922519fa38487c8250c2b8a670a39a2cf9ff`, function `load_plugin_hooks`, line 1230: when the manifest has no `hooks` field, Codex loads `hooks/hooks.json` from the plugin root (`DEFAULT_HOOKS_CONFIG_FILE`). Upstream superpowers' own `tests/codex/test-marketplace-manifest.sh` documents the same fallback. The Codex validator therefore passes cleanly and the hook still loads by fallback. Gate G4 measures that fallback. Task 4 amends spec §6.2, §10.2, §10.3, §12 and §13 so spec and repository agree.
 
 Also verified 2026-09-04 and relied on below: Codex's hook-file parser (`codex-rs/config/src/hook_config.rs`, same sha) accepts `command`, `timeout`, `async`, `statusMessage` on a command hook and ignores unknown keys such as `shell`; only the file's top level rejects unknown keys. Spec §8's `hooks.json` therefore parses on Codex unchanged.
 
@@ -63,7 +63,7 @@ tests/test-vendored-brainstorming.sh            vendored tree == upstream except
 tests/test-hook.sh                              payload exactness + envelope round-trip (Task 6)
 tests/test-codex-marketplace.sh                 Codex marketplace shape and agreement with Claude's (Task 7)
 .github/workflows/validate.yml                  installs both validators, runs tests/run.sh (Task 8)
-docs/superpowers/specs/2026-09-04-…-design.md   amended §6.2/§10.2/§10.3/§12 (Task 4); §14 gate results (Task 11)
+docs/superpowers/specs/2026-09-04-…-design.md   amended §6.2/§10.2/§10.3/§12/§13 (Task 4); §14 gate results (Task 11)
 ```
 
 All tests are bash scripts that `source tests/lib.sh`, use `set -euo pipefail`, and call `fail "message"` (prints `FAIL: message`, exits 1). A test passes when it exits 0. `tests/run.sh` is the single entry point for local runs and CI.
@@ -379,7 +379,7 @@ If either differs, `~/harness-backup` moved on since 2026-09-04; stop and report
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `tests/run.sh`
-Expected: `Plugin validation passed: /…/plugins/sensemaking/`, `json: 2 files well-formed`, three `PASS` lines, exit 0.
+Expected: `Plugin validation passed: /…/plugins/sensemaking`, `json: 2 files well-formed`, three `PASS` lines, exit 0.
 
 - [ ] **Step 5: Commit**
 
@@ -565,7 +565,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Modify: `docs/superpowers/specs/2026-09-04-software-development-layout-and-tracer-design.md` (§6.2, §10.2, §10.3, §12, §13)
 
 **Interfaces:**
-- Consumes: `tests/test-claude-validate.sh`, `tests/test-codex-validate.sh` (both already iterate `plugins/*/`).
+- Consumes: `tests/test-claude-validate.sh`, `tests/test-codex-validate.sh` (both already iterate `plugins/*/`); `tests/lib.sh` (`REPO_ROOT`, `MARKETPLACE`, `fail`) for the new test in Step 2.
 - Produces: plugin id `software-development@eranroseman` with `dependencies: ["sensemaking", "superpowers"]`; Codex manifest with `"skills": "./skills/"` and no `hooks` key; `tests/test-references-resolve.sh`, which holds every string-source marketplace path and every `dependencies` name to a real plugin.
 
 - [ ] **Step 1: Create the plugin directory and watch the existing tests fail**
@@ -784,7 +784,7 @@ rm plugins/software-development/.gitkeep
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `tests/run.sh`
-Expected: `Plugin validation passed: /…/plugins/software-development/`, `✔ Validation passed` three times, `json: 5 files well-formed`, `references-resolve: 2 string-source path(s) resolve, 2 dependency name(s) resolve`, five `PASS` lines, exit 0.
+Expected: `Plugin validation passed: /…/plugins/software-development`, `✔ Validation passed` three times, `json: 5 files well-formed`, `references-resolve: 2 string-source path(s) resolve, 2 dependency name(s) resolve`, five `PASS` lines, exit 0.
 
 - [ ] **Step 5: Amend the spec so it matches the manifest**
 
@@ -1514,10 +1514,10 @@ cp ~/.claude/plugins/installed_plugins.json ~/cutover-2026-09-04/installed_plugi
 cp ~/.claude/plugins/known_marketplaces.json ~/cutover-2026-09-04/known_marketplaces.before.json
 cp ~/.claude/settings.json ~/cutover-2026-09-04/settings.before.json
 cp ~/.claude/CLAUDE.md ~/cutover-2026-09-04/CLAUDE.before.md
-grep -A1 superpowers-dev ~/cutover-2026-09-04/marketplaces.before.txt
+grep -A1 'superpowers-dev$' ~/cutover-2026-09-04/marketplaces.before.txt
 ```
 
-Expected: `Source: GitHub (obra/superpowers)`. Rollback is `claude plugin marketplace add obra/superpowers` (the marketplace is named `superpowers-dev` by its own manifest) then `claude plugin install superpowers@superpowers-dev` at user scope and, from `/home/eranr/memoria-vault`, at project scope, plus restoring the four copied files.
+Expected: `Source: GitHub (obra/superpowers)`. The `$` anchor matters: this machine also has a marketplace named `superpowers-developing-for-claude-code-dev`, which an unanchored `superpowers-dev` matches. Rollback is `claude plugin marketplace add obra/superpowers` (the marketplace is named `superpowers-dev` by its own manifest) then `claude plugin install superpowers@superpowers-dev` at user scope and, from `/home/eranr/memoria-vault`, at project scope, plus restoring the four copied files.
 
 - [ ] **Step 2: Uninstall the old plugin at both scopes (spec §10.1 steps 1 to 2)**
 
@@ -1596,7 +1596,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 cd -
 ```
 
-Expected: `git status --short` lists `claude/CLAUDE.md` and `claude/settings.json` (and, if Task 10 ran first, `codex/config.toml`).
+Expected: `git status --short` lists at least `claude/CLAUDE.md` and `claude/settings.json`. Files that drifted from the backup independently of this task also appear (on this machine, `codex/config.toml`, whose `model` line changed on 2026-09-01); `git add -A` sweeps them into the same commit.
 
 - [ ] **Step 5: Gate G1, Claude catalog (static half)**
 
@@ -1634,6 +1634,7 @@ Record each answer verbatim for Task 11. If G1 fails, the fallback is the fork r
 
 **Files:**
 - Modify: `~/.codex/config.toml` (marketplace removed, plugins added, hook trust recorded by Codex)
+- Modify: `~/harness-backup/codex/config.toml` (refresh copy, committed in Step 7)
 - Create: `~/.local/share/software-development/upstream/superpowers` (clone at the pinned sha)
 - Create: 13 symlinks `~/.codex/skills/<name>` → that clone's `skills/<name>`
 
@@ -1700,7 +1701,7 @@ In a `codex` session:
 1. Type `$writing-plans` and confirm the skill loads from the symlink (it opens with "I'm using the writing-plans skill"). Ask: "Which file did that skill load from? Print the absolute path." Expected: a path under `~/.local/share/software-development/upstream/superpowers/skills/writing-plans/`.
 2. Give an SDD-shaped prompt: "Use the subagent-driven-development skill to plan how you would implement a one-task plan. Do not implement; describe which skills you would invoke and by what name." Expected: the model reaches `superpowers:test-driven-development` in the skill body and resolves it to the bare `test-driven-development` (or names it and continues) rather than stalling on a missing `superpowers:` catalog entry.
 
-Record the observed behaviour. If G2 fails, apply the recorded fallback: remove the 13 symlinks, then `codex plugin marketplace add https://github.com/obra/superpowers.git --ref v6.3.0` and `codex plugin add superpowers@superpowers`, and record that `brainstorming` now exists twice on Codex.
+Record the observed behaviour. If G2 fails, apply the recorded fallback: remove the 13 symlinks, then `codex plugin marketplace add https://github.com/obra/superpowers.git --ref v6.3.0` and `codex plugin add superpowers@superpowers-dev` (upstream's own manifest names that marketplace `superpowers-dev`, not `superpowers`), and record that `brainstorming` now exists twice on Codex.
 
 - [ ] **Step 6: Note the `rethink-audit` duplicate**
 
@@ -1758,10 +1759,10 @@ The user runs this from a terminal, and runs it last: Task 10's Codex rollback p
 
 ```bash
 claude plugin marketplace remove superpowers-dev
-claude plugin marketplace list | grep -c superpowers-dev || echo "superpowers-dev removed"
+claude plugin marketplace list | grep -q 'superpowers-dev$' && echo "STILL PRESENT" || echo "superpowers-dev removed"
 ```
 
-Expected: `superpowers-dev removed`.
+Expected: `superpowers-dev removed`. The `$` anchor is what makes this check able to fail: `grep -c superpowers-dev` also counts `superpowers-developing-for-claude-code-dev`, so it exits 0 and prints a non-zero count whether or not the removal worked.
 
 - [ ] **Step 3: Commit and push**
 

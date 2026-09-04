@@ -48,6 +48,7 @@ eranroseman/software-development
 │   │   ├── skills/brainstorming/          vendored, see §7
 │   │   ├── hooks/hooks.json               (§8)
 │   │   ├── hooks/session-start            (§8)
+│   │   ├── hooks/payload.md               (§8)
 │   │   ├── LICENSE                        MIT, carries obra's notice for the vendored skill
 │   │   └── README.md
 │   └── sensemaking/
@@ -56,9 +57,11 @@ eranroseman/software-development
 │       ├── skills/rethink-audit/          SKILL.md + agents/openai.yaml, as-is
 │       ├── LICENSE
 │       └── README.md
-├── docs/                                  existing agent docs and this spec
+├── tests/                                 run.sh, lib.sh, and eight test-*.sh (§10.3)
+├── docs/                                  existing agent docs, this spec, and its plan
+├── README.md                              marketplace overview, install on both harnesses
 ├── AGENTS.md, CLAUDE.md, CONTEXT.md       existing
-└── .github/workflows/validate.yml         static checks (§10)
+└── .github/workflows/validate.yml         runs tests/run.sh (§10.3)
 ```
 
 Component directories sit at each plugin root, never inside `.claude-plugin/`.
@@ -273,16 +276,20 @@ Both `add` commands are explicit because Codex has no dependency field. Codex pr
 ### 9.2 superpowers by symlink
 
 ```bash
-git clone https://github.com/obra/superpowers.git ~/.local/share/software-development/upstream/superpowers
-git -C ~/.local/share/software-development/upstream/superpowers checkout b36e0829c6d0140e93cfef2ca599b1b07d4a7797
-for s in dispatching-parallel-agents executing-plans finishing-a-development-branch receiving-code-review requesting-code-review subagent-driven-development systematic-debugging test-driven-development using-git-worktrees using-superpowers verification-before-completion writing-plans writing-skills; do
-  ln -s ~/.local/share/software-development/upstream/superpowers/skills/$s ~/.codex/skills/$s
+REPO=/path/to/this/checkout
+SHA="$(jq -r '.plugins[] | select(.name == "superpowers") | .source.sha' "$REPO/.claude-plugin/marketplace.json")"
+CLONE=~/.local/share/software-development/upstream/superpowers
+git clone https://github.com/obra/superpowers.git "$CLONE"
+git -C "$CLONE" checkout "$SHA"
+for s in $(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$REPO/.claude-plugin/marketplace.json" | sed 's#^\./##'); do
+  [ -e ~/.codex/skills/"$s" ] && { echo "ALREADY EXISTS: ~/.codex/skills/$s"; continue; }
+  ln -s "$CLONE/skills/$s" ~/.codex/skills/"$s"
 done
 ```
 
-Codex follows symlinked skill folders. `~/.agents/skills/` is not used because the skills.sh installer owns it. The 13-name list has one source of truth: the marketplace entry in §5.1. Sub-project 2 decides whether setup reads it from there or from a lockfile beside it; the tracer links by hand.
+Codex follows symlinked skill folders. `~/.agents/skills/` is not used because the skills.sh installer owns it. The 13-name list has one source of truth: the marketplace entry in §5.1. Sub-project 2 decides whether setup reads it from there or from a lockfile beside it; the tracer links by hand, reading the names from that entry with `jq` rather than repeating them here. The `[ -e ]` guard exists because `ln -s` into a directory symlink that already exists nests a link inside its target instead of failing.
 
-Gate G2 exists because Codex prefixes plugin skills with the plugin name (its catalog on this machine shows `superpowers:writing-plans`) while a skills-directory skill appears bare (`writing-plans`). The 26 qualified references in skill bodies then name catalog entries that do not exist on Codex. If Codex does not resolve them, the fallback is a plugin install: `codex plugin marketplace add https://github.com/obra/superpowers.git --ref v6.3.0` then `codex plugin add superpowers@superpowers`, which brings all 14 skills, `brainstorming` beside ours, and the symlinks are removed.
+Gate G2 exists because Codex prefixes plugin skills with the plugin name (its catalog on this machine shows `superpowers:writing-plans`) while a skills-directory skill appears bare (`writing-plans`). The 26 qualified references in skill bodies then name catalog entries that do not exist on Codex. If Codex does not resolve them, the fallback is a plugin install: `codex plugin marketplace add https://github.com/obra/superpowers.git --ref v6.3.0` then `codex plugin add superpowers@superpowers-dev` (upstream's own marketplace manifest carries the name `superpowers-dev`), which brings all 14 skills, `brainstorming` beside ours, and the symlinks are removed.
 
 ### 9.3 mattpocock
 
@@ -324,10 +331,16 @@ Fresh-machine reproducibility is not a gate here. It belongs to sub-project 2.
 
 ### 10.3 Static checks, in CI from the first commit
 
+`tests/run.sh` is the single entry point: it runs every `tests/test-*.sh` and exits non-zero if any fails. CI's only check step invokes it, so local runs and CI check the same things. The checks:
+
 - `claude plugin validate --strict` on `.claude-plugin/marketplace.json` and both plugin manifests. This checks schema, not scan behaviour; it does not substitute for G1.
 - `python3 ~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py plugins/<name>` on both plugins; both pass. CI fetches the same script from openai/codex at a pinned sha.
-- JSON well-formedness for all four manifests.
+- JSON well-formedness for every manifest and hooks file in the tree, discovered rather than enumerated, so a new manifest is covered the day it lands.
 - A shallow clone of `obra/superpowers` at the pinned sha, asserting that every directory listed in §5.1 exists and that `brainstorming` is not listed.
+- The vendored `brainstorming` tree against that same clone: identical bytes and file modes everywhere except the provenance header and the description, and the sha in the plugin's LICENSE equal to the pin.
+- The hook: `hooks/payload.md` regenerated from the clone and diffed, and `hooks/session-start`'s output parsed back to it, including a control-character case the common five escapes miss.
+- The Codex marketplace's shape, and its agreement with the Claude marketplace on the local plugin names.
+- Every string `source` path and every declared `dependencies` name in §5.1 resolving to a real plugin whose manifest agrees on the name.
 
 ### 10.4 Pins, recorded for sub-project 4
 
