@@ -84,7 +84,7 @@ plugins/software-development/
 - Two catalog strings still advertise "bridge rules" and must not: `interface.longDescription` in the Codex manifest becomes "Narrowed brainstorming front door over the superpowers spine and mattpocock's engineering skills.", and the `software-development` entry's `description` in `.claude-plugin/marketplace.json` becomes "Glue over superpowers and mattpocock/skills: narrowed brainstorming, plus a SessionStart hook on Claude Code."
 - `interface.capabilities` in the Codex manifest becomes `["Instructions"]`. `"Lifecycle hooks"` would be a false claim on Codex's catalog surface.
 - The plugin README replaces the paragraph that says Codex does not load the hook with the posture in §6. The repository README's line 7 ("plus a SessionStart hook") gains "on Claude Code".
-- The parent spec's §13 gets one line closing "why the `loader.rs` fallback did not fire": the question is moot, the plugin no longer offers Codex a hook, see this spec. Its §8 gets a one-line note beside the `hooks/hooks.json` listing pointing here, since that file no longer exists.
+- The parent spec's §13 gets one line closing "why the `loader.rs` fallback did not fire": the question is moot, the plugin no longer offers Codex a hook, see this spec. Its §6.1 sentence "Hooks load from the default path `hooks/hooks.json`" and its §8 `hooks/hooks.json` listing each get a one-line note pointing here, since that file no longer exists.
 - `~/.claude/CLAUDE.md` loses its **Worktree cleanup** paragraph, which now arrives by injection. The harness-backup copy is refreshed per that repository's README. No other user-file line moves; sub-project 2 owns the rest.
 
 ## 6. Codex
