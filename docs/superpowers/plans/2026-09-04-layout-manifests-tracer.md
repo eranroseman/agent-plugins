@@ -18,11 +18,11 @@
 - Both plugins are version `0.1.0`, license MIT, author `{ "name": "Eran Roseman", "url": "https://github.com/eranroseman" }`.
 - Component directories (`skills/`, `hooks/`) sit at each plugin root, never inside `.claude-plugin/`.
 - Vendored `brainstorming` keeps `name: brainstorming`. Only the `description` line and a provenance header change; every other byte, and every file mode, matches upstream at the pinned sha.
-- `rethink-audit` is copied byte-for-byte from `~/harness-backup/claude/skills/rethink-audit/` (`SKILL.md` md5 `41f9e1fc78aff3dcd302995322c88921`, `agents/openai.yaml` md5 `2a3f8e6f9044a4126ced384dd59d2200`).
+- `rethink-audit` is copied byte-for-byte from `~/harness-backup/claude/skills/rethink-audit/`. Task 2 Step 3 verifies the copy once, by md5, at copy time. No test repeats that check: the source is machine-local, and sub-project 5 rewrites the file.
 - Hook output envelope is exactly `{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"…"}}`.
 - Hook payload is upstream `skills/using-superpowers/SKILL.md` at the pinned sha, inside upstream's `<EXTREMELY_IMPORTANT>` frame, with exactly one edit: line 30, `superpowers:brainstorming` → `software-development:brainstorming`.
 - `superpowers` has no Codex marketplace entry; on Codex it arrives by symlinks from a clone pinned to the same sha.
-- Commit messages are plain prose and end with the trailer `Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>`.
+- Commit messages are plain prose and end with the executing agent's attribution trailer (`Co-Authored-By: <agent name> <noreply@anthropic.com>`). The commit commands below show the plan author's trailer; substitute your own.
 - All work happens on branch `tracer-bullet` cut from `main`; Tasks 9 to 11 run only after that branch is merged and pushed.
 
 ## Deviation From Spec
@@ -58,6 +58,7 @@ tests/test-json-wellformed.sh                   every manifest and hooks.json pa
 tests/test-claude-validate.sh                   claude plugin validate --strict (Task 1, extended Task 3)
 tests/test-codex-validate.sh                    validate_plugin.py on plugins/* (Task 2)
 tests/test-upstream-pin.sh                      shallow fetch at sha; 13 listed dirs exist; brainstorming absent (Task 3)
+tests/test-references-resolve.sh                marketplace source paths and dependency names resolve to real plugins (Task 4)
 tests/test-vendored-brainstorming.sh            vendored tree == upstream except header + description (Task 5)
 tests/test-hook.sh                              payload exactness + envelope round-trip (Task 6)
 tests/test-codex-marketplace.sh                 Codex marketplace shape and agreement with Claude's (Task 7)
@@ -347,7 +348,7 @@ Expected md5 output, exactly:
 2a3f8e6f9044a4126ced384dd59d2200  plugins/sensemaking/skills/rethink-audit/agents/openai.yaml
 ```
 
-If either differs, `~/harness-backup` moved on since 2026-09-04; stop and report the diff rather than adapting.
+If either differs, `~/harness-backup` moved on since 2026-09-04; stop and report the diff rather than adapting. This is the only check on these two files' bytes. The source is machine-local, so no test repeats it, and sub-project 5 adapts the skill anyway.
 
 `plugins/sensemaking/.codex-plugin/plugin.json`:
 
@@ -403,7 +404,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `tests/lib.sh` (`MARKETPLACE`, `upstream_sha`, `fetch_upstream`, `fail`).
-- Produces: `.claude-plugin/marketplace.json`, the single source of truth for the pinned sha, the `6.3.0` version, and the 13-name list. Tasks 5, 6, 7 and 10 read from it.
+- Produces: `.claude-plugin/marketplace.json`, the single source of truth for the pinned sha, the `6.3.0` version, and the 13-name list. Tasks 4, 5, 6, 7 and 10 read from it. Two files repeat the sha as human-readable provenance, the `software-development` LICENSE (Task 4) and the vendored `SKILL.md` header (Task 5); Task 5's test asserts both equal the marketplace value.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -447,11 +448,26 @@ have_version="$(jq -r '.version' "$UP/.claude-plugin/plugin.json")"
 printf 'upstream-pin: 13 listed dirs exist at %s; brainstorming excluded; version %s\n' "$sha" "$want_version"
 ```
 
-Also extend `tests/test-claude-validate.sh`: insert these lines before the `found=0` line.
+Also extend `tests/test-claude-validate.sh` so it validates the marketplace manifest first. The whole file, replacing the Task 1 version:
+
+`tests/test-claude-validate.sh`:
 
 ```bash
+#!/usr/bin/env bash
+# Schema-check every plugin manifest with Claude Code's own validator.
+# --strict turns warnings (unknown fields, missing metadata) into failures.
+. "$(dirname "$0")/lib.sh"
+
 [ -f "$MARKETPLACE" ] || fail "missing $MARKETPLACE"
 claude plugin validate --strict "$MARKETPLACE" || fail "claude plugin validate --strict $MARKETPLACE"
+
+found=0
+for p in "$REPO_ROOT"/plugins/*/; do
+  [ -f "$p/.claude-plugin/plugin.json" ] || continue
+  claude plugin validate --strict "$p" || fail "claude plugin validate --strict $p"
+  found=$((found + 1))
+done
+[ "$found" -gt 0 ] || fail "no plugin manifests under plugins/"
 ```
 
 - [ ] **Step 2: Run the tests to verify they fail**
@@ -545,11 +561,12 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Create: `plugins/software-development/.codex-plugin/plugin.json`
 - Create: `plugins/software-development/LICENSE`
 - Create: `plugins/software-development/README.md`
-- Modify: `docs/superpowers/specs/2026-09-04-software-development-layout-and-tracer-design.md` (§6.2, §10.2, §10.3, §12)
+- Create: `tests/test-references-resolve.sh`
+- Modify: `docs/superpowers/specs/2026-09-04-software-development-layout-and-tracer-design.md` (§6.2, §10.2, §10.3, §12, §13)
 
 **Interfaces:**
 - Consumes: `tests/test-claude-validate.sh`, `tests/test-codex-validate.sh` (both already iterate `plugins/*/`).
-- Produces: plugin id `software-development@eranroseman` with `dependencies: ["sensemaking", "superpowers"]`; Codex manifest with `"skills": "./skills/"` and no `hooks` key.
+- Produces: plugin id `software-development@eranroseman` with `dependencies: ["sensemaking", "superpowers"]`; Codex manifest with `"skills": "./skills/"` and no `hooks` key; `tests/test-references-resolve.sh`, which holds every string-source marketplace path and every `dependencies` name to a real plugin.
 
 - [ ] **Step 1: Create the plugin directory and watch the existing tests fail**
 
@@ -561,7 +578,55 @@ touch plugins/software-development/.gitkeep
 Run: `tests/run.sh`
 Expected: `FAIL: /…/plugins/software-development/ has no .codex-plugin/plugin.json` from `test-codex-validate.sh`, exit 1. (`test-claude-validate.sh` skips directories without a Claude manifest, so it still passes; that is fine.)
 
-- [ ] **Step 2: Write both manifests, LICENSE, README**
+- [ ] **Step 2: Write the failing references test**
+
+The marketplace already names `./plugins/software-development` (Task 3) and this task declares `dependencies`. Nothing else checks that either resolves; an install would be the first thing to notice a stale path or a misspelt dependency.
+
+`tests/test-references-resolve.sh`:
+
+```bash
+#!/usr/bin/env bash
+# The marketplace listing promises directories that exist and dependency
+# names that resolve to real plugins. Nothing else checks either claim
+# statically; an install would be the first thing to notice a stale path or
+# a renamed dependency.
+. "$(dirname "$0")/lib.sh"
+
+# Check A: every Claude marketplace entry with a plain-string source names a
+# real plugin.json whose own name agrees with the marketplace entry's name.
+found=0
+while IFS= read -r entry; do
+  name="$(jq -r '.name' <<<"$entry")"
+  src="$(jq -r '.source' <<<"$entry" | sed 's#^\./##')"
+  manifest="$REPO_ROOT/$src/.claude-plugin/plugin.json"
+  [ -f "$manifest" ] || fail "$name: $src has no .claude-plugin/plugin.json"
+  [ "$(jq -r '.name' "$manifest")" = "$name" ] || fail "$name: manifest name differs"
+  found=$((found + 1))
+done < <(jq -c '.plugins[] | select(.source | type == "string")' "$MARKETPLACE")
+
+[ "$found" -gt 0 ] || fail "no string-source marketplace entries found"
+
+# Check B: every plugin's declared dependency names a real marketplace plugin.
+# The dependencies key is optional; a manifest without it is not a failure.
+names="$(jq -r '.plugins[].name' "$MARKETPLACE")"
+depcount=0
+for pf in "$REPO_ROOT"/plugins/*/.claude-plugin/plugin.json; do
+  pname="$(jq -r '.name' "$pf")"
+  while IFS= read -r dep; do
+    depcount=$((depcount + 1))
+    grep -qxF "$dep" <<<"$names" || fail "$pname: dependency '$dep' is not a marketplace plugin"
+  done < <(jq -r '.dependencies[]?' "$pf")
+done
+
+[ "$depcount" -gt 0 ] || fail "no dependencies found"
+
+printf 'references-resolve: %s string-source path(s) resolve, %s dependency name(s) resolve\n' "$found" "$depcount"
+```
+
+Run: `bash tests/test-references-resolve.sh`
+Expected: `FAIL: software-development: plugins/software-development has no .claude-plugin/plugin.json`, exit 1.
+
+- [ ] **Step 3: Write both manifests, LICENSE, README**
 
 `plugins/software-development/.claude-plugin/plugin.json` (spec §6.1, verbatim):
 
@@ -716,12 +781,12 @@ MIT. The vendored `skills/brainstorming/` is MIT, © 2025 Jesse Vincent. See
 rm plugins/software-development/.gitkeep
 ```
 
-- [ ] **Step 3: Run the tests to verify they pass**
+- [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `tests/run.sh`
-Expected: `Plugin validation passed: /…/plugins/software-development/`, `✔ Validation passed` three times, `json: 5 files well-formed`, four `PASS` lines, exit 0.
+Expected: `Plugin validation passed: /…/plugins/software-development/`, `✔ Validation passed` three times, `json: 5 files well-formed`, `references-resolve: 2 string-source path(s) resolve, 2 dependency name(s) resolve`, five `PASS` lines, exit 0.
 
-- [ ] **Step 4: Amend the spec so it matches the manifest**
+- [ ] **Step 5: Amend the spec so it matches the manifest**
 
 In `docs/superpowers/specs/2026-09-04-software-development-layout-and-tracer-design.md`:
 
@@ -761,15 +826,17 @@ Codex either loads `hooks/hooks.json` by manifest fallback after the trust promp
 | Codex loads `hooks/hooks.json` when the manifest has no `hooks` key; `{}` suppresses it; the hook-file parser accepts `timeout`, `async`, `statusMessage` and ignores `shell` | `codex-rs/core-plugins/src/loader.rs` line 1230 and `codex-rs/config/src/hook_config.rs` at openai/codex `f3f6922519fa38487c8250c2b8a670a39a2cf9ff`; upstream superpowers `tests/codex/test-marketplace-manifest.sh` |
 ```
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add plugins/software-development docs/superpowers/specs
+git add plugins/software-development docs/superpowers/specs tests/test-references-resolve.sh
 git commit -m "Add the software-development plugin manifests
 
 The Codex manifest omits the hooks key: Codex loads hooks/hooks.json by
 fallback when the key is absent, and its validator rejects the key when
-present. The spec's sections 6.2, 10.2, 10.3 and 12 now say the same.
+present. The spec's sections 6.2, 10.2, 10.3, 12 and 13 now say the same.
+A test holds the marketplace's source paths and the plugin's dependency
+names to real plugins.
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
@@ -842,6 +909,10 @@ expected_header="$(printf '%s\n' \
 # Body: drop line 3 and lines 5-9; rest must equal upstream minus line 3.
 diff <(sed '3d' "$U/SKILL.md") <(sed -e '3d' -e '5,9d' "$V/SKILL.md") \
   || fail "SKILL.md changed beyond the header and the description"
+
+# The LICENSE's provenance notice names the same commit as the pin.
+grep -q "at commit $sha)" "$REPO_ROOT/plugins/software-development/LICENSE" \
+  || fail "LICENSE provenance sha != marketplace sha"
 
 printf 'vendored-brainstorming: matches upstream %s except header + description\n' "$sha"
 ```
@@ -931,7 +1002,7 @@ Expected: `brainstorming`, `344 chars`, and the description ending `not for stre
 - [ ] **Step 5: Run the tests to verify they pass**
 
 Run: `tests/run.sh`
-Expected: `vendored-brainstorming: matches upstream b36e0829c6d0140e93cfef2ca599b1b07d4a7797 except header + description`, all five tests `PASS`, exit 0. The Codex validator now also parses `skills/brainstorming/SKILL.md`.
+Expected: `vendored-brainstorming: matches upstream b36e0829c6d0140e93cfef2ca599b1b07d4a7797 except header + description`, all six tests `PASS`, exit 0. The Codex validator now also parses `skills/brainstorming/SKILL.md`.
 
 - [ ] **Step 6: Commit**
 
@@ -959,7 +1030,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 **Interfaces:**
 - Consumes: `tests/lib.sh` (`fetch_upstream`, `fail`); upstream `skills/using-superpowers/SKILL.md` at the pinned sha.
-- Produces: an executable `hooks/session-start` that takes no arguments, reads `hooks/payload.md` next to itself, and prints one JSON object on stdout: `{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"<payload>"}}`. `hooks/hooks.json` wires it for `startup|clear|compact`. Sub-project 3 replaces only `payload.md`.
+- Produces: an executable `hooks/session-start` that takes no arguments, reads `hooks/payload.md` next to itself, and prints one JSON object on stdout: `{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"<payload>"}}`. Every C0 control character in the payload is escaped, not only the common five, so a future payload cannot silently break the envelope. `hooks/hooks.json` wires it for `startup|clear|compact`. Sub-project 3 replaces only `payload.md`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -969,8 +1040,9 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 #!/usr/bin/env bash
 # The SessionStart hook must (1) carry upstream's using-superpowers text inside
 # upstream's frame with exactly one edit, (2) emit it as the documented JSON
-# envelope so that a JSON parser recovers the payload byte-for-byte, and
-# (3) be wired by hooks.json. Needs network access for (1).
+# envelope so that a JSON parser recovers the payload byte-for-byte,
+# (3) be wired by hooks.json, and (4) escape every C0 control character, not
+# just the common five. Needs network access for (1).
 . "$(dirname "$0")/lib.sh"
 
 H="$REPO_ROOT/plugins/software-development/hooks"
@@ -1010,7 +1082,18 @@ diff <(printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext') "$H/p
 [ "$(jq -r '.hooks.SessionStart[0].hooks[0].command' "$H/hooks.json")" = '"${CLAUDE_PLUGIN_ROOT}/hooks/session-start"' ] || fail "hook command"
 [ "$(jq -r 'keys | join(",")' "$H/hooks.json")" = 'hooks' ] || fail "hooks.json top level must contain only 'hooks' (Codex rejects unknown top-level keys)"
 
-echo "hook: payload exact, envelope round-trips, wiring correct"
+# (4) the encoder escapes control characters, not just the common five
+T="$(mktemp -d)"
+cp "$H/session-start" "$T/session-start"
+sample=$'x\x01\x0c\x1b\x1fy "q" \\ end'
+printf '%s' "$sample" > "$T/payload.md"
+out="$("$T/session-start")"
+printf '%s' "$out" | jq -e . >/dev/null || fail "control characters produced invalid JSON"
+[ "$(printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext')" = "$sample" ] \
+  || fail "control characters did not round-trip"
+rm -rf "$T"
+
+echo "hook: payload exact, envelope round-trips, wiring correct, control characters escaped"
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -1114,7 +1197,7 @@ chmod +x plugins/software-development/hooks/session-start
 - [ ] **Step 5: Run the tests to verify they pass**
 
 Run: `tests/run.sh`
-Expected: `hook: payload exact, envelope round-trips, wiring correct`, `json: 6 files well-formed`, six `PASS` lines, exit 0.
+Expected: `hook: payload exact, envelope round-trips, wiring correct, control characters escaped`, `json: 6 files well-formed`, seven `PASS` lines, exit 0.
 
 - [ ] **Step 6: Commit**
 
@@ -1276,7 +1359,7 @@ the upstream pin, vendored-skill drift, hook output. CI runs the same script.
 - [ ] **Step 5: Run the tests to verify they pass**
 
 Run: `tests/run.sh`
-Expected: `codex-marketplace: 2 local plugins, manifests match, no superpowers entry`, `json: 7 files well-formed`, seven `PASS` lines, exit 0.
+Expected: `codex-marketplace: 2 local plugins, manifests match, no superpowers entry`, `json: 7 files well-formed`, eight `PASS` lines, exit 0.
 
 - [ ] **Step 6: Commit**
 
@@ -1315,7 +1398,7 @@ md5sum "$D/validate_plugin.py" ~/.codex/skills/.system/plugin-creator/scripts/va
 CODEX_PLUGIN_VALIDATOR="$D/validate_plugin.py" tests/run.sh
 ```
 
-Expected: both md5 lines read `57d8f21fd3416e97c624f46aa090868f`; seven `PASS` lines, exit 0.
+Expected: both md5 lines read `57d8f21fd3416e97c624f46aa090868f`; eight `PASS` lines, exit 0.
 
 - [ ] **Step 2: Write the workflow**
 
@@ -1381,40 +1464,31 @@ validator from openai/codex at a pinned sha, and runs tests/run.sh.
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
 
-- [ ] **Step 4: Push the branch, open the PR, and watch CI**
+- [ ] **Step 4: Push the branch and watch CI**
+
+The branch push exists only to get a CI run on the exact commits before `main` moves; the repository's git policy (AGENTS.md, "Git") is to merge locally and push `main` in the same motion, not to open a pull request.
 
 ```bash
 git push -u origin tracer-bullet
-gh pr create --title "Marketplace layout, manifests, and tracer bullet" --body "$(cat <<'EOF'
-Implements docs/superpowers/specs/2026-09-04-software-development-layout-and-tracer-design.md, sub-project 1.
-
-- eranroseman marketplace for Claude Code and Codex
-- software-development plugin: vendored brainstorming (narrowed description), SessionStart hook
-- sensemaking plugin: rethink-audit
-- curated superpowers entry (git-subdir at skills/, 13 of 14, pinned sha)
-- static checks in tests/, run locally and in CI
-
-Deviation from spec: the Codex manifest omits the hooks key (Codex loads hooks/hooks.json by fallback; validator passes). Spec amended.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-EOF
-)"
-gh pr checks tracer-bullet --watch --fail-fast
+until id="$(gh run list --branch tracer-bullet --limit 1 --json databaseId --jq '.[0].databaseId')" && [ -n "$id" ]; do sleep 5; done
+gh run watch --exit-status "$id"
 ```
 
-Expected: `gh pr checks` ends with the `validate` check marked pass. If it fails, read `gh run view --log-failed` for the failing run and fix the workflow; do not weaken a test to make CI pass.
+Expected: the `validate` job completes and `gh run watch` exits 0. If it fails, read `gh run view "$id" --log-failed` and fix the workflow; do not weaken a test to make CI pass.
 
-- [ ] **Step 5: Merge to main**
+- [ ] **Step 5: Merge to main and push in one motion**
 
 Integrate with `superpowers:finishing-a-development-branch`; the merge itself is:
 
 ```bash
-gh pr merge tracer-bullet --merge --delete-branch
-git switch main && git pull --ff-only
-gh run list --branch main --limit 1
+git switch main
+git merge --ff-only tracer-bullet && git push origin main
+git push origin --delete tracer-bullet && git branch -d tracer-bullet
+until id="$(gh run list --branch main --limit 1 --json databaseId,headSha --jq '.[0] | select(.headSha == "'"$(git rev-parse HEAD)"'") | .databaseId')" && [ -n "$id" ]; do sleep 5; done
+gh run watch --exit-status "$id"
 ```
 
-Expected: `main` carries every commit above and its latest `validate` run is green.
+Expected: `main` carries every commit above, the branch is gone locally and on origin, and `main`'s own `validate` run exits 0.
 
 ---
 
@@ -1679,6 +1753,8 @@ Observations carried to later sub-projects:
 ```
 
 - [ ] **Step 2: Remove the old marketplace (spec §10.1 step 6), only if every gate passed or has a recorded fallback applied**
+
+The user runs this from a terminal, and runs it last: Task 10's Codex rollback path re-adds the marketplace from `~/.claude/plugins/marketplaces/superpowers-dev`, which this command deletes.
 
 ```bash
 claude plugin marketplace remove superpowers-dev
