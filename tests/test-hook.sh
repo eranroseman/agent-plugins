@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # The SessionStart hook must (1) carry upstream's using-superpowers text inside
 # upstream's frame with exactly one edit, (2) emit it as the documented JSON
-# envelope so that a JSON parser recovers the payload byte-for-byte, and
-# (3) be wired by hooks.json. Needs network access for (1).
+# envelope so that a JSON parser recovers the payload byte-for-byte,
+# (3) be wired by hooks.json, and (4) escape every C0 control character, not
+# just the common five. Needs network access for (1).
 . "$(dirname "$0")/lib.sh"
 
 H="$REPO_ROOT/plugins/software-development/hooks"
@@ -42,4 +43,15 @@ diff <(printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext') "$H/p
 [ "$(jq -r '.hooks.SessionStart[0].hooks[0].command' "$H/hooks.json")" = '"${CLAUDE_PLUGIN_ROOT}/hooks/session-start"' ] || fail "hook command"
 [ "$(jq -r 'keys | join(",")' "$H/hooks.json")" = 'hooks' ] || fail "hooks.json top level must contain only 'hooks' (Codex rejects unknown top-level keys)"
 
-echo "hook: payload exact, envelope round-trips, wiring correct"
+# (4) the encoder escapes control characters, not just the common five
+T="$(mktemp -d)"
+cp "$H/session-start" "$T/session-start"
+sample=$'x\x01\x0c\x1b\x1fy "q" \\ end'
+printf '%s' "$sample" > "$T/payload.md"
+out="$("$T/session-start")"
+printf '%s' "$out" | jq -e . >/dev/null || fail "control characters produced invalid JSON"
+[ "$(printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext')" = "$sample" ] \
+  || fail "control characters did not round-trip"
+rm -rf "$T"
+
+echo "hook: payload exact, envelope round-trips, wiring correct, control characters escaped"

@@ -43,4 +43,8 @@ expected_header="$(printf '%s\n' \
 diff <(sed '3d' "$U/SKILL.md") <(sed -e '3d' -e '5,9d' "$V/SKILL.md") \
   || fail "SKILL.md changed beyond the header and the description"
 
+# The LICENSE's provenance notice names the same commit as the pin.
+grep -q "at commit $sha)" "$REPO_ROOT/plugins/software-development/LICENSE" \
+  || fail "LICENSE provenance sha != marketplace sha"
+
 printf 'vendored-brainstorming: matches upstream %s except header + description\n' "$sha"
