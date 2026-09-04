@@ -1,5 +1,9 @@
 ## Agent skills
 
+### Git
+
+Merge back to main locally and push main to origin in the same motion. Fetch before claiming something is absent from origin.
+
 ### Issue tracker
 
 GitHub Issues (github.com/eranroseman/software-development), via `gh` CLI. See `docs/agents/issue-tracker.md`.
