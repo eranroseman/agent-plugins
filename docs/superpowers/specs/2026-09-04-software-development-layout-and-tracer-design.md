@@ -412,12 +412,15 @@ Not reversed: `sensemaking` exists and is shared by both products; the map's mea
 | mattpocock ships a Claude plugin (25 skills) and no Codex manifest; 11 of 25 are model-invocable | `gh api repos/mattpocock/skills/contents/.claude-plugin/plugin.json`; per-skill frontmatter and `agents/openai.yaml` at HEAD `6654f6b6` |
 | `eroseman` is taken; `eranroseman/{sensemaking,superpowers,research-vault}` do not exist; `knowledge-harness` is private | `gh api users/eroseman`; `gh repo view` |
 | `sensemaking` collides with nothing across 373 marketplace entries | grep over `~/.claude/plugins/marketplaces/*/marketplace.json` |
-| Codex loads `hooks/hooks.json` when the manifest has no `hooks` key; `{}` suppresses it; the hook-file parser accepts `timeout`, `async`, `statusMessage` and ignores `shell` | `codex-rs/core-plugins/src/loader.rs` line 1230 and `codex-rs/config/src/hook_config.rs` at openai/codex `f3f6922519fa38487c8250c2b8a670a39a2cf9ff`; upstream superpowers `tests/codex/test-marketplace-manifest.sh` |
+| Codex loads `hooks/hooks.json` when the manifest has no `hooks` key; `{}` suppresses it; the hook-file parser accepts `timeout`, `async`, `statusMessage` and ignores `shell` | `codex-rs/core-plugins/src/loader.rs` line 1230 and `codex-rs/config/src/hook_config.rs` at openai/codex `f3f6922519fa38487c8250c2b8a670a39a2cf9ff`; upstream superpowers `tests/codex/test-marketplace-manifest.sh`. **Qualified 2026-09-04 (§14, G4):** the source reads as stated, but the fallback did not fire for our plugin on codex-cli 0.147.0 — no trust prompt, no `[hooks.state]` entry, in-session count 0. Whether the installed build differs from this sha, or the fallback has another precondition, is unresolved and belongs to sub-project 3 |
 
 ## 13. Open items carried forward
 
-- G1 and G2 are the two mechanism claims this design could not settle statically (§10.2).
-- Whether Codex loads `hooks/hooks.json` by manifest fallback for our plugin (G4).
+- ~~G1 and G2 are the two mechanism claims this design could not settle statically (§10.2).~~ Closed 2026-09-04: both PASS (§14). G2 passed by a mechanism this design did not predict; see §9.2.
+- ~~Whether Codex loads `hooks/hooks.json` by manifest fallback for our plugin (G4).~~ Closed 2026-09-04: it does not, on codex-cli 0.147.0 (§14). Sub-project 3 designs against IGNORED.
+- Why the `loader.rs` fallback did not fire, given that the source reads as §12 records (opened by G4, sub-project 3).
+- The one qualified cross-reference curation leaves dangling, `using-superpowers/SKILL.md:30` (opened by §14's G2 observation, sub-project 3).
+- That `tests/test-hook.sh` transcribes upstream's `<EXTREMELY_IMPORTANT>` frame rather than reading it, so a pin bump changing that frame passes green (§12, sub-projects 3 and 4).
 - The exact list format that setup reads for the 13 superpowers names and the mattpocock subset (sub-project 2).
 - The hook payload beyond the tracer's like-for-like text (sub-project 3).
 - `adhd`, `archify`, `diagnosing-bugs` gating, and every other roster question (sub-project 5).
