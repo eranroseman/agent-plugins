@@ -1,0 +1,49 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "eranroseman",
+  "owner": { "name": "Eran Roseman", "url": "https://github.com/eranroseman" },
+  "description": "Eran Roseman's plugins: a curated software-development harness and the shared sensemaking skills.",
+  "plugins": [
+    {
+      "name": "software-development",
+      "source": "./plugins/software-development",
+      "description": "Glue over superpowers and mattpocock/skills: narrowed brainstorming, session-start bridge rules.",
+      "category": "development"
+    },
+    {
+      "name": "sensemaking",
+      "source": "./plugins/sensemaking",
+      "description": "Skills shared by software-development and research-vault.",
+      "category": "productivity"
+    },
+    {
+      "name": "superpowers",
+      "description": "obra/superpowers, curated: the process spine without brainstorming.",
+      "category": "development",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/obra/superpowers.git",
+        "path": "skills",
+        "ref": "main",
+        "sha": "b36e0829c6d0140e93cfef2ca599b1b07d4a7797"
+      },
+      "version": "6.3.0",
+      "strict": false,
+      "skills": [
+        "./dispatching-parallel-agents",
+        "./executing-plans",
+        "./finishing-a-development-branch",
+        "./receiving-code-review",
+        "./requesting-code-review",
+        "./subagent-driven-development",
+        "./systematic-debugging",
+        "./test-driven-development",
+        "./using-git-worktrees",
+        "./using-superpowers",
+        "./verification-before-completion",
+        "./writing-plans",
+        "./writing-skills"
+      ]
+    }
+  ]
+}

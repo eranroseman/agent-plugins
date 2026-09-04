@@ -3,6 +3,9 @@
 # --strict turns warnings (unknown fields, missing metadata) into failures.
 . "$(dirname "$0")/lib.sh"
 
+[ -f "$MARKETPLACE" ] || fail "missing $MARKETPLACE"
+claude plugin validate --strict "$MARKETPLACE" || fail "claude plugin validate --strict $MARKETPLACE"
+
 found=0
 for p in "$REPO_ROOT"/plugins/*/; do
   [ -f "$p/.claude-plugin/plugin.json" ] || continue
