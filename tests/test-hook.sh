@@ -2,8 +2,9 @@
 # The SessionStart hook must (1) carry upstream's using-superpowers text inside
 # upstream's frame with exactly one edit, (2) emit it as the documented JSON
 # envelope so that a JSON parser recovers the payload byte-for-byte,
-# (3) be wired by claude-hooks.json, and (4) escape every C0 control character, not
-# just the common five. Needs network access for (1).
+# (3) be wired by claude-hooks.json, (4) escape every C0 control character, not
+# just the common five, and (5) fail rather than emit a rules-only envelope when
+# payload.md is missing. Needs network access for (1).
 . "$(dirname "$0")/lib.sh"
 
 # fail() exits immediately, so temporaries have to be freed from a trap or a

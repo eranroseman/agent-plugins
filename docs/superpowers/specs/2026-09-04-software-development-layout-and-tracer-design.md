@@ -258,7 +258,7 @@ The Visual Companion's server fetches a logo from an external site unless `SUPER
 }
 ```
 
-`hooks/session-start` reads `hooks/payload.md`, JSON-escapes it, and prints `{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "..."}}`. That envelope is what Claude Code documents and what Codex requires; one output serves both harnesses. *Amended 2026-09-04: the script now reads two files, `hooks/payload.md` and `hooks/payload-rules.md`, and joins them into the envelope as the [hook spec](2026-09-04-session-start-hook-design.md) §4 describes; Codex is offered no hook at all, see §6.*
+`hooks/session-start` reads `hooks/payload.md`, JSON-escapes it, and prints `{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "..."}}`. That envelope is what Claude Code documents and what Codex requires; one output serves both harnesses. *Amended 2026-09-04: the script now reads two files, `hooks/payload.md` and `hooks/payload-rules.md`, and joins them into the envelope as the [hook spec](2026-09-04-session-start-hook-design.md) §4 describes; Codex is offered no hook at all, see the [hook spec](2026-09-04-session-start-hook-design.md) §6.*
 
 Payload for the tracer bullet: the text of upstream `skills/using-superpowers/SKILL.md` at `b36e0829`, wrapped in the same `<EXTREMELY_IMPORTANT>` frame upstream uses, with exactly one edit: line 30, `superpowers:brainstorming` becomes `software-development:brainstorming`. Line 22 ("invoke the brainstorming skill first") is a bare-name mention and stays. `<SUBAGENT-STOP>` stays. The lean-router redesign, the admission test, and the bridge rules are sub-project 3; this payload exists so that the tracer measures a like-for-like replacement of upstream's injection.
 
