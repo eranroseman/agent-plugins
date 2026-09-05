@@ -4,7 +4,8 @@ The source repository for the `eranroseman` plugin marketplace, which serves
 both Claude Code and Codex. It hosts three plugins:
 
 - `software-development`: the glue plugin. obra/superpowers' `brainstorming`
-  skill vendored with a narrowed description, plus a SessionStart hook.
+  skill vendored with a narrowed description, plus a SessionStart hook on
+  Claude Code (Codex is offered none, by design).
   Depends on the two entries below.
 - `sensemaking`: skills shared with `research-vault`, starting with
   `rethink-audit`.

@@ -11,7 +11,7 @@
   "interface": {
     "displayName": "Software Development",
     "shortDescription": "Curated software-development harness",
-    "longDescription": "Narrowed brainstorming front door plus session-start bridge rules over the superpowers spine and mattpocock's engineering skills.",
+    "longDescription": "Narrowed brainstorming front door over the superpowers spine and mattpocock's engineering skills.",
     "developerName": "Eran Roseman",
     "category": "Developer Tools",
     "capabilities": ["Instructions"],

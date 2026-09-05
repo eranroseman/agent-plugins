@@ -7,7 +7,7 @@
     {
       "name": "software-development",
       "source": "./plugins/software-development",
-      "description": "Glue over superpowers and mattpocock/skills: narrowed brainstorming, session-start bridge rules.",
+      "description": "Glue over superpowers and mattpocock/skills: narrowed brainstorming, plus a SessionStart hook on Claude Code.",
       "category": "development"
     },
     {

@@ -82,6 +82,10 @@ HJ="$H/claude-hooks.json"
 [ "$(jq 'has("hooks")' "$PLUGIN/.codex-plugin/plugin.json")" = 'false' ] || fail "Codex manifest must not declare hooks"
 [ "$(jq '.interface.capabilities | index("Lifecycle hooks")' "$PLUGIN/.codex-plugin/plugin.json")" = 'null' ] || fail "Codex manifest must not claim Lifecycle hooks"
 
+for f in "$PLUGIN/.codex-plugin/plugin.json" "$MARKETPLACE"; do
+  if grep -q 'bridge rules' "$f"; then fail "$f still advertises bridge rules"; fi
+done
+
 # (4) the encoder escapes control characters, not just the common five
 T="$(mktemp -d)"
 cp "$H/session-start" "$T/session-start"
