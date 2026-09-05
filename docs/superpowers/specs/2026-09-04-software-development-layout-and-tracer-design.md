@@ -173,7 +173,7 @@ Codex has no dependency concept and cannot subset a plugin's `skills/` directory
 }
 ```
 
-Installing `software-development@eranroseman` installs both dependencies at the same scope and enables them; disabling either while `software-development` is enabled fails with a chained-command hint; `claude plugin uninstall software-development --prune` removes them if nothing else needs them. Hooks load from the default path `hooks/hooks.json`.
+Installing `software-development@eranroseman` installs both dependencies at the same scope and enables them; disabling either while `software-development` is enabled fails with a chained-command hint; `claude plugin uninstall software-development --prune` removes them if nothing else needs them. Hooks load from the default path `hooks/hooks.json`. *Amended 2026-09-04: the hook file is now `hooks/claude-hooks.json`, declared in this manifest; see the [hook spec](2026-09-04-session-start-hook-design.md) §5.*
 
 ### 6.2 `plugins/software-development/.codex-plugin/plugin.json`
 
@@ -231,6 +231,8 @@ The Visual Companion's server fetches a logo from an external site unless `SUPER
 `grilling` and `brainstorming` no longer compete on description. `grilling` fires on "grill", "stress-test", and plan critique; `brainstorming` fires on build requests. `adhd`, if adopted later, is checked against this description (sub-project 5).
 
 ## 8. The SessionStart hook
+
+*Amended 2026-09-04: this file is now `hooks/claude-hooks.json`, content unchanged, declared in the Claude manifest; see the [hook spec](2026-09-04-session-start-hook-design.md) §5.*
 
 `hooks/hooks.json`:
 
@@ -418,7 +420,7 @@ Not reversed: `sensemaking` exists and is shared by both products; the map's mea
 
 - ~~G1 and G2 are the two mechanism claims this design could not settle statically (§10.2).~~ Closed 2026-09-04: both PASS (§14). G2 passed by a mechanism this design did not predict; see §9.2.
 - ~~Whether Codex loads `hooks/hooks.json` by manifest fallback for our plugin (G4).~~ Closed 2026-09-04: it does not, on codex-cli 0.147.0 (§14). Sub-project 3 designs against IGNORED.
-- Why the `loader.rs` fallback did not fire, given that the source reads as §12 records (opened by G4, sub-project 3).
+- ~~Why the `loader.rs` fallback did not fire, given that the source reads as §12 records (opened by G4, sub-project 3).~~ Closed 2026-09-04 as moot: the plugin no longer offers Codex a hook, so nothing exists for the fallback to load; see the [hook spec](2026-09-04-session-start-hook-design.md) §6.
 - The one qualified cross-reference curation leaves dangling, `using-superpowers/SKILL.md:30` (opened by §14's G2 observation, sub-project 3).
 - That `tests/test-hook.sh` transcribes upstream's `<EXTREMELY_IMPORTANT>` frame rather than reading it, so a pin bump changing that frame passes green (§12, sub-projects 3 and 4).
 - The exact list format that setup reads for the 13 superpowers names and the mattpocock subset (sub-project 2).
