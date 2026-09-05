@@ -18,7 +18,7 @@
 - After Task 1 no file named `hooks/hooks.json` exists anywhere under `plugins/`. The Claude manifest declares `"hooks": "./hooks/claude-hooks.json"` with the leading `./`; `claude plugin validate --strict` rejects the path without it.
 - The Codex manifest never gains a `hooks` key in any form. Its `interface.capabilities` is `["Instructions"]`.
 - Matcher stays `startup|clear|compact`.
-- Both `software-development` manifests move from `0.1.0` to `0.2.0`. `sensemaking` stays `0.1.0`.
+- Both `software-development` manifests move from `0.1.0` to `0.2.0`. `sensemaking` stays `0.1.0`. *(Tasks 1 to 5 shipped 0.2.0 and the references below record that. A later change, the task-reports rule, moved the shipped version to **0.3.0** before the cutover ran; Tasks 6 to 8 are written against 0.3.0.)*
 - The strings `bridge rules` and `Lifecycle hooks` appear in neither `software-development` manifest nor `.claude-plugin/marketplace.json` after Task 3.
 - `additionalContext` length, `jq '.hookSpecificOutput.additionalContext | length'`, stays under 8,000.
 - Test scripts call `grep` with plain patterns only (no `.{0,n}` quantifiers); `grep` on this machine may resolve to ugrep.
@@ -608,7 +608,7 @@ Cutover performed on this machine per §9. Claude Code <version>, codex-cli <ver
 | Gate | Result | Evidence |
 | --- | --- | --- |
 | G3 rerun | <PASS or FAIL> | Standalone-line count of `You have superpowers.`: <n> at startup, <n> after `/clear`, <n> after `/compact`; both the worktree and task-reports paragraphs were read back at <which legs> |
-| G6 Codex | <PASS or FAIL> | Cache `0.2.0/hooks/` listed <files>; `/hooks` listed <nothing or what>; `[hooks.state]` had <no entry or what>; injection observed: <none or what> (informational) |
+| G6 Codex | <PASS or FAIL> | Cache `0.3.0/hooks/` listed <files>; `/hooks` listed <nothing or what>; `[hooks.state]` had <no entry or what>; injection observed: <none or what> (informational) |
 | G7 baseline | <recorded> | "Let's build" invoked `<skill>` first; "Fix this bug" invoked `<skill>` first |
 
 Observations carried forward: <one bullet per surprise, or "none">.
