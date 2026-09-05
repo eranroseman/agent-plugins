@@ -46,7 +46,6 @@ if grep -q 'superpowers:brainstorming' "$H/payload.md"; then fail "a superpowers
 [ "$(tail -c 1 "$H/payload-rules.md" | wc -l)" -eq 1 ] || fail "payload-rules.md must end with a newline"
 [ "$(tail -c 2 "$H/payload-rules.md" | wc -l)" -eq 1 ] || fail "payload-rules.md must end with exactly one newline"
 grep -q 'worktree' "$H/payload-rules.md" || fail "payload-rules.md does not carry the worktree rule"
-grep -q 'superpowers:subagent-driven-development' "$H/payload-rules.md" || fail "payload-rules.md does not carry the task-reports rule"
 if grep -q 'superpowers:brainstorming' "$H/payload-rules.md"; then fail "payload-rules.md names superpowers:brainstorming"; fi
 curated="$(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$MARKETPLACE" | sed 's#^\./##')"
 while IFS= read -r name; do

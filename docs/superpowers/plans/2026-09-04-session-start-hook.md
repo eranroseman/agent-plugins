@@ -497,7 +497,7 @@ Expected: the `validate` workflow concludes `success`. If it fails, read the fai
 
 ### Task 6: HUMAN-RUN. Claude Code cutover, G3 rerun, G7 baseline
 
-> **Amended 2026-09-05.** The version shipped is **0.3.0**, not 0.2.0: the task-reports rule was admitted to the payload after this plan was written, and the [hook spec](../specs/2026-09-04-session-start-hook-design.md) §10 records that reversal. Two paragraphs now leave `~/.claude/CLAUDE.md`, not one. And the verification step moved **before** the deletion, so you prove the hook carries a rule before you delete its only other copy.
+> **Amended 2026-09-05.** The version shipped is **0.3.0**, not 0.2.0. The payload still carries exactly one rule, worktree cleanup: a task-reports rule was admitted and withdrawn the same day, because its destination clause is repository-specific and it belongs beside each repository's tracker declaration instead (hook spec §10, [setup and drift spec](../specs/2026-09-05-setup-and-drift-design.md) §8). So one paragraph leaves `~/.claude/CLAUDE.md`, not two, and the task-reports paragraph stays in **both** global files until the scaffolding skill ships. And the verification step moved **before** the deletion, so you prove the hook carries the rule before you delete its only other copy.
 
 > **Do not dispatch an implementer for this task.** It restarts Claude Code and edits files under `~`. The controller hands the steps below to the user and records what they report.
 
@@ -518,15 +518,15 @@ Expected in the details output: version `0.3.0`, `Hooks (1) SessionStart`. Quit 
 
 In a fresh Claude Code session in any directory, ask:
 
-> Count the standalone lines in your context that are exactly `You have superpowers.` Then print the first line that begins `**Worktree cleanup.**` and the first that begins `**Task reports.**`.
+> Count the standalone lines in your context that are exactly `You have superpowers.` Then print the first line that begins `**Worktree cleanup.**`.
 
-Expected: `1`, and **both** paragraphs printed back. Run `/clear`, ask again: `1` and both. Then produce enough conversation to compact (several substantial exchanges), run `/compact`, and ask again: `1` and both. If `/compact` answers "Not enough messages to compact", the compact leg has not run; add history and retry.
+Expected: `1`, and the paragraph printed back. Run `/clear`, ask again: `1` and the paragraph. Then produce enough conversation to compact (several substantial exchanges), run `/compact`, and ask again: `1` and the paragraph. If `/compact` answers "Not enough messages to compact", the compact leg has not run; add history and retry.
 
-A count of `1` without the paragraphs means the old cache is still loaded: check that `claude plugin details` reports `0.3.0` and restart. **Do not proceed to Step 3 until both paragraphs come back**, because until then `~/.claude/CLAUDE.md` is their only carrier.
+A count of `1` without the paragraph means the old cache is still loaded: check that `claude plugin details` reports `0.3.0` and restart. **Do not proceed to Step 3 until the paragraph comes back**, because until then `~/.claude/CLAUDE.md` is its only carrier.
 
-- [ ] **Step 3: Move both rules out of the user file**
+- [ ] **Step 3: Move the worktree rule out of the user file**
 
-Only after Step 2 passes. Delete the paragraphs beginning `**Worktree cleanup.**` and `**Task reports.**` from the `## Tool routing` section of `~/.claude/CLAUDE.md`; both now arrive by injection. **Leave `~/.codex/AGENTS.md` alone**: Codex gets no hook, so its copy of the task-reports rule is the only one on that side.
+Only after Step 2 passes. Delete the paragraph beginning `**Worktree cleanup.**` from the `## Tool routing` section of `~/.claude/CLAUDE.md`; it now arrives by injection. **Leave everything else in both global files alone**, including the task-reports paragraphs: they move to each repository's `AGENTS.md` when the scaffolding skill ships, not now.
 
 Then refresh the backup, which also captures the CLI-owned Codex marketplace timestamps that a 2026-09-05 investigation refreshed:
 
@@ -536,7 +536,7 @@ cp ~/.claude/CLAUDE.md ~/.claude/settings.json claude/
 cp ~/.codex/AGENTS.md ~/.codex/config.toml codex/
 cp ~/.agents/.skill-lock.json agents/
 git status
-git add -A && git commit -m "Move the worktree cleanup and task reports rules into the software-development hook payload"
+git add -A && git commit -m "Move the worktree cleanup rule into the software-development hook payload"
 ```
 
 - [ ] **Step 4: G7 baseline**
@@ -550,7 +550,7 @@ Record pass or fail per prompt, with the skill actually invoked. A fail is a fin
 
 - [ ] **Step 5: Report**
 
-Report to the controller: the three G3 counts and whether each carried **both** paragraphs, and the two G7 results.
+Report to the controller: the three G3 counts and whether each carried the worktree paragraph, and the two G7 results.
 
 ---
 
@@ -607,7 +607,7 @@ Cutover performed on this machine per §9. Claude Code <version>, codex-cli <ver
 
 | Gate | Result | Evidence |
 | --- | --- | --- |
-| G3 rerun | <PASS or FAIL> | Standalone-line count of `You have superpowers.`: <n> at startup, <n> after `/clear`, <n> after `/compact`; both the worktree and task-reports paragraphs were read back at <which legs> |
+| G3 rerun | <PASS or FAIL> | Standalone-line count of `You have superpowers.`: <n> at startup, <n> after `/clear`, <n> after `/compact`; the worktree paragraph was read back at <which legs> |
 | G6 Codex | <PASS or FAIL> | Cache `0.3.0/hooks/` listed <files>; `/hooks` listed <nothing or what>; `[hooks.state]` had <no entry or what>; injection observed: <none or what> (informational) |
 | G7 baseline | <recorded> | "Let's build" invoked `<skill>` first; "Fix this bug" invoked `<skill>` first |
 
