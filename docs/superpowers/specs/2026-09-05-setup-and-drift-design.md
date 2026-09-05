@@ -54,12 +54,15 @@ Applying the test empties the third category almost entirely.
 | Worktree cleanup, Claude | **Delete after the 0.2.0 cutover, not before.** It already ships in `hooks/payload-rules.md`, but the installed plugin is still 0.1.0, so the file is currently the only carrier. |
 | Grilling, both | **Delete.** The narrowed `brainstorming` description made the two disjoint, verified 2026-09-05. The Codex copy is additionally stale, still asserting a `skillOverrides` mute that was removed on 2026-09-04. |
 | Skill installs, both | **Delete.** Its evidence base is refuted: the rule sits in the file's first commit and no littering incident exists in any history. Once the script owns the skills.sh invocations, no human types the command. |
-| Code review, Claude | **Delete four of five claims** as redundant with the plugins' own descriptions. The survivor is an upstream defect, that `Skill(codex:rescue)` re-enters the command and hangs the session; file it against `codex@openai-codex` rather than carrying prose. |
+| Code review, Claude | **Delete all five claims.** Four are redundant with the plugins' own descriptions. The fifth, that `Skill(codex:rescue)` re-enters the command and hangs the session, needs no upstream filing: verified 2026-09-05, `codex@openai-codex` 1.0.6 already carries that exact warning in `commands/rescue.md` itself, at the point of use. The prose duplicates its source. |
 | Security tooling, Codex | **Delete the first clause**, measured false: none of the scan skills carries a `policy` key and the default is true. The survivor, that nothing scans passively on Codex, becomes a repository `AGENTS.md` line where it matters. |
-| Task reports, both | **Landed in the payload on Claude** at version 0.3.0, 2026-09-05; the [hook spec](2026-09-04-session-start-hook-design.md) §10 records the reversal of its own decline. Codex has no carrier; the rule's destination half already lives in each repository's tracker declaration. |
-| Harness backup, both | **The only genuine survivor.** Stays until sub-project 6 deletes it, after which both files are empty. |
+| Task reports, Claude | **Landed in the payload** at version 0.3.0, 2026-09-05; the [hook spec](2026-09-04-session-start-hook-design.md) §10 records the reversal of its own decline. Delete from `~/.claude/CLAUDE.md` after the cutover. |
+| Task reports, Codex | **Stays.** That side has no carrier: no hook, and a Codex plugin manifest has no instructions component. A repository's tracker declaration names where findings go but does not carry the discipline of closing a workspace only once each has landed, so deleting it would lose the rule on Codex. Corrected 2026-09-05; an earlier draft claimed the tracker declaration covered it. |
+| Harness backup, both | Stays until sub-project 6 deletes it. |
 
-Two costs, accepted knowingly. Codex loses every global carrier, so anything future that is genuinely machine-scoped there will have nowhere to go. And a repository nobody has run §8 in gets no file-borne rules, though the plugin's own skills still load.
+The end state is asymmetric. `~/.claude/CLAUDE.md` holds one paragraph until sub-project 6 and then nothing; `~/.codex/AGENTS.md` holds two and then one. Codex keeps a global file for as long as any machine-scoped rule survives there, which is the price of its having no plugin carrier.
+
+Two costs, accepted knowingly. Codex loses every carrier this repository controls, so anything future that is genuinely machine-scoped there stays in a hand-edited file. And a repository nobody has run §8 in gets no file-borne rules, though the plugin's own skills still load.
 
 ## 5. What this repository declares
 
@@ -289,5 +292,5 @@ Marked **[test]** where settled empirically rather than by reading.
 - Whether re-running `skills add` with a ref across all twenty skills is clean on a real machine; verified for one skill in a scratch home.
 - Which upstream tag corresponds to the currently installed content. It is almost certainly between tags, so no tag reproduces today's exact bytes; the first pin is a deliberate content move.
 - The two `obra/superpowers-developing-for-claude-code` skills are duplicated on Claude today (plugin and skills.sh). Sub-project 5 decides ([issue #10](https://github.com/eranroseman/agent-plugins/issues/10)).
-- The `Skill(codex:rescue)` hang loses its prose home under §4.1 and should be filed upstream against `codex@openai-codex`.
+- ~~The `Skill(codex:rescue)` hang loses its prose home under §4.1 and should be filed upstream against `codex@openai-codex`.~~ Closed 2026-09-05: upstream already documents it in `commands/rescue.md`, so the prose deletes with nothing to file.
 - Whether the `env` key or the plugin's own SessionStart hook writing to `$CLAUDE_ENV_FILE` is the better Claude channel for the telemetry variable. The hook option would mean setup writes nothing at all on Claude, but it is a repository change rather than a setup change.
