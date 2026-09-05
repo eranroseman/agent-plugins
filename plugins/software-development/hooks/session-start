@@ -9,7 +9,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-payload="$(cat "${SCRIPT_DIR}/payload.md"; printf '\n'; cat "${SCRIPT_DIR}/payload-rules.md")"
+payload="$(cat "${SCRIPT_DIR}/payload.md" && printf '\n' && cat "${SCRIPT_DIR}/payload-rules.md")"
 
 # JSON-escape with bash parameter substitution: one pass per character class.
 # Backslash first, so later passes do not double-escape it.

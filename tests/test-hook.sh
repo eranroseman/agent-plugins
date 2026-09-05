@@ -2,7 +2,7 @@
 # The SessionStart hook must (1) carry upstream's using-superpowers text inside
 # upstream's frame with exactly one edit, (2) emit it as the documented JSON
 # envelope so that a JSON parser recovers the payload byte-for-byte,
-# (3) be wired by hooks.json, and (4) escape every C0 control character, not
+# (3) be wired by claude-hooks.json, and (4) escape every C0 control character, not
 # just the common five. Needs network access for (1).
 . "$(dirname "$0")/lib.sh"
 
@@ -11,6 +11,7 @@
 cleanup() {
   [ -n "${expected:-}" ] && rm -f "$expected"
   [ -n "${T:-}" ] && rm -rf "$T"
+  [ -n "${T2:-}" ] && rm -rf "$T2"
   return 0
 }
 trap cleanup EXIT
@@ -48,12 +49,12 @@ if grep -q 'superpowers:brainstorming' "$H/payload-rules.md"; then fail "payload
 curated="$(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$MARKETPLACE" | sed 's#^\./##')"
 while IFS= read -r name; do
   [ -z "$name" ] && continue
-  printf '%s\n' "$curated" | grep -qx "$name" \
+  printf '%s\n' "$curated" | grep -qxF -- "$name" \
     || fail "payload-rules.md names superpowers:$name, which the curated entry does not list"
 done < <(grep -o 'superpowers:[a-z-]*' "$H/payload-rules.md" | sed 's/^superpowers://' | sort -u)
 
 # (2) envelope round-trip
-# CLAUDE_PLUGIN_ROOT mirrors how hooks.json invokes the script; session-start
+# CLAUDE_PLUGIN_ROOT mirrors how claude-hooks.json invokes the script; session-start
 # itself resolves payload.md via dirname "$0" and never reads the variable, so
 # the ${CLAUDE_PLUGIN_ROOT} expansion asserted in section 3 is checked as a
 # string and not exercised as an expansion.
@@ -71,7 +72,7 @@ len="$(printf '%s' "$out" | jq '.hookSpecificOutput.additionalContext | length')
 # the path Codex loads by fallback when its manifest has no hooks key.
 PLUGIN="$REPO_ROOT/plugins/software-development"
 HJ="$H/claude-hooks.json"
-[ ! -e "$H/hooks.json" ] || fail "hooks/hooks.json must not exist: Codex loads that path by fallback"
+[ -z "$(find "$REPO_ROOT/plugins" -name hooks.json)" ] || fail "no plugins/**/hooks/hooks.json may exist: Codex loads that path by fallback"
 [ "$(jq -r '.hooks.SessionStart[0].matcher' "$HJ")" = 'startup|clear|compact' ] || fail "matcher"
 [ "$(jq -r '.hooks.SessionStart[0].hooks[0].type' "$HJ")" = 'command' ] || fail "hook type"
 [ "$(jq -r '.hooks.SessionStart[0].hooks[0].command' "$HJ")" = '"${CLAUDE_PLUGIN_ROOT}/hooks/session-start"' ] || fail "hook command"
@@ -82,8 +83,9 @@ HJ="$H/claude-hooks.json"
 [ "$(jq 'has("hooks")' "$PLUGIN/.codex-plugin/plugin.json")" = 'false' ] || fail "Codex manifest must not declare hooks"
 [ "$(jq '.interface.capabilities | index("Lifecycle hooks")' "$PLUGIN/.codex-plugin/plugin.json")" = 'null' ] || fail "Codex manifest must not claim Lifecycle hooks"
 
-for f in "$PLUGIN/.codex-plugin/plugin.json" "$MARKETPLACE"; do
+for f in "$PLUGIN/.claude-plugin/plugin.json" "$PLUGIN/.codex-plugin/plugin.json" "$MARKETPLACE"; do
   if grep -q 'bridge rules' "$f"; then fail "$f still advertises bridge rules"; fi
+  if grep -q 'Lifecycle hooks' "$f"; then fail "$f still advertises Lifecycle hooks"; fi
 done
 
 # (4) the encoder escapes control characters, not just the common five
@@ -96,5 +98,16 @@ out="$("$T/session-start")"
 printf '%s' "$out" | jq -e . >/dev/null || fail "control characters produced invalid JSON"
 [ "$(printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext')" = "$sample" ] \
   || fail "control characters did not round-trip"
+
+# (5) a missing payload.md must fail loudly: $(...) does not inherit -e, so
+# `cat payload.md; printf '\n'; cat payload-rules.md` would let a present
+# payload-rules.md's zero exit mask the missing file and silently emit a
+# rules-only envelope. Assert the fixed `&&`-joined form fails instead.
+T2="$(mktemp -d)"
+cp "$H/session-start" "$T2/session-start"
+printf 'some rules\n' > "$T2/payload-rules.md"
+if "$T2/session-start" >/dev/null 2>&1; then
+  fail "session-start must exit non-zero when payload.md is missing"
+fi
 
 echo "hook: payload exact, envelope round-trips, wiring correct, control characters escaped"
