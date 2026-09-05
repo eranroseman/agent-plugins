@@ -554,11 +554,11 @@ Report to the controller: the three G3 counts and whether each carried the workt
 
 ---
 
-### Task 7: HUMAN-RUN. Codex refresh and G6
+### Task 7: Codex refresh and G6 — COMPLETE, G6 PASS
 
 > **Do not dispatch an implementer for this task.** It changes the user's Codex installation.
 
-- [ ] **Step 1: Refresh the marketplace snapshot and reinstall**
+- [x] **Step 1: Refresh the marketplace snapshot and reinstall** — done 2026-09-05
 
 ```bash
 codex plugin marketplace upgrade
@@ -570,7 +570,7 @@ ls ~/.codex/plugins/cache/eranroseman/software-development/0.3.0/hooks/
 
 Expected: the cache directory `0.3.0` exists; its `hooks/` listing shows `claude-hooks.json`, `payload.md`, `payload-rules.md`, `session-start`, and no `hooks.json`. No trust prompt appears on `add`.
 
-- [ ] **Step 2: G6**
+- [x] **Step 2: G6** — PASS, 2026-09-05
 
 Start a Codex session in any trusted directory and run `/hooks`. Expected: no entry for `software-development@eranroseman`. Then:
 
@@ -581,7 +581,7 @@ grep -A1 'hooks.state."software-development' ~/.codex/config.toml  # expected: n
 
 Note for the record whether the session showed any injection from this plugin (expected none; not discriminating, spec §8).
 
-- [x] **Step 3: Report** — run by the agent 2026-09-05, except the one leg needing a TUI
+- [x] **Step 3: Report** — complete 2026-09-05
 
 Observed, real machine, codex-cli 0.147.0:
 
@@ -593,7 +593,9 @@ Observed, real machine, codex-cli 0.147.0:
 - All 13 superpowers symlinks resolve; none dangling.
 - The Codex copy of `payload-rules.md` carries the worktree rule and nothing else, matching the shipped 0.3.0.
 
-**Outstanding, needs a TUI:** run `/hooks` in a Codex session and confirm no entry for `software-development@eranroseman`. Every other G6 leg passes.
+- `/hooks` in a Codex session, run by the user: **"Enabled hooks: ponytail SessionStart, ponytail UserPromptSubmit, ponytail SubagentStart. All three are trusted."** No entry for `software-development@eranroseman`, consistent with the three `[hooks.state]` entries in `config.toml`.
+
+**G6 PASSES on every leg.** The plugin ships `claude-hooks.json`, `payload.md`, `payload-rules.md` and `session-start` into the Codex cache, and Codex registers nothing, which is the design's central claim about that harness.
 
 ---
 
