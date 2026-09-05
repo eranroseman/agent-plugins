@@ -1,6 +1,6 @@
 # software-development
 
-The glue plugin of Eran Roseman's software-development harness. It is a thin
+Eran Roseman's glue plugin for software development. It is a thin
 layer over two upstream skill packs, not a home for copies of them.
 
 What it ships:

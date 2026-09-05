@@ -2,7 +2,7 @@
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "eranroseman",
   "owner": { "name": "Eran Roseman", "url": "https://github.com/eranroseman" },
-  "description": "Eran Roseman's plugins: a curated software-development harness and the shared sensemaking skills.",
+  "description": "Eran Roseman's plugins for software development, plus the sensemaking skills they share with research-vault.",
   "plugins": [
     {
       "name": "software-development",

@@ -10,7 +10,7 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Software Development",
-    "shortDescription": "Curated software-development harness",
+    "shortDescription": "Curated software-development skills",
     "longDescription": "Narrowed brainstorming front door over the superpowers spine and mattpocock's engineering skills.",
     "developerName": "Eran Roseman",
     "category": "Developer Tools",

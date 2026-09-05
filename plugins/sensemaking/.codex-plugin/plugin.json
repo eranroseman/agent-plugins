@@ -11,7 +11,7 @@
   "interface": {
     "displayName": "Sensemaking",
     "shortDescription": "Skills shared by software-development and research-vault",
-    "longDescription": "Clean-slate redesign audits and other sensemaking skills shared across Eran Roseman's software-development and research-vault harnesses.",
+    "longDescription": "Clean-slate redesign audits and other sensemaking skills, shared by `software-development` and `research-vault`.",
     "developerName": "Eran Roseman",
     "category": "Productivity",
     "capabilities": ["Instructions"],
