@@ -22,7 +22,7 @@ No misfire of the current injection is on record. Nothing here rests on one.
 | Decision | Choice |
 | --- | --- |
 | Payload base | Upstream `skills/using-superpowers/SKILL.md` at the pinned sha, in upstream's `<EXTREMELY_IMPORTANT>` frame, with the one line-30 edit. Byte-identical to today's `hooks/payload.md`. |
-| Payload appendix | One rule, worktree cleanup, moved out of the author's `~/.claude/CLAUDE.md`. Nothing else. |
+| Payload appendix | Two rules, worktree cleanup and task reports, moved out of the author's `~/.claude/CLAUDE.md`. Nothing else. Task reports was admitted on 2026-09-05; §10 records the reversal. |
 | What was not admitted | The lean router, the two bridge rules and the three Iron Laws proposed on #61, and the task-reports rule. Reason in §10. |
 | Admission rule for future additions | A rule enters the payload only when it solves a problem for which there is evidence that it exists. Where an admitted rule lives follows from what it depends on: a rule that holds for every installer, depending on nothing beyond this plugin and its declared dependencies, goes in the payload; one that holds only on this machine goes in the user file. |
 | Assembly | Two files. `hooks/payload.md` is regenerated from the pinned clone and tested byte-equal. `hooks/payload-rules.md` is authored. `hooks/session-start` concatenates them. |
@@ -52,13 +52,15 @@ Exactly: `cat payload.md; printf '\n'; cat payload-rules.md`. `payload.md` alrea
 # software-development: working rules
 
 **Worktree cleanup.** `EnterWorktree` places worktrees under `.claude/worktrees/`. `superpowers:finishing-a-development-branch` recognises only `.worktrees/` and `worktrees/` as its own and declines to remove anything else. Once the branch is merged or abandoned, run `git worktree remove <path>` from the main checkout, then `git worktree prune`.
+
+**Task reports.** `superpowers:subagent-driven-development` writes its reports into a git-ignored `.superpowers/sdd/<plan>/` workspace and deletes that workspace at its Finish step, so a report is not a durable home. Name a destination for each Concern as you write it, and close a plan's workspace only once every Concern's disposition has landed there: an issue, a spec or register entry, or a recorded decline.
 ```
 
-That is the whole file, ending in exactly one newline, which §7 asserts. It carries the one rule with evidence behind it, and it holds for every installer: `EnterWorktree` is Claude Code's, and `finishing-a-development-branch` arrives through the curated `superpowers` dependency.
+That is the whole file, ending in exactly one newline, which §7 asserts. Both rules hold for every installer: `EnterWorktree` is Claude Code's, and `finishing-a-development-branch` and `subagent-driven-development` both arrive through the curated `superpowers` dependency. The facts each asserts are current at the pinned sha: `subagent-driven-development/SKILL.md:137` prints the git-ignored `<repo-root>/.superpowers/sdd/<plan-basename>/`, and :483 deletes it at Finish.
 
 ### 4.3 Size
 
-`payload.md` is 3,343 bytes and the appendix 387, so the emitted string is 3,730 bytes, 3,718 code points. That is near upstream's own size, which G3 proved injects once at startup, `/clear`, and `/compact`. The test in §7 caps the total at 8,000 code points, measured with `jq '.hookSpecificOutput.additionalContext | length'`, as a tripwire against growth, not as a documented limit.
+`payload.md` is 3,343 bytes and the appendix 802, so the emitted string is 4,145 bytes, 4,133 code points. That is near upstream's own size, which G3 proved injects once at startup, `/clear`, and `/compact`. The test in §7 caps the total at 8,000 code points, measured with `jq '.hookSpecificOutput.additionalContext | length'`, as a tripwire against growth, not as a documented limit.
 
 ### 4.4 Matcher
 
@@ -151,13 +153,13 @@ Each was proposed by AI triage on the knowledge-harness tracker and never accept
 | Replace upstream's text with a lean router | Not adopted | The text G3 proved is kept whole. No misfire is on record, and the persuasion in it is the only enforcement superpowers has. |
 | Bridge rule: a `ready-for-agent` issue is the spec, execution enters only via `writing-plans` | Not adopted | Restates `brainstorming`'s gate through the tracker, and as worded would force a plan document on bounded work that the vendored `brainstorming` sends straight to TDD. No evidence that the problem it addresses exists. |
 | Iron Laws in the payload | Not adopted | Restate lines owned by `test-driven-development`, `systematic-debugging`, and `verification-before-completion`. No evidence that the problem exists. |
-| Task-reports rule in the payload | Not adopted | Same: no evidence that the problem exists. The paragraph stays in the user file until sub-project 2 decides its fate. |
+| Task-reports rule in the payload | ~~Not adopted~~ **Adopted 2026-09-05** | Reversed by the author. The original decline read the problem as unevidenced. Sub-project 2 established evidence for the same failure from the other side: without a declared destination, findings from plan execution are lost in chat. The tracker declaration is the precondition and this rule is the discipline, and this repository's own build filed [issues #1 through #6](https://github.com/eranroseman/agent-plugins/issues/1) for its declined minors rather than losing them. Landed in `payload-rules.md` at version 0.3.0. |
 | Content classes and the "true for every installer" admission test | Adopted in part | The installer test decides where an admitted rule lives (§3). Admission itself needs evidence that the problem exists, which #61's test never asked for. |
 | Codex hook posture "designed against IGNORED" | Superseded | No hook is offered at all; §6. |
 
 ## 11. Open items carried forward
 
-- Whether the task-reports paragraph and the rest of the author's `~/.claude/CLAUDE.md` tool-routing section survive as user-file templates, and in what form (sub-project 2).
+- ~~Whether the task-reports paragraph and the rest of the author's `~/.claude/CLAUDE.md` tool-routing section survive as user-file templates, and in what form (sub-project 2).~~ Closed 2026-09-05: task reports moved into the payload (§10), and the [setup and drift spec](2026-09-05-setup-and-drift-design.md) §4.1 dispositions every remaining section of both global files.
 - `using-superpowers/SKILL.md:30` still names `superpowers:brainstorming` when the skill file is read directly rather than through this hook; on Codex, where no hook runs, the reference dangles unmitigated (roster, sub-project 5).
 - `tests/test-hook.sh` transcribes upstream's frame rather than reading it from the clone, so a pin bump that changed the frame would pass green while the injection diverged (parent spec §12; sub-project 4).
 - An upstream change to `finishing-a-development-branch` accepting `.claude/worktrees/` would delete the one appended rule. Upstream states a 94% PR rejection rate; not pursued here.

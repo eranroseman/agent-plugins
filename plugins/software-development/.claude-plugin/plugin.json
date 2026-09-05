@@ -1,6 +1,6 @@
 {
   "name": "software-development",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Glue over superpowers and mattpocock/skills for Claude Code and Codex.",
   "author": { "name": "Eran Roseman", "url": "https://github.com/eranroseman" },
   "homepage": "https://github.com/eranroseman/agent-plugins",

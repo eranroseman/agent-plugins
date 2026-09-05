@@ -56,7 +56,7 @@ Applying the test empties the third category almost entirely.
 | Skill installs, both | **Delete.** Its evidence base is refuted: the rule sits in the file's first commit and no littering incident exists in any history. Once the script owns the skills.sh invocations, no human types the command. |
 | Code review, Claude | **Delete four of five claims** as redundant with the plugins' own descriptions. The survivor is an upstream defect, that `Skill(codex:rescue)` re-enters the command and hangs the session; file it against `codex@openai-codex` rather than carrying prose. |
 | Security tooling, Codex | **Delete the first clause**, measured false: none of the scan skills carries a `policy` key and the default is true. The survivor, that nothing scans passively on Codex, becomes a repository `AGENTS.md` line where it matters. |
-| Task reports, both | **To the payload on Claude**, under a new §5 amendment to the hook spec. Codex has no carrier; the rule's destination half already lives in each repository's tracker declaration. |
+| Task reports, both | **Landed in the payload on Claude** at version 0.3.0, 2026-09-05; the [hook spec](2026-09-04-session-start-hook-design.md) §10 records the reversal of its own decline. Codex has no carrier; the rule's destination half already lives in each repository's tracker declaration. |
 | Harness backup, both | **The only genuine survivor.** Stays until sub-project 6 deletes it, after which both files are empty. |
 
 Two costs, accepted knowingly. Codex loses every global carrier, so anything future that is genuinely machine-scoped there will have nowhere to go. And a repository nobody has run §8 in gets no file-borne rules, though the plugin's own skills still load.

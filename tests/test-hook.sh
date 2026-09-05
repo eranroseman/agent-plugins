@@ -46,6 +46,7 @@ if grep -q 'superpowers:brainstorming' "$H/payload.md"; then fail "a superpowers
 [ "$(tail -c 1 "$H/payload-rules.md" | wc -l)" -eq 1 ] || fail "payload-rules.md must end with a newline"
 [ "$(tail -c 2 "$H/payload-rules.md" | wc -l)" -eq 1 ] || fail "payload-rules.md must end with exactly one newline"
 grep -q 'worktree' "$H/payload-rules.md" || fail "payload-rules.md does not carry the worktree rule"
+grep -q 'superpowers:subagent-driven-development' "$H/payload-rules.md" || fail "payload-rules.md does not carry the task-reports rule"
 if grep -q 'superpowers:brainstorming' "$H/payload-rules.md"; then fail "payload-rules.md names superpowers:brainstorming"; fi
 curated="$(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$MARKETPLACE" | sed 's#^\./##')"
 while IFS= read -r name; do
@@ -79,8 +80,8 @@ HJ="$H/claude-hooks.json"
 [ "$(jq -r '.hooks.SessionStart[0].hooks[0].command' "$HJ")" = '"${CLAUDE_PLUGIN_ROOT}/hooks/session-start"' ] || fail "hook command"
 [ "$(jq -r 'keys | join(",")' "$HJ")" = 'hooks' ] || fail "claude-hooks.json top level must contain only 'hooks'"
 [ "$(jq -r '.hooks' "$PLUGIN/.claude-plugin/plugin.json")" = './hooks/claude-hooks.json' ] || fail "Claude manifest must declare hooks: ./hooks/claude-hooks.json"
-[ "$(jq -r '.version' "$PLUGIN/.claude-plugin/plugin.json")" = '0.2.0' ] || fail "Claude manifest version must be 0.2.0"
-[ "$(jq -r '.version' "$PLUGIN/.codex-plugin/plugin.json")" = '0.2.0' ] || fail "Codex manifest version must be 0.2.0"
+[ "$(jq -r '.version' "$PLUGIN/.claude-plugin/plugin.json")" = '0.3.0' ] || fail "Claude manifest version must be 0.3.0"
+[ "$(jq -r '.version' "$PLUGIN/.codex-plugin/plugin.json")" = '0.3.0' ] || fail "Codex manifest version must be 0.3.0"
 [ "$(jq 'has("hooks")' "$PLUGIN/.codex-plugin/plugin.json")" = 'false' ] || fail "Codex manifest must not declare hooks"
 [ "$(jq '.interface.capabilities | index("Lifecycle hooks")' "$PLUGIN/.codex-plugin/plugin.json")" = 'null' ] || fail "Codex manifest must not claim Lifecycle hooks"
 
