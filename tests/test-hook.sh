@@ -17,6 +17,7 @@ trap cleanup EXIT
 
 H="$REPO_ROOT/plugins/software-development/hooks"
 [ -f "$H/payload.md" ] || fail "missing $H/payload.md"
+[ -f "$H/payload-rules.md" ] || fail "missing $H/payload-rules.md"
 [ -f "$H/claude-hooks.json" ] || fail "missing $H/claude-hooks.json"
 [ -x "$H/session-start" ] || fail "$H/session-start missing or not executable"
 
@@ -37,6 +38,20 @@ diff "$expected" "$H/payload.md" || fail "payload.md != upstream using-superpowe
 [ "$(grep -c 'software-development:brainstorming' "$H/payload.md")" -eq 1 ] || fail "expected exactly one software-development:brainstorming"
 if grep -q 'superpowers:brainstorming' "$H/payload.md"; then fail "a superpowers:brainstorming reference survived"; fi
 
+# (1b) the authored rules file: non-empty, exactly one trailing newline, and
+# every qualified superpowers reference names a skill the curated entry lists.
+[ -s "$H/payload-rules.md" ] || fail "payload-rules.md is empty"
+[ "$(tail -c 1 "$H/payload-rules.md" | wc -l)" -eq 1 ] || fail "payload-rules.md must end with a newline"
+[ "$(tail -c 2 "$H/payload-rules.md" | wc -l)" -eq 1 ] || fail "payload-rules.md must end with exactly one newline"
+grep -q 'worktree' "$H/payload-rules.md" || fail "payload-rules.md does not carry the worktree rule"
+if grep -q 'superpowers:brainstorming' "$H/payload-rules.md"; then fail "payload-rules.md names superpowers:brainstorming"; fi
+curated="$(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$MARKETPLACE" | sed 's#^\./##')"
+while IFS= read -r name; do
+  [ -z "$name" ] && continue
+  printf '%s\n' "$curated" | grep -qx "$name" \
+    || fail "payload-rules.md names superpowers:$name, which the curated entry does not list"
+done < <(grep -o 'superpowers:[a-z-]*' "$H/payload-rules.md" | sed 's/^superpowers://' | sort -u)
+
 # (2) envelope round-trip
 # CLAUDE_PLUGIN_ROOT mirrors how hooks.json invokes the script; session-start
 # itself resolves payload.md via dirname "$0" and never reads the variable, so
@@ -46,8 +61,11 @@ out="$(CLAUDE_PLUGIN_ROOT="$REPO_ROOT/plugins/software-development" "$H/session-
 printf '%s' "$out" | jq -e '.hookSpecificOutput.hookEventName == "SessionStart"' >/dev/null \
   || fail "output is not the SessionStart envelope: $out"
 [ "$(printf '%s' "$out" | jq 'keys | length')" -eq 1 ] || fail "envelope has extra top-level keys"
-diff <(printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext') "$H/payload.md" \
-  || fail "additionalContext does not round-trip to payload.md"
+diff <(printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext') \
+     <(cat "$H/payload.md"; printf '\n'; cat "$H/payload-rules.md") \
+  || fail "additionalContext does not round-trip to payload.md + blank line + payload-rules.md"
+len="$(printf '%s' "$out" | jq '.hookSpecificOutput.additionalContext | length')"
+[ "$len" -lt 8000 ] || fail "additionalContext is $len code points; the tripwire is 8000"
 
 # (3) wiring: the Claude manifest declares the hook file, and nothing sits at
 # the path Codex loads by fallback when its manifest has no hooks key.
@@ -69,6 +87,7 @@ T="$(mktemp -d)"
 cp "$H/session-start" "$T/session-start"
 sample=$'x\x01\x0c\x1b\x1fy "q" \\ end'
 printf '%s' "$sample" > "$T/payload.md"
+: > "$T/payload-rules.md"   # the script now reads it; empty keeps the expectation the sample alone
 out="$("$T/session-start")"
 printf '%s' "$out" | jq -e . >/dev/null || fail "control characters produced invalid JSON"
 [ "$(printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext')" = "$sample" ] \
