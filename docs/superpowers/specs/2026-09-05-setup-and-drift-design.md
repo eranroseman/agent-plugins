@@ -33,6 +33,7 @@ Three problems, each with evidence.
 | Upstream watch | Scheduled GitHub Actions in this repository. Detects and files one issue; never bumps, never opens a pull request. |
 | Claude plugin updates | Marketplace auto-update, enabled for `eranroseman`. It respects the `version` field and never drags upstream past our pinned sha. |
 | Repo scaffolding | A thin skill that composes `setup-matt-pocock-skills` and adds the two things it does not write (§8). |
+| The telemetry variable | **Setup does not set it.** `bin/doctor` reports whether it is set and the README documents what it prevents; the user decides. Reasoning in §7.6. |
 | The two global instruction files | Emptied to one paragraph each, which sub-project 6 then removes (§4). |
 
 ## 4. Where a rule lives
@@ -43,7 +44,7 @@ The rule that governs everything else in this design.
 - True for **this repository**: the repository's own `AGENTS.md`, written by the setup skill in §8.
 - True only for **this machine**: a global instruction file, `~/.claude/CLAUDE.md` or `~/.codex/AGENTS.md`.
 
-**Machine facts must never be written to a repository's `AGENTS.md`.** Which plugins are installed is not a repository fact, and that file is checked in. The same reasoning forbids `--scope project` (§7.5).
+**Machine facts must never be written to a repository's `AGENTS.md`.** Which plugins are installed is not a repository fact, and that file is checked in. The same reasoning forbids `--scope project` (§7.4).
 
 ### 4.1 Disposition of the two global files
 
@@ -147,7 +148,7 @@ It does **not** require `gh` authentication or an SSH key: a keyless machine fal
 
 **Claude.** `claude plugin marketplace add`, then `claude plugin install software-development@eranroseman -y --scope user`, which installs and enables `sensemaking` and `superpowers` as dependencies. Both commands are clean no-ops on re-run. Then enable auto-update for the marketplace (§9, gate S3).
 
-**Codex.** `codex plugin marketplace add` once, then `codex plugin add` for **both** plugins, because Codex has no dependency concept. Then the environment key (§7.4). **Never re-run `codex plugin marketplace add`:** it prints "already added" and silently deletes `last_revision`. Use `codex plugin marketplace upgrade`, which is a true no-op when upstream is unchanged.
+**Codex.** `codex plugin marketplace add` once, then `codex plugin add` for **both** plugins, because Codex has no dependency concept. **Never re-run `codex plugin marketplace add`:** it prints "already added" and silently deletes `last_revision`. Use `codex plugin marketplace upgrade`, which is a true no-op when upstream is unchanged.
 
 **The pinned clone.** Read `source.sha` from the marketplace manifest beside the script. If the clone directory does not exist, clone and check out. If it exists, fetch and check out; do not chain with `&&` after a clone that may fail. The README's current recipe leaves a clone at the wrong revision silently, because `git clone … && git checkout …` short-circuits when the clone fails, exit 128.
 
@@ -165,18 +166,7 @@ The script therefore compares `readlink -f` against the intended target, moves a
 
 **The skills.sh set.** For each source in `upstream/skills.json`, `npx skills add "<repo>#<ref>" --skill <name> -g -y`. This writes `ref` into the lockfile, installs content identical to that ref, upgrades an already-unpinned entry in place, and survives `skills update -g` untouched.
 
-### 7.4 The environment key
-
-The Visual Companion in the vendored `brainstorming` skill fetches an external logo unless one of `SUPERPOWERS_DISABLE_TELEMETRY`, `DISABLE_TELEMETRY` or `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` is truthy. None is set on this machine and none appears in any shell profile.
-
-`~/.bashrc` is the wrong channel: it returns early for non-interactive shells, and a hook launched from a non-interactive parent never sees its exports, measured. Two channels work:
-
-- **Claude:** the `env` key in `~/.claude/settings.json`, proven to reach a SessionStart hook subprocess. The script must **merge with `jq`, never template the file**, because `enabledPlugins` and `extraKnownMarketplaces` in the same file are CLI-owned.
-- **Codex:** one line appended to `~/.profile`, guarded with `grep -qxF` so a re-run is a no-op. Codex's shell tool runs `/bin/bash -lc`, which sources that file, measured; `~/.bashrc` does not work, because it returns early for non-interactive shells.
-
-**The script never edits `config.toml`, deliberately.** `[shell_environment_policy].set` would also work and is the more targeted channel, but writing it safely means knowing whether an inline `set = {…}` already exists, since appending a subtable on top of one is a TOML redefinition error. Detecting that needs a TOML reader, and the only one on a typical machine is Python's `tomllib`, which is read-only and would add a `python3` 3.11 floor to §7.2 for one guard. A single `~/.profile` line costs no prerequisite and no parser. Everything else in `config.toml` is CLI-owned (§15), so the script has no reason to open the file at all.
-
-### 7.5 What the script must not do
+### 7.4 What the script must not do
 
 Never `--scope project`. Measured: it writes a checked-in `.claude/settings.json` carrying both `enabledPlugins` and `extraKnownMarketplaces`, which commits machine configuration into a repository.
 
@@ -184,9 +174,19 @@ Never treat `config.toml` as an installation check. `codex plugin marketplace re
 
 Never delete a squatting file or link. Move it aside and report.
 
-### 7.6 What it cannot do
+### 7.5 What it cannot do
 
 Codex's per-project `trust_level` comes from an interactive onboarding prompt, not from any command; a fresh clone is prompted once. And on Claude the plugins load on the next launch or after `/reload-plugins`, because the CLI running the script is the one that must restart.
+
+### 7.6 What it deliberately does not set: the telemetry variable
+
+An earlier draft had setup write `SUPERPOWERS_DISABLE_TELEMETRY` into `~/.claude/settings.json` and `~/.profile`. It no longer does, and the reasoning is worth keeping because the variable will be proposed again.
+
+Read from `brandMarkup()` in the vendored skill's `scripts/server.cjs`: unset, the Visual Companion's page renders one `<img>` at `https://primeradiant.com/brand/superpowers-visual-brainstorming-logo.png?v=<superpowers version>`, with `referrerpolicy="no-referrer"`. Set, there is no `<img>` and the caption changes. That URL is the only external address in the whole eight-file skill. So the exposure is one browser request per companion page load, carrying an address, a user agent, a timestamp, and the superpowers version in the query string.
+
+The companion is opt-in and offered just-in-time, and it has never been used on the reference machine, so no such request has ever fired. Against that, setting it costs a `jq` merge into `~/.claude/settings.json`, a file the Claude CLI rewrites wholesale and owns two keys in, plus a `~/.profile` line, a doctor check, and a README paragraph. The riskiest write in the whole script would exist for a beacon that has never fired.
+
+So: `bin/doctor` reports whether any of the three accepted names is set, because a doctor describes what is there without imposing anything, and the plugin README documents the variable and what it prevents so a user who accepts the companion offer can decide then. This also settles a question §16 used to carry, whether the `env` key or a hook writing to `$CLAUDE_ENV_FILE` was the better channel: neither, because setup writes nothing.
 
 ## 8. Repository scaffolding
 
@@ -242,9 +242,9 @@ New tests, run by the existing `tests/run.sh`:
 - `bin/setup` runs end to end against a scratch `HOME` in CI and exits 0, then a `bin/doctor` run over the same `HOME` reports clean. The runner has the Claude CLI and no Codex, so this exercises the Claude install, the pinned clone, and the skills.sh set, with the Codex half reported as skipped. It is the automated half of gate S1, which stays manual only for the parts a scratch `HOME` cannot reach.
 - `bin/setup` and `bin/doctor` pass `shellcheck`, and `bin/doctor` reports the five seeded faults when pointed at a scratch `HOME` carrying a wrong-sha clone, a dangling link, a nested link, a squatting regular file, and a lockfile entry missing its `ref`. The doctor takes no path argument; it reads the machine through `HOME` and `CODEX_HOME`, the same overrides gate S1 uses. The test asserts those five lines appear, not that they are the only ones, and its two CLI-dependent checks report SKIPPED on a runner with no Codex (§7.2). All five faults are filesystem and git state, so the fixture detects every one with neither CLI present.
 - `test-hook.sh` reads upstream's frame from the pinned clone rather than transcribing it (§10).
-- **README.md is rewritten in this sub-project**, which no other section names as a deliverable. Its Codex section loses the four-ways-broken clone-and-symlink recipe in favour of §7.1's two-line bootstrap; its Claude section gains the same; and it gains an Update section carrying §9's steps 1 and 2, the only two commands a human types, since steps 3 through 6 are the script's internals. Both blocks become fenced rather than indented, because the README currently has none and a test cannot extract what does not exist. The test then asserts that each fenced block in those sections appears verbatim in the usage text `bin/setup --help` prints, so the instructions and the script cannot drift.
+- **README.md is rewritten in this sub-project**, which no other section names as a deliverable. Its Codex section loses the four-ways-broken clone-and-symlink recipe in favour of §7.1's two-line bootstrap; its Claude section gains the same; and it gains an Update section carrying §9's steps 1 and 2, the only two commands a human types, since steps 3 through 6 are the script's internals. The plugin README's Environment section gains what the variable actually prevents, per §7.6, rather than only naming it. Both blocks become fenced rather than indented, because the README currently has none and a test cannot extract what does not exist. The test then asserts that each fenced block in those sections appears verbatim in the usage text `bin/setup --help` prints, so the instructions and the script cannot drift.
 
-`bin/doctor` itself is the local half of the former sub-project 4. It compares the machine against §5's declarations: the clone at the declared sha, each of the thirteen links resolving to its intended target, the lockfile's `ref` per source matching the declaration, the installed plugin version matching the manifest, and the marketplace clone not behind upstream's `main` as resolved by `git ls-remote` (§7.1). It reports and, in `bin/setup` mode, repairs.
+`bin/doctor` itself is the local half of the former sub-project 4. It compares the machine against §5's declarations: the clone at the declared sha, each of the thirteen links resolving to its intended target, the lockfile's `ref` per source matching the declaration, the installed plugin version matching the manifest, and the marketplace clone not behind upstream's `main` as resolved by `git ls-remote` (§7.1). It also reports, without repairing, whether any of the three telemetry-disabling variables is set (§7.6) and whether the twenty redundant Codex links are still present (§7.3). It repairs only what §5 declares.
 
 ## 12. mattpocock: why the curated route was not taken
 
@@ -317,4 +317,4 @@ Marked **[test]** where settled empirically rather than by reading.
 - Which upstream tag corresponds to the currently installed content. It is almost certainly between tags, so no tag reproduces today's exact bytes; the first pin is a deliberate content move.
 - The two `obra/superpowers-developing-for-claude-code` skills are duplicated on Claude today (plugin and skills.sh). Sub-project 5 decides ([issue #10](https://github.com/eranroseman/agent-plugins/issues/10)).
 - ~~The `Skill(codex:rescue)` hang loses its prose home under §4.1 and should be filed upstream against `codex@openai-codex`.~~ Closed 2026-09-05: upstream already documents it in `commands/rescue.md`, so the prose deletes with nothing to file.
-- Whether the `env` key or the plugin's own SessionStart hook writing to `$CLAUDE_ENV_FILE` is the better Claude channel for the telemetry variable. The hook option would mean setup writes nothing at all on Claude, but it is a repository change rather than a setup change.
+- ~~Whether the `env` key or the plugin's own SessionStart hook writing to `$CLAUDE_ENV_FILE` is the better Claude channel for the telemetry variable.~~ Closed 2026-09-05: setup sets neither (§7.6).

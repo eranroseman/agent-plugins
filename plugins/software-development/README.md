@@ -47,9 +47,24 @@ spec in the repository records the evidence.
 
 ## Environment
 
-The brainstorming skill's Visual Companion fetches a logo from an external
-site unless `SUPERPOWERS_DISABLE_TELEMETRY` or `DISABLE_TELEMETRY` is set.
-Set one of them in your shell profile.
+Nothing here needs configuring to work. One optional variable is worth knowing
+about, and no setup step sets it for you.
+
+The brainstorming skill's Visual Companion is an opt-in browser view, offered
+only when a question is genuinely clearer shown than described. When its page
+loads, it renders a logo from `primeradiant.com`, with the superpowers version
+in the query string. Your browser therefore reveals its address, user agent,
+and the time of the request, though the referrer is suppressed. That URL is the
+only external address in the whole skill.
+
+To render the page without it, set any one of `SUPERPOWERS_DISABLE_TELEMETRY`,
+`DISABLE_TELEMETRY`, or `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` to any value
+other than `0`, `false`, `no`, or `off`. On Claude Code an `env` entry in
+`~/.claude/settings.json` reaches the session; on Codex a line in `~/.profile`
+does, since its shell runs `bash -lc`. `~/.bashrc` does not work, because it
+returns early for non-interactive shells.
+
+If you never accept the Visual Companion offer, the request never happens.
 
 ## License
 
