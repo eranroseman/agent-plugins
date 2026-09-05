@@ -129,7 +129,7 @@ The path is recorded as `installLocation` in `~/.claude/plugins/known_marketplac
 
 **Always required, fatal if missing:** `git`, `jq`, `node`, `npx`. The skills.sh set in §5 installs globally and serves both harnesses, so those four are needed whichever harness is present.
 
-**Harness-gated, skipped rather than fatal:** the `claude` binary gates the Claude steps of §7.3 and §9; the `codex` binary gates the Codex steps, together with `python3` 3.11 or later for the `tomllib` guard in §7.4. At least one harness must be present. A missing harness is reported as skipped, not as a failure, and every doctor check that needs a CLI reports SKIPPED rather than failing the run.
+**Harness-gated, skipped rather than fatal:** the `claude` binary gates the Claude steps of §7.3 and §9; the `codex` binary gates the Codex steps. At least one harness must be present. A missing harness is reported as skipped, not as a failure, and every doctor check that needs a CLI reports SKIPPED rather than failing the run.
 
 That rule is what makes two other parts of this design possible. §7.1's Codex-only bootstrap needs `bin/setup` to run without `claude`. And §11's doctor fixture runs in CI, where `codex` is absent: the workflow's own comment records that a fresh runner has no Codex CLI, which is why it fetches Codex's validator from GitHub at a pinned sha instead.
 
@@ -164,7 +164,9 @@ The Visual Companion in the vendored `brainstorming` skill fetches an external l
 `~/.bashrc` is the wrong channel: it returns early for non-interactive shells, and a hook launched from a non-interactive parent never sees its exports, measured. Two channels work:
 
 - **Claude:** the `env` key in `~/.claude/settings.json`, proven to reach a SessionStart hook subprocess. The script must **merge with `jq`, never template the file**, because `enabledPlugins` and `extraKnownMarketplaces` in the same file are CLI-owned.
-- **Codex:** `[shell_environment_policy].set` in `config.toml`. Codex edits that file surgically, preserving comments and ordering, so the script appends a guarded subtable rather than rewriting. Guard with `tomllib`, never with `grep`: if an inline `set = {…}` already exists, appending a subtable is a TOML redefinition error. `tomllib` is read-only and is the only TOML library present, which is why the design never needs a writer.
+- **Codex:** one line appended to `~/.profile`, guarded with `grep -qxF` so a re-run is a no-op. Codex's shell tool runs `/bin/bash -lc`, which sources that file, measured; `~/.bashrc` does not work, because it returns early for non-interactive shells.
+
+**The script never edits `config.toml`, deliberately.** `[shell_environment_policy].set` would also work and is the more targeted channel, but writing it safely means knowing whether an inline `set = {…}` already exists, since appending a subtable on top of one is a TOML redefinition error. Detecting that needs a TOML reader, and the only one on a typical machine is Python's `tomllib`, which is read-only and would add a `python3` 3.11 floor to §7.2 for one guard. A single `~/.profile` line costs no prerequisite and no parser. Everything else in `config.toml` is CLI-owned (§14), so the script has no reason to open the file at all.
 
 ### 7.5 What the script must not do
 
