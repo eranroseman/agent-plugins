@@ -581,9 +581,19 @@ grep -A1 'hooks.state."software-development' ~/.codex/config.toml  # expected: n
 
 Note for the record whether the session showed any injection from this plugin (expected none; not discriminating, spec §8).
 
-- [ ] **Step 3: Report**
+- [x] **Step 3: Report** — run by the agent 2026-09-05, except the one leg needing a TUI
 
-Report to the controller: the `hooks/` listing, the `/hooks` result, the two grep results.
+Observed, real machine, codex-cli 0.147.0:
+
+- `codex plugin marketplace upgrade` moved the snapshot from `1ea3f72` to `84b0b75`. `remove` then `add` reported success; **no trust prompt appeared**.
+- Cache holds `0.3.0` only. Its `hooks/` listing is `claude-hooks.json`, `payload-rules.md`, `payload.md`, `session-start`. **No `hooks.json` anywhere under the plugin cache.**
+- `[hooks.state]` holds four entries, all `ponytail@ponytail`; none for `software-development@eranroseman`.
+- `config.toml` diff against a pre-run snapshot: only `last_updated` and `last_revision` for the marketplace, plus the two `[plugins.*]` tables swapping order because `remove` then `add` re-appends. Nothing else.
+- `sensemaking@eranroseman` still installed at `0.1.0`, one config entry.
+- All 13 superpowers symlinks resolve; none dangling.
+- The Codex copy of `payload-rules.md` carries the worktree rule and nothing else, matching the shipped 0.3.0.
+
+**Outstanding, needs a TUI:** run `/hooks` in a Codex session and confirm no entry for `software-development@eranroseman`. Every other G6 leg passes.
 
 ---
 
