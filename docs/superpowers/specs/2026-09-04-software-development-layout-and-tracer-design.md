@@ -46,9 +46,10 @@ eranroseman/agent-plugins
 │   │   ├── .claude-plugin/plugin.json     (§6.1)
 │   │   ├── .codex-plugin/plugin.json      (§6.2)
 │   │   ├── skills/brainstorming/          vendored, see §7
-│   │   ├── hooks/hooks.json               (§8)
+│   │   ├── hooks/claude-hooks.json        (§8)
 │   │   ├── hooks/session-start            (§8)
 │   │   ├── hooks/payload.md               (§8)
+│   │   ├── hooks/payload-rules.md         (§8)
 │   │   ├── LICENSE                        MIT, carries obra's notice for the vendored skill
 │   │   └── README.md
 │   └── sensemaking/
@@ -257,7 +258,7 @@ The Visual Companion's server fetches a logo from an external site unless `SUPER
 }
 ```
 
-`hooks/session-start` reads `hooks/payload.md`, JSON-escapes it, and prints `{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "..."}}`. That envelope is what Claude Code documents and what Codex requires; one output serves both harnesses.
+`hooks/session-start` reads `hooks/payload.md`, JSON-escapes it, and prints `{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "..."}}`. That envelope is what Claude Code documents and what Codex requires; one output serves both harnesses. *Amended 2026-09-04: the script now reads two files, `hooks/payload.md` and `hooks/payload-rules.md`, and joins them into the envelope as the [hook spec](2026-09-04-session-start-hook-design.md) §4 describes; Codex is offered no hook at all, see §6.*
 
 Payload for the tracer bullet: the text of upstream `skills/using-superpowers/SKILL.md` at `b36e0829`, wrapped in the same `<EXTREMELY_IMPORTANT>` frame upstream uses, with exactly one edit: line 30, `superpowers:brainstorming` becomes `software-development:brainstorming`. Line 22 ("invoke the brainstorming skill first") is a bare-name mention and stays. `<SUBAGENT-STOP>` stays. The lean-router redesign, the admission test, and the bridge rules are sub-project 3; this payload exists so that the tracer measures a like-for-like replacement of upstream's injection.
 
