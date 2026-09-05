@@ -28,7 +28,8 @@ Three problems, each with evidence.
 | mattpocock adoption | **Keep skills.sh.** Add a tag fragment to the install so the lockfile records a ref. The curated `git-subdir` route works but buys a hypothetical at the cost of eighteen renames (§12). |
 | Where declarations live | This repository. `superpowers` in `.claude-plugin/marketplace.json` as today; a new `upstream/skills.json` for the skills.sh set. |
 | Setup and doctor form | One bash script in this repository, two modes. Not a skill: convergence must be deterministic, and a sampled process has no fixed point. |
-| Where it runs from | The marketplace clone, which is a full clone of this repository at a path recorded in `known_marketplaces.json`. |
+| Where it runs from | The Claude marketplace clone, which is a full clone of this repository at a path recorded in `known_marketplaces.json`. |
+| Harness requirement | `bin/setup` requires Claude Code and treats Codex as optional; `bin/doctor` requires neither. Claude is structural: the script lives in the clone `claude plugin marketplace add` creates and reads its declarations from it (§7.2). |
 | Upstream watch | Scheduled GitHub Actions in this repository. Detects and files one issue; never bumps, never opens a pull request. |
 | Claude plugin updates | Marketplace auto-update, enabled for `eranroseman`. It respects the `version` field and never drags upstream past our pinned sha. |
 | Repo scaffolding | A thin skill that composes `setup-matt-pocock-skills` and adds the two things it does not write (§8). |
@@ -121,17 +122,24 @@ claude plugin marketplace add eranroseman/agent-plugins
 bash ~/.claude/plugins/marketplaces/eranroseman/bin/setup
 ```
 
-The path is recorded as `installLocation` in `~/.claude/plugins/known_marketplaces.json`; the script resolves it from there rather than hardcoding it. On a Codex-only machine the equivalent clone is under `~/.codex/.tmp/marketplaces/eranroseman/`, and whether that path is durable is gate S4 (§13).
+The path is recorded as `installLocation` in `~/.claude/plugins/known_marketplaces.json`; the script resolves it from there rather than hardcoding it. Codex keeps an equivalent clone under `~/.codex/.tmp/marketplaces/eranroseman/`, but nothing in this design bootstraps from it, so its durability is not a question this repository has to answer.
 
 **The doctor's first check is whether its own clone is behind upstream's `main`**, because a stale script silently applies stale pins. It resolves the tip with `git ls-remote origin refs/heads/main`, the same rule §6 inherits, and **must never compare `HEAD` against `origin/main`**. On neither harness does any CLI operation move that tracking ref independently of `HEAD`: `claude plugin marketplace update` deletes the directory and re-clones at depth 1 rather than fetching, and `codex plugin marketplace upgrade` moves both together. Measured 2026-09-05: in the Claude clone `HEAD`, `refs/heads/main` and `refs/remotes/origin/main` all read `8fb3ca8` while this repository's `main` was 22 commits ahead, so the comparison reports "up to date" on a clone three weeks of work behind.
 
 ### 7.2 Prerequisites
 
-**Always required, fatal if missing:** `git`, `jq`, `node`, `npx`. The skills.sh set in §5 installs globally and serves both harnesses, so those four are needed whichever harness is present.
+The two entry points have different requirements, because they answer to different failures. A setup run that cannot complete should refuse; a doctor should always be able to describe whatever is there.
 
-**Harness-gated, skipped rather than fatal:** the `claude` binary gates the Claude steps of §7.3 and §9; the `codex` binary gates the Codex steps. At least one harness must be present. A missing harness is reported as skipped, not as a failure, and every doctor check that needs a CLI reports SKIPPED rather than failing the run.
+| | Fatal if missing | Gated, skipped and reported |
+| --- | --- | --- |
+| `bin/setup` | `git`, `jq`, `node`, `npx`, `claude` | `codex` |
+| `bin/doctor` | none | `claude`, `codex` |
 
-That rule is what makes two other parts of this design possible. §7.1's Codex-only bootstrap needs `bin/setup` to run without `claude`. And §11's doctor fixture runs in CI, where `codex` is absent: the workflow's own comment records that a fresh runner has no Codex CLI, which is why it fetches Codex's validator from GitHub at a pinned sha instead.
+**Claude is required for setup, and the reason is structural rather than a preference.** The script lives in the clone that `claude plugin marketplace add` creates, and reads its declarations from `.claude-plugin/marketplace.json` inside it (§5, §7.1). Requiring Claude is requiring the script's own delivery mechanism. Codex is a consumer of those declarations, so the whole Codex half of §7.3 and §9 runs only when the binary is on `PATH`, and is reported as skipped otherwise.
+
+The four always-fatal tools each earn their place: `git` for the pinned clone, `jq` for the manifests and the settings merge, `node` for the Visual Companion server at runtime, `npx` for the skills.sh set in §5, which is harness-neutral and installs the same either way.
+
+Two consequences worth naming. A Claude-only machine is fully supported, which matters because this is a public marketplace. And `bin/setup` becomes testable in CI, where the Claude CLI is installed and Codex is not (§11).
 
 It does **not** require `gh` authentication or an SSH key: a keyless machine falls back from SSH to HTTPS automatically, measured.
 
@@ -193,7 +201,7 @@ Evidence, from the author 2026-09-05: without a declared issue tracker, agents d
 
 Shipping that skill bumps `software-development` to **0.4.0** in both manifests. §9's `version` field is the sole update gate, so without a bump the skill never reaches an installed copy, and `bin/doctor`'s version check would compare 0.3.0 against 0.3.0 and report clean. `tests/test-hook.sh` pins the version in two assertions and moves with it.
 
-Gate S5: `setup-matt-pocock-skills` carries `disable-model-invocation: true`, which removes it from the catalog entirely, so whether a model-invoked skill can reach it through the Skill tool is untested. If it cannot, the fallback is to vendor and adapt it, and the author's convenience argument carries that decision.
+Gate S4: `setup-matt-pocock-skills` carries `disable-model-invocation: true`, which removes it from the catalog entirely, so whether a model-invoked skill can reach it through the Skill tool is untested. If it cannot, the fallback is to vendor and adapt it, and the author's convenience argument carries that decision.
 
 ## 9. Updating an installation
 
@@ -231,6 +239,7 @@ For a skills.sh source it is one `ref` edit in `upstream/skills.json`.
 New tests, run by the existing `tests/run.sh`:
 
 - `upstream/skills.json` is well-formed, every `repo` resolves, every `ref` exists as a tag, and every listed skill name resolves to exactly one `SKILL.md` at that ref. It is the skills.sh twin of `test-upstream-pin.sh` in role but not in path idiom: that test hardcodes a flat `skills/<name>/SKILL.md`, and the two declared sources differ, since `obra/superpowers-developing-for-claude-code` is flat while `mattpocock/skills` nests a category level (`skills/engineering/`, `skills/productivity/`) that a name does not reveal. The test resolves each name the way `skills add --skill <name>` does, by searching the fetched ref for a `SKILL.md` whose parent directory basename equals the name, and asserting exactly one match, so a mistyped name and a duplicated one both fail loudly.
+- `bin/setup` runs end to end against a scratch `HOME` in CI and exits 0, then a `bin/doctor` run over the same `HOME` reports clean. The runner has the Claude CLI and no Codex, so this exercises the Claude install, the pinned clone, and the skills.sh set, with the Codex half reported as skipped. It is the automated half of gate S1, which stays manual only for the parts a scratch `HOME` cannot reach.
 - `bin/setup` and `bin/doctor` pass `shellcheck`, and `bin/doctor` reports the five seeded faults when pointed at a scratch `HOME` carrying a wrong-sha clone, a dangling link, a nested link, a squatting regular file, and a lockfile entry missing its `ref`. The doctor takes no path argument; it reads the machine through `HOME` and `CODEX_HOME`, the same overrides gate S1 uses. The test asserts those five lines appear, not that they are the only ones, and its two CLI-dependent checks report SKIPPED on a runner with no Codex (§7.2). All five faults are filesystem and git state, so the fixture detects every one with neither CLI present.
 - `test-hook.sh` reads upstream's frame from the pinned clone rather than transcribing it (§10).
 - **README.md is rewritten in this sub-project**, which no other section names as a deliverable. Its Codex section loses the four-ways-broken clone-and-symlink recipe in favour of §7.1's two-line bootstrap; its Claude section gains the same; and it gains an Update section carrying §9's steps 1 and 2, the only two commands a human types, since steps 3 through 6 are the script's internals. Both blocks become fenced rather than indented, because the README currently has none and a test cannot extract what does not exist. The test then asserts that each fenced block in those sections appears verbatim in the usage text `bin/setup --help` prints, so the instructions and the script cannot drift.
@@ -251,14 +260,13 @@ Checked on this machine after the first `bin/setup` run. Gate labels are `S`-pre
 
 | Gate | Passes when | If it fails |
 | --- | --- | --- |
-| S1 Fresh install | `bin/setup` against a scratch `HOME` and `CODEX_HOME` produces the whole target state, and `bin/doctor` then reports clean. Verified with the real machine untouched | Defect, fix in place |
+| S1 Fresh install | `bin/setup` against a scratch `HOME` and `CODEX_HOME` produces the whole target state, and `bin/doctor` then reports clean. Verified with the real machine untouched. Its Claude-only half runs in CI on every push (§11); this gate covers what a runner cannot reach, namely the Codex install and the thirteen symlinks | Defect, fix in place |
 | S2 Doctor detects | `bin/doctor` against a scratch `HOME` seeded with a wrong-sha clone, a dangling link, a nested link, a squatting regular file, and a lockfile entry missing its `ref` reports all five, and `bin/setup` repairs all five. Its CLI-dependent checks report SKIPPED where a binary is absent (§7.2) | Defect, fix in place |
 | S3 Auto-update | `autoUpdate: true` on the user-scope `extraKnownMarketplaces` entry causes a published release to reach the machine without an explicit update command, observed within one session plus the documented delay | Setup stops trying to write it and instead prints the `/plugin` toggle steps; §9 gains a manual step for Claude and the README says so |
-| S4 Codex bootstrap | `~/.codex/.tmp/marketplaces/eranroseman/` still holds a usable clone after a Codex restart and a `marketplace upgrade`. The durability half is testable on this dual-CLI machine; the purpose it serves, that a Codex-only machine can bootstrap from it, depends on §7.2's harness gating letting `bin/setup` run without `claude` | The README documents a plain `git clone` as the Codex-only bootstrap instead |
-| S5 Skill reach | A model-invoked skill reaches `setup-matt-pocock-skills` through the Skill tool despite its `disable-model-invocation: true` | Vendor and adapt it instead of composing (§8), and record the rung change |
-| S6 Pin application | Re-running `skills add "<repo>#<ref>" --skill <name> -g -y` across all twenty declared skills on the real machine leaves every lockfile entry carrying the declared `ref`, and `skills update -g` then reports everything up to date | Investigate before the pin is declared; the fallback is to pin only the sources that apply cleanly and record the rest |
+| S4 Skill reach | A model-invoked skill reaches `setup-matt-pocock-skills` through the Skill tool despite its `disable-model-invocation: true` | Vendor and adapt it instead of composing (§8), and record the rung change |
+| S5 Pin application | Re-running `skills add "<repo>#<ref>" --skill <name> -g -y` across all twenty declared skills on the real machine leaves every lockfile entry carrying the declared `ref`, and `skills update -g` then reports everything up to date | Investigate before the pin is declared; the fallback is to pin only the sources that apply cleanly and record the rest |
 
-Fresh-machine reproducibility is gate S1 and is in scope here, unlike in the layout spec where it was explicitly deferred to this sub-project.
+Fresh-machine reproducibility is gate S1 and is in scope here, unlike in the layout spec where it was explicitly deferred to this sub-project. There is no gate for a Codex-only machine, because §7.2 does not support one.
 
 ## 14. Positions from knowledge-harness not adopted
 
@@ -304,8 +312,7 @@ Marked **[test]** where settled empirically rather than by reading.
 ## 16. Open items carried forward
 
 - Whether `autoUpdate: true` in a **user-scope** `extraKnownMarketplaces` entry is honoured, or only in managed settings. `claude plugin marketplace list --json` does not report the flag (gate S3).
-- Whether `~/.codex/.tmp/marketplaces/` is durable enough to bootstrap from on a Codex-only machine (gate S4).
-- Whether a model-invoked skill can reach `setup-matt-pocock-skills` through the Skill tool given its `disable-model-invocation: true` (gate S5).
+- Whether a model-invoked skill can reach `setup-matt-pocock-skills` through the Skill tool given its `disable-model-invocation: true` (gate S4).
 - Whether re-running `skills add` with a ref across all twenty skills is clean on a real machine; verified for one skill in a scratch home.
 - Which upstream tag corresponds to the currently installed content. It is almost certainly between tags, so no tag reproduces today's exact bytes; the first pin is a deliberate content move.
 - The two `obra/superpowers-developing-for-claude-code` skills are duplicated on Claude today (plugin and skills.sh). Sub-project 5 decides ([issue #10](https://github.com/eranroseman/agent-plugins/issues/10)).
