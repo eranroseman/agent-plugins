@@ -11,7 +11,8 @@ both Claude Code and Codex. It hosts three plugins:
   `rethink-audit`.
 - `superpowers`: obra/superpowers taken straight from upstream at a pinned
   commit, 13 of its 14 skills. `brainstorming` is the one left out. This entry
-  is Claude Code only; Codex gets the same skills by symlink (below).
+  is Claude Code only; Codex gets the same skills by symlink, created by
+  `bin/setup` as described in Install below.
 
 ## Install
 
@@ -66,10 +67,11 @@ Claude Code loads the new versions at the next launch or after
 
 `tests/run.sh` runs every static check: manifest schema on both harnesses, the
 upstream pin, the skills.sh pins, vendored-skill drift on both vendored skills,
-hook output, the engine's shape, and the doctor's fault detection. Five of them
-need network access: the two pin checks, the two vendored-skill drift checks,
-and the hook payload check. CI runs the same script, plus an end-to-end
-`bin/setup` run against a scratch `HOME`.
+hook output, the engine's shape, and the doctor's fault detection. Six of them
+touch the network: the two pin checks, the two vendored-skill drift checks, the
+hook payload check, and the engine's own test, whose upgrade-path assertion
+fetches the pinned upstream tree when `claude` is on `PATH`. CI runs the same
+script, plus an end-to-end `bin/setup` run against a scratch `HOME`.
 
 ## Design
 

@@ -31,17 +31,19 @@ What it depends on (Claude Code installs both automatically):
 
 ## Install
 
-Claude Code:
+Installed by the same script as the rest of the marketplace, not by adding
+this plugin on its own — Codex has no dependency concept, so a manual `codex
+plugin add` here would skip the thirteen `superpowers` symlinks entirely. See
+the repository README's `## Install` section for the full picture; its
+two-command bootstrap
 
-    claude plugin marketplace add eranroseman/agent-plugins
-    claude plugin install software-development@eranroseman
+```
+claude plugin marketplace add eranroseman/agent-plugins
+bash ~/.claude/plugins/marketplaces/eranroseman/bin/setup
+```
 
-Codex (no dependency concept; superpowers arrives by symlink, see the
-repository README):
-
-    codex plugin marketplace add https://github.com/eranroseman/agent-plugins.git
-    codex plugin add software-development@eranroseman
-    codex plugin add sensemaking@eranroseman
+installs this plugin, with its `sensemaking` and `superpowers` dependencies,
+on Claude Code, and on Codex too when `codex` is on `PATH`.
 
 Codex gets the skills and no hook, by design. Codex follows the skills
 without a session-start injection: obra/superpowers removed its own Codex hook
@@ -94,7 +96,7 @@ marketplace names `superpowers` at a fixed sha, so auto-update delivers this
 repository's releases and never drags in upstream's HEAD.
 
 Without it, and on Codex either way, the repository README's Update section has
-the two commands to run.
+the commands to run.
 
 ## License
 
