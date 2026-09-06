@@ -77,6 +77,14 @@ Applying the test empties the third category almost entirely.
 
 The end state is symmetric after all. Both files hold one paragraph, Harness backup, until sub-project 6 deletes it, after which both are empty. Moving task reports to the repository layer is what removed the asymmetry an earlier draft had.
 
+**Executed 2026-09-06, with one row not applied.** The task-reports row landed: the rule is gone from both global files, and lives in each scaffolded repository's `AGENTS.md` (`eranroseman/harness-backup@917c826`).
+
+The **intro row did not**. Its disposition reads "self-negates once §8 gives every repository one", and §8 did not. Four repositories were scaffolded and five were excluded — two deny all markdown edits and their `AGENTS.md` files are generated projections, one is a content vault with no tracker or code, and two are scheduled for deletion ([#22](https://github.com/eranroseman/agent-plugins/issues/22)). `harness-backup` and `dev/rethink` still have no `AGENTS.md`, so "ask before assuming conventions in a repo with no `AGENTS.md`" is still live advice. The paragraph stays until those two are deleted, which is the same gate the Harness backup row waits on.
+
+The task-reports row survives the same shortfall because the design already anticipated it: a repository with no declared tracker gets no rule, and that costs nothing. Every excluded repository is in that state. The intro row had no equivalent escape, because it is the rule that covers exactly the repositories the pass did not reach.
+
+**How the pass itself went is recorded in [#23](https://github.com/eranroseman/agent-plugins/issues/23).** Three defects in the scaffolding skill surfaced across four runs, all three traceable to changes shipped as bounded work rather than through `superpowers:writing-skills`. Its Iron Law — no skill without a failing test first — applies to edits, and the three changes that produced defects (Section D, the design ladder in the block, the triage handling) all changed what the skill makes an agent *do*. The rename and the version bump, the two changes in the same batch that were genuinely mechanical, produced none. Size was the wrong axis to classify on.
+
 Two costs, accepted knowingly. Codex loses every carrier this repository controls, so anything future that is genuinely machine-scoped there stays in a hand-edited file. And a repository nobody has run §8 in gets no file-borne rules, though the plugin's own skills still load.
 
 ## 5. What this repository declares
