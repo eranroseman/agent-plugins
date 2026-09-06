@@ -547,7 +547,7 @@ git status
 git add -A && git commit -m "Move the worktree cleanup rule into the software-development hook payload"
 ```
 
-- [ ] **Step 4: G7 baseline**
+- [x] **Step 4: G7 baseline** — PASS on both prompts, 2026-09-05, run headless by the agent
 
 Two fresh sessions in a scratch directory that has a git repository and no `docs/superpowers/`:
 
@@ -555,6 +555,8 @@ Two fresh sessions in a scratch directory that has a git repository and no `docs
 2. Prompt: `Fix this bug: the tests fail with "AssertionError" in the branch printer.` Record the first skill invoked. Expected: `superpowers:systematic-debugging`.
 
 Record pass or fail per prompt, with the skill actually invoked. A fail is a finding, not a defect (spec §8).
+
+**Observed:** prompt 1 invoked `Skill(software-development:brainstorming)` as its first tool call, prompt 2 invoked `Skill(superpowers:systematic-debugging)`. Prompt 1 was run twice: the first used `--permission-mode plan`, which the payload itself biases toward brainstorming, so it was rerun without plan mode and with edits disallowed. Only the clean run counts. Full record in spec §13.
 
 - [ ] **Step 5: Report**
 
@@ -607,7 +609,7 @@ Observed, real machine, codex-cli 0.147.0:
 
 ---
 
-### Task 8: Record the cutover results in the spec
+### Task 8: Record the cutover results in the spec — DONE 2026-09-05
 
 **Files:**
 - Modify: `docs/superpowers/specs/2026-09-04-session-start-hook-design.md` (append a section)
@@ -616,7 +618,7 @@ Observed, real machine, codex-cli 0.147.0:
 - Consumes: the user's reports from Tasks 6 and 7.
 - Produces: the spec's results section; the plan closes.
 
-- [ ] **Step 1: Append the results section**
+- [x] **Step 1: Append the results section** — written as spec §13
 
 At the end of the hook spec add, filling every `<…>` from the reports (no field may stay unfilled):
 
