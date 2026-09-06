@@ -18,6 +18,12 @@ if jq -e '[.sources[].skills[]] | index("setup-matt-pocock-skills")' "$S" >/dev/
   fail "setup-matt-pocock-skills is vendored by this plugin as an adapted copy whose file-pick rule differs; declaring it here too would install the unadapted one beside it"
 fi
 
+# diagnosing-bugs is vendored with a rewritten description (spec section 6.1);
+# declaring it here too would install the unadapted one beside it.
+if jq -e '[.sources[].skills[]] | index("diagnosing-bugs")' "$S" >/dev/null 2>&1; then
+  fail "diagnosing-bugs is vendored by software-dev with a rewritten description; declaring it here too would install the unadapted one beside it"
+fi
+
 # mattpocock's process skills are not adopted: superpowers owns those slots.
 # Author's ruling 2026-09-06, restating knowledge-harness #72 and settling the
 # one case that had drifted from it. grill-with-docs IS adopted, per that
