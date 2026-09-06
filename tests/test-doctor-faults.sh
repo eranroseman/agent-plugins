@@ -119,7 +119,7 @@ JSON
 BIN2="$H2/bin"
 mkdir -p "$BIN2"
 for t in bash git jq node sed awk grep find date readlink basename dirname \
-         rm mv ln mkdir cp cat; do
+         rm mv ln mkdir cp cat sha256sum; do
   p="$(command -v "$t" 2>/dev/null)" || fail "the fixture needs $t on PATH"
   ln -sf "$p" "$BIN2/$t"
 done
@@ -168,7 +168,7 @@ done < <(jq -r '.sources[].skills[]' "$REPO_ROOT/upstream/skills.json")
 BIN="$H/bin"
 mkdir -p "$BIN"
 for t in bash git jq node npx claude sed awk grep find date readlink basename dirname \
-         rm mv ln mkdir cp cat; do
+         rm mv ln mkdir cp cat sha256sum; do
   p="$(command -v "$t" 2>/dev/null)" || fail "the fixture needs $t on PATH"
   ln -sf "$p" "$BIN/$t"
 done

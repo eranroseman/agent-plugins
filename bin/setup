@@ -565,11 +565,107 @@ report_only() {
     [ "$redundant" -gt 0 ] && note "$redundant link(s) under $CODEX_SKILLS resolve into $SKILL_ROOT, which Codex already reads directly; they are redundant and are left alone"
   fi
 
-  # 4. A skills.sh copy of a skill this plugin vendors.
+  # 4. A skills.sh copy of a skill this plugin vendors under another name. A
+  # rename is invisible to the by-name check below, so this one stays declared.
   if [ -f "$LOCKFILE" ] \
      && jq -e '.skills["setup-matt-pocock-skills"]' "$LOCKFILE" >/dev/null 2>&1; then
     note "setup-matt-pocock-skills is installed through skills.sh, but this plugin vendors an adapted copy as setup-repository; remove the unadapted one with 'npx skills remove setup-matt-pocock-skills -g'"
   fi
+
+  report_duplicates
+}
+
+# 5. One skill name reaching two different trees on one harness. Derived
+# from every route that harness loads a skill by, never from a declared list:
+# its user skill root, the shared root, and the install path of each of its
+# plugins. Three rules, each earned from a measured false positive on a clean
+# machine (spec section 6.6): compare content, not path, so the thirteen
+# curated links into the pinned clone are not thirteen findings; take only
+# the current version of each installed plugin, which the install registry
+# names, so a plugin bump does not manufacture duplicates of its own skills;
+# and report a Claude plugin cache whose marketplace is no longer registered
+# as its own finding rather than filtering it away. Per harness, because the
+# hazard is one name reaching two skills in one session; the two harnesses
+# running different versions of a third-party plugin is a different, milder
+# thing and is not reported here. Reported, never repaired.
+report_duplicates() {
+  local -a claude_dirs=() codex_dirs=()
+  local root dir path mkt name version
+
+  # A plugin's skills sit under skills/, or at its root when a git-subdir
+  # entry's path already is the skills directory, as the superpowers entry's
+  # is. Both are listed; a directory without SKILL.md is skipped below.
+  plugin_skill_dirs() {
+    local path="$1" dir
+    for dir in "$path"/skills/*/ "$path"/*/; do
+      [ -f "$dir/SKILL.md" ] && printf '%s\n' "${dir%/}"
+    done
+  }
+
+  for root in "$HOME/.claude/skills" "$SKILL_ROOT"; do
+    [ -d "$root" ] || continue
+    for dir in "$root"/*/; do [ -f "$dir/SKILL.md" ] && claude_dirs+=("${dir%/}"); done
+  done
+  if [ -f "$INSTALLED_PLUGINS" ]; then
+    while IFS= read -r path; do
+      [ -n "$path" ] || continue
+      while IFS= read -r dir; do claude_dirs+=("$dir"); done < <(plugin_skill_dirs "$path")
+    done < <(jq -r '.plugins[]?[]?.installPath // empty' "$INSTALLED_PLUGINS" 2>/dev/null)
+  fi
+  report_pool Claude "${claude_dirs[@]}"
+
+  for root in "$CODEX_SKILLS" "$SKILL_ROOT"; do
+    [ -d "$root" ] || continue
+    for dir in "$root"/*/; do [ -f "$dir/SKILL.md" ] && codex_dirs+=("${dir%/}"); done
+  done
+  # Codex loads an installed plugin from its cache, keyed by marketplace,
+  # name and installed version; `codex plugin list --json` names all three.
+  if [ -n "$CODEX_LIST" ]; then
+    while IFS="$(printf '\t')" read -r mkt name version; do
+      [ -n "$name" ] || continue
+      path="${CODEX_HOME:-$HOME/.codex}/plugins/cache/$mkt/$name/$version"
+      while IFS= read -r dir; do codex_dirs+=("$dir"); done < <(plugin_skill_dirs "$path")
+    done < <(printf '%s' "$CODEX_LIST" \
+      | jq -r '.installed[]? | select(.enabled) | [.marketplaceName, .name, .version] | @tsv')
+  fi
+  if have codex; then report_pool Codex "${codex_dirs[@]}"; fi
+
+  # A Claude plugin cache whose marketplace is not registered: residue of a
+  # removal, and not this script's to delete.
+  if [ -d "$HOME/.claude/plugins/cache" ]; then
+    for dir in "$HOME/.claude/plugins/cache"/*/; do
+      name="$(basename "$dir")"
+      jq -e --arg m "$name" '.[$m]' "$KNOWN_MARKETPLACES" >/dev/null 2>&1 \
+        || note "plugin cache for an unregistered marketplace: ${dir%/} (left alone; remove it by hand)"
+    done
+  fi
+}
+
+# $1 the harness name, then every skill directory that harness can load.
+# Hashing SKILL.md is the content identity: two paths with one hash are the
+# same skill, and a name with two hashes is the finding.
+report_pool() {
+  local harness="$1" dir name h found=0
+  local -A hashes=() places=()
+  local -a distinct
+  shift
+  for dir in "$@"; do
+    name="$(basename "$dir")"
+    h="$(sha256sum "$dir/SKILL.md" 2>/dev/null)" || continue
+    h="${h%% *}"
+    case " ${hashes[$name]:-} " in
+      *" $h "*) ;;
+      *) hashes[$name]="${hashes[$name]:-} $h"
+         places[$name]="${places[$name]:-}${places[$name]:+, }$dir (${h:0:12})" ;;
+    esac
+  done
+  for name in "${!hashes[@]}"; do
+    read -r -a distinct <<<"${hashes[$name]}"
+    [ "${#distinct[@]}" -gt 1 ] || continue
+    found=$((found + 1))
+    note "$harness: skill $name resolves to ${#distinct[@]} different trees: ${places[$name]}"
+  done
+  [ "$found" -eq 0 ] && note "$harness: no skill name resolves to more than one tree"
 }
 
 main() {

@@ -77,7 +77,7 @@ mkdir -p "$J/.local/share/software-dev/upstream/superpowers/.git" "$J/.agents/sk
 NOJQ="$H/nojq-bin"
 mkdir -p "$NOJQ"
 for t in bash git node npx claude sed awk grep find date readlink basename dirname \
-         mv ln mkdir cp cat; do
+         mv ln mkdir cp cat sha256sum; do
   p="$(command -v "$t" 2>/dev/null)" && ln -sf "$p" "$NOJQ/$t"
 done
 [ -x "$NOJQ/bash" ] || fail "the fixture needs bash on PATH"
@@ -161,7 +161,7 @@ if command -v claude >/dev/null 2>&1; then
   BIN="$W/bin"
   mkdir -p "$BIN"
   for t in bash git jq node npx claude sed awk grep find date readlink basename dirname \
-           rm mv ln mkdir cp cat; do
+           rm mv ln mkdir cp cat sha256sum; do
     p="$(command -v "$t" 2>/dev/null)" || fail "the fixture needs $t on PATH"
     ln -sf "$p" "$BIN/$t"
   done
