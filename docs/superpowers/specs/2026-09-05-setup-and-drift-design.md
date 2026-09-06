@@ -250,6 +250,8 @@ The first fix drafted was a third place to look, `~/.agents/skills/triage/`. Tha
 
 The drift test gains a sixth region per side for that one line, and the provenance header grows to eight lines.
 
+**Corrected the same day (0.5.5).** The reason recorded above — that this marketplace always installs `triage` — is true but weak: it makes the conditional vacuous rather than wrong, so a machine that later removed `triage` would invite the test back. The stronger reason is that upstream's premise is false. Its text is "an uninstalled skill needs no labels", and the labels are not the skill's to need: they are a tracker convention any agent applies through `gh` or `glab`. Measured here the same day — six issues in this repository carry `needs-triage`, `ready-for-agent` and `ready-for-human`, every one applied by an agent that could not invoke `triage` at all, because the skill is gated. The bullet now gives that reason instead.
+
 ## 9. Updating an installation
 
 **Claude, once the user enables auto-update: nothing to run.** Claude Code refreshes the marketplace and updates installed plugins on disk after a session starts, with a random delay of up to ten minutes, then either prompts for `/reload-plugins` or loads the new versions at the next launch. Third-party marketplaces default to auto-update off, which is why this has never happened; the `eranroseman` entry has no `autoUpdate` key today.

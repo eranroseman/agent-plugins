@@ -138,8 +138,8 @@ our_body="$(strip_regions vendored "$d/ours.md" \
   '# Setup Repository' \
   '> Explainer: The "issue tracker" is where issues live for this repo. `triage` reads from and writes to it — it needs to know whether to call `gh issue create`, write a markdown file under `.scratch/`, or follow some other workflow you describe. Pick the place you actually track work for this repo.' \
   '> Explainer: The "issue tracker" is where issues live for this repo. `triage` reads from and writes to it — it needs to know whether to call `gh issue create`, write a markdown file under `.scratch/`, or follow some other workflow you describe. Pick the place you actually track work for this repo.' \
-  '- The `triage` skill is always installed here: this marketplace declares it and `bin/setup` installs it. Section B always runs. Do not test for it — `triage` is gated, so it never appears in your available skills and any test answers "no" on a correct machine.' \
-  '- The `triage` skill is always installed here: this marketplace declares it and `bin/setup` installs it. Section B always runs. Do not test for it — `triage` is gated, so it never appears in your available skills and any test answers "no" on a correct machine.' \
+  '- Section B always runs; do not test whether `triage` is installed. The label vocabulary is a tracker convention that any agent applies through `gh` or `glab`, not private configuration of the `triage` skill, so whether that skill is present does not bear on whether the repository needs one.' \
+  '- Section B always runs; do not test whether `triage` is installed. The label vocabulary is a tracker convention that any agent applies through `gh` or `glab`, not private configuration of the `triage` skill, so whether that skill is present does not bear on whether the repository needs one.' \
   '**Write `AGENTS.md`, and make `CLAUDE.md` an import:**' \
   'Never leave the block in `CLAUDE.md` alone: a Claude-only carrier leaves Codex reading nothing.' \
   '**Section D — Git convention.** Default to **merge locally**. Ask which of the three this repo uses:' \

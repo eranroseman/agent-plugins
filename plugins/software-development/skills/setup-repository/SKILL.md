@@ -34,7 +34,7 @@ Look at the current repo to understand its starting state. Read whatever exists;
 - `docs/adr/` and any `src/*/docs/adr/` directories
 - `docs/agents/` — does this skill's prior output already exist?
 - `.scratch/` — sign that a local-markdown issue tracker convention is already in use
-- The `triage` skill is always installed here: this marketplace declares it and `bin/setup` installs it. Section B always runs. Do not test for it — `triage` is gated, so it never appears in your available skills and any test answers "no" on a correct machine.
+- Section B always runs; do not test whether `triage` is installed. The label vocabulary is a tracker convention that any agent applies through `gh` or `glab`, not private configuration of the `triage` skill, so whether that skill is present does not bear on whether the repository needs one.
 - Monorepo signals — a `pnpm-workspace.yaml`, a `workspaces` field in `package.json`, or a populated `packages/*` with its own `src/`. Present only in a genuinely large multi-package repo; their absence means single-context, which is almost every repo.
 
 ### 2. Present findings and ask
