@@ -495,7 +495,7 @@ Expected: the `validate` workflow concludes `success`. If it fails, read the fai
 
 ---
 
-### Task 6: HUMAN-RUN. Claude Code cutover, G3 rerun, G7 baseline
+### Task 6: Claude Code cutover, G3 rerun, G7 baseline — COMPLETE, both gates PASS
 
 > **Amended 2026-09-05.** The version shipped is **0.3.0**, not 0.2.0. The payload still carries exactly one rule, worktree cleanup: a task-reports rule was admitted and withdrawn the same day, because its destination clause is repository-specific and it belongs beside each repository's tracker declaration instead (hook spec §10, [setup and drift spec](../specs/2026-09-05-setup-and-drift-design.md) §8). So one paragraph leaves `~/.claude/CLAUDE.md`, not two, and the task-reports paragraph stays in **both** global files until the scaffolding skill ships. And the verification step moved **before** the deletion, so you prove the hook carries the rule before you delete its only other copy.
 
@@ -504,7 +504,7 @@ Expected: the `validate` workflow concludes `success`. If it fails, read the fai
 **Files:**
 - Modify (by the user): `~/.claude/CLAUDE.md`, `~/harness-backup/claude/CLAUDE.md`
 
-- [ ] **Step 1: Refresh the plugin**
+- [x] **Step 1: Refresh the plugin** — done 2026-09-05, 0.1.0 to 0.3.0
 
 ```bash
 claude plugin marketplace update eranroseman
@@ -532,7 +532,7 @@ A count of `1` without the paragraph means the old cache is still loaded: check 
 
 **One limit worth recording rather than glossing.** A count of `1` after `/compact` cannot by itself distinguish a fresh injection from an old one surviving compaction, and unlike the tracer there is no payload difference to discriminate with, since both would be 0.3.0. The reading rests on two things: compaction replaces history with a summary, and the session reported that the summary's own mentions of both strings "sit inline in backticks, not standalone lines", so the single standalone occurrence is a live injection rather than preserved text. That is the same inline-versus-standalone trap the tracer hit, handled correctly here.
 
-- [ ] **Step 3: Move the worktree rule out of the user file**
+- [x] **Step 3: Move the worktree rule out of the user file** — done 2026-09-05, after G3 passed
 
 Only after Step 2 passes. Delete the paragraph beginning `**Worktree cleanup.**` from the `## Tool routing` section of `~/.claude/CLAUDE.md`; it now arrives by injection. **Leave everything else in both global files alone**, including the task-reports paragraphs: they move to each repository's `AGENTS.md` when the scaffolding skill ships, not now.
 
@@ -558,7 +558,7 @@ Record pass or fail per prompt, with the skill actually invoked. A fail is a fin
 
 **Observed:** prompt 1 invoked `Skill(software-development:brainstorming)` as its first tool call, prompt 2 invoked `Skill(superpowers:systematic-debugging)`. Prompt 1 was run twice: the first used `--permission-mode plan`, which the payload itself biases toward brainstorming, so it was rerun without plan mode and with edits disallowed. Only the clean run counts. Full record in spec §13.
 
-- [ ] **Step 5: Report**
+- [x] **Step 5: Report** — recorded directly in spec §13
 
 Report to the controller: the three G3 counts and whether each carried the worktree paragraph, and the two G7 results.
 
@@ -636,7 +636,7 @@ Cutover performed on this machine per §9. Claude Code <version>, codex-cli <ver
 Observations carried forward: <one bullet per surprise, or "none">.
 ```
 
-- [ ] **Step 2: Commit and push**
+- [x] **Step 2: Commit and push** — done 2026-09-05
 
 ```bash
 git add docs/superpowers/specs/2026-09-04-session-start-hook-design.md
@@ -648,3 +648,10 @@ MSG
 )"
 git push origin main
 ```
+
+
+---
+
+## Plan complete, 2026-09-05
+
+All eight tasks done. Gates G3, G6 and G7 all pass; results and their caveats are in [spec §13](../specs/2026-09-04-session-start-hook-design.md). Shipped version 0.3.0. The `**Worktree cleanup.**` paragraph is out of `~/.claude/CLAUDE.md` and arrives by injection; `harness-backup` is refreshed and pushed. Nothing in this plan is outstanding.
