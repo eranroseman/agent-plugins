@@ -27,14 +27,32 @@ ln -s "$H/nowhere" "$SKILLS/writing-plans"            # dangling
 mkdir -p "$SKILLS/executing-plans"                    # a directory where a link belongs
 printf 'squat\n' > "$SKILLS/writing-skills"           # a regular file where a link belongs
 
+# A lockfile entry with no ref: the state every skills.sh install is in today.
+mkdir -p "$H/.agents"
+cat > "$H/.agents/.skill-lock.json" <<'JSON'
+{
+  "version": 3,
+  "skills": {
+    "grilling": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "sourceUrl": "https://github.com/mattpocock/skills.git",
+      "skillPath": "skills/productivity/grilling/SKILL.md"
+    }
+  },
+  "dismissed": {}
+}
+JSON
+
 if out="$(env HOME="$H" CODEX_HOME="$H/.codex" bash "$DOCTOR" 2>&1)"; then status=0; else status=$?; fi
-[ "$status" -eq 1 ] || fail "doctor exited $status on a machine with four seeded faults"
+[ "$status" -eq 1 ] || fail "doctor exited $status on a machine with five seeded faults"
 
 for pat in \
   'pinned clone is at' \
   'dangling link' \
   'executing-plans exists and is not a symlink' \
-  'writing-skills exists and is not a symlink'
+  'writing-skills exists and is not a symlink' \
+  'lockfile entry for grilling records no ref'
 do
   printf '%s\n' "$out" | grep -q "$pat" || fail "doctor did not report: $pat"
 done
@@ -91,4 +109,4 @@ printf '%s\n' "$out" | grep -q -- '--- re-checking ---' || fail "bin/setup did n
 [ -L "$SKILLS/writing-skills" ] || fail "the squatting file was not replaced by a link"
 ls "$SKILLS" | grep -q 'aside' || fail "nothing was moved aside; squatters must be kept, not deleted"
 
-printf 'doctor-faults: four seeded faults reported and the local ones repaired\n'
+printf 'doctor-faults: five seeded faults reported and the local ones repaired\n'

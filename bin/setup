@@ -29,6 +29,7 @@ CLONE_DIR="$HOME/.local/share/software-development/upstream/superpowers"
 SKILL_ROOT="$HOME/.agents/skills"
 KNOWN_MARKETPLACES="$HOME/.claude/plugins/known_marketplaces.json"
 INSTALLED_PLUGINS="$HOME/.claude/plugins/installed_plugins.json"
+LOCKFILE="$HOME/.agents/.skill-lock.json"
 
 # The only override. CI points this at the checkout under test, because
 # `claude plugin marketplace add eranroseman/agent-plugins` would clone origin
@@ -359,9 +360,47 @@ ensure_codex() {
   done
 }
 
+locked_ref() {
+  jq -r --arg n "$1" '.skills[$n].ref // empty' "$LOCKFILE" 2>/dev/null
+}
+
+ensure_skills_sh() {
+  local repo ref name have
+  while IFS="$(printf '\t')" read -r repo ref name; do
+    [ -n "$name" ] || continue
+    have="$(locked_ref "$name")"
+    if [ "$have" = "$ref" ]; then
+      ok "skills.sh $name at $ref"
+      continue
+    fi
+    if ! applying; then
+      if [ -z "$have" ]; then
+        bad "lockfile entry for $name records no ref, declared $ref"
+      else
+        bad "lockfile records $have for $name, declared $ref"
+      fi
+      continue
+    fi
+    # The fragment form is what writes ref into the lockfile. -g keeps the
+    # install in the shared root; without it a project tree and a second
+    # lockfile appear beside it.
+    if npx --yes skills add "$repo#$ref" --skill "$name" -g -y >/dev/null 2>&1; then
+      did "installed $name from $repo#$ref"
+    else
+      bad "npx skills add $repo#$ref --skill $name failed"
+      continue
+    fi
+    have="$(locked_ref "$name")"
+    if [ "$have" = "$ref" ]; then
+      ok "skills.sh $name at $ref"
+    else
+      bad "after installing $name the lockfile records '${have:-no ref}', declared $ref"
+    fi
+  done < <(jq -r '.sources[] as $s | $s.skills[] | [$s.repo, $s.ref, .] | @tsv' "$SKILLS_JSON")
+}
+
 # Filled in by later tasks; defined here so the script runs from this one.
 ensure_fresh_clone() { :; }
-ensure_skills_sh() { :; }
 report_only()      { :; }
 
 main() {

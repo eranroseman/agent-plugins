@@ -100,6 +100,17 @@ if command -v claude >/dev/null 2>&1; then
     ln -sf "$p" "$BIN/$t"
   done
 
+  # A fully pinned lockfile, mirroring test-doctor-faults.sh: without it,
+  # ensure_skills_sh would find every declared skill unpinned and try to
+  # install all nineteen over the network on every run of this test.
+  mkdir -p "$W/home/.agents"
+  jq '{version: 3,
+       skills: (reduce (.sources[] as $s | $s.skills[] |
+         {key: ., value: {source: $s.repo, ref: $s.ref}}) as $e ({}; . + {($e.key): $e.value})),
+       dismissed: {}}' \
+    "$REPO_ROOT/upstream/skills.json" > "$W/home/.agents/.skill-lock.json" \
+    || fail "could not synthesise a pinned lockfile"
+
   want="$(jq -r .version "$REPO_ROOT/$PJ")"
   if out="$(env HOME="$W/home" CODEX_HOME="$W/home/.codex" SD_MARKETPLACE_SOURCE="$W/repo" \
       PATH="$BIN" bash "$SETUP" 2>&1)"; then status=0; else status=$?; fi
