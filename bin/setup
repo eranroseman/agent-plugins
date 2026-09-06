@@ -26,6 +26,7 @@ SKILLS_JSON="$REPO_ROOT/upstream/skills.json"
 # than here: a variable declared before anything reads it is a shellcheck
 # SC2034 warning, and shellcheck must exit 0 from Task 4 onward.
 CLONE_DIR="$HOME/.local/share/software-development/upstream/superpowers"
+SKILL_ROOT="$HOME/.agents/skills"
 
 MODE=apply
 FAILURES=0
@@ -37,6 +38,7 @@ FAILURES=0
 ok()   { printf 'OK:   %s\n' "$*"; }
 bad()  { printf 'FAIL: %s\n' "$*"; FAILURES=$((FAILURES + 1)); }
 die()  { printf 'ERROR: %s\n' "$*" >&2; exit 2; }
+did()  { printf 'DID:  %s\n' "$*"; }
 
 applying() { [ "$MODE" = apply ]; }
 have() { command -v "$1" >/dev/null 2>&1; }
@@ -83,17 +85,125 @@ require_tools() {
   [ -z "$missing" ] || die "bin/setup needs these on PATH:$missing (bin/doctor needs none)"
 }
 
-# The first real check, replaced wholesale in Task 5. It exists here rather
-# than as a stub so that the skeleton reports an empty machine honestly, and so
-# that CLONE_DIR, ok and bad all have a reader from this task onward.
+declared_sha() {
+  jq -r '.plugins[] | select(.name == "superpowers") | .source.sha' "$MARKETPLACE"
+}
+
+curated_skills() {
+  jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$MARKETPLACE" | sed 's#^\./##'
+}
+
+# A timestamped sibling, so nothing a user put here is ever destroyed.
+aside_path() { printf '%s.aside.%s' "$1" "$(date +%Y%m%d%H%M%S)"; }
+
 ensure_clone() {
-  [ -d "$CLONE_DIR/.git" ] || { bad "the pinned clone is missing: $CLONE_DIR"; return; }
-  ok "pinned clone exists"
+  local sha have
+  sha="$(declared_sha)"
+  [ "${#sha}" -eq 40 ] || { bad "the superpowers entry carries no 40-character sha"; return; }
+
+  if [ ! -d "$CLONE_DIR/.git" ]; then
+    if ! applying; then
+      bad "the pinned clone is missing: $CLONE_DIR"
+      return
+    fi
+    mkdir -p "$(dirname "$CLONE_DIR")" || { bad "could not create $(dirname "$CLONE_DIR")"; return; }
+    # Never chained with &&: a failed clone would short-circuit the checkout
+    # and leave the directory at whatever it happened to be.
+    if git clone -q https://github.com/obra/superpowers.git "$CLONE_DIR"; then
+      did "cloned obra/superpowers into $CLONE_DIR"
+    else
+      bad "could not clone obra/superpowers into $CLONE_DIR"
+      return
+    fi
+  fi
+
+  have="$(git -C "$CLONE_DIR" rev-parse HEAD 2>/dev/null)"
+  if [ "$have" = "$sha" ]; then
+    ok "pinned clone is at $sha"
+    return
+  fi
+  if ! applying; then
+    bad "pinned clone is at ${have:-an unknown revision}, declared $sha"
+    return
+  fi
+  git -C "$CLONE_DIR" fetch -q origin || { bad "could not fetch in $CLONE_DIR"; return; }
+  if git -C "$CLONE_DIR" checkout -q "$sha"; then
+    did "checked out $sha in $CLONE_DIR"
+  else
+    bad "could not check out $sha in $CLONE_DIR"
+    return
+  fi
+  have="$(git -C "$CLONE_DIR" rev-parse HEAD 2>/dev/null)"
+  if [ "$have" = "$sha" ]; then
+    ok "pinned clone is at $sha"
+  else
+    bad "pinned clone is at ${have:-an unknown revision}, declared $sha"
+  fi
+}
+
+ensure_links() {
+  local name target link actual aside
+  if applying; then
+    mkdir -p "$SKILL_ROOT" || { bad "could not create $SKILL_ROOT"; return; }
+  elif [ ! -d "$SKILL_ROOT" ]; then
+    bad "the skill root is missing: $SKILL_ROOT"
+    return
+  fi
+
+  while IFS= read -r name; do
+    [ -n "$name" ] || continue
+    target="$CLONE_DIR/skills/$name"
+    link="$SKILL_ROOT/$name"
+
+    if [ -L "$link" ]; then
+      # Dangling first, and by `[ -e ]` on the link rather than by an empty
+      # readlink: `readlink -f` canonicalises a path whose last component does
+      # not exist and returns it, so a dangling link reports a target here, not
+      # the empty string. `[ -e ]` follows the link and is false exactly when
+      # the target is missing -- which is also why the README's guard passed on
+      # a dangling link and let `ln -s` fail with "File exists".
+      if [ ! -e "$link" ]; then
+        if ! applying; then bad "dangling link: $link"; continue; fi
+        rm "$link" || { bad "could not remove the dangling link $link"; continue; }
+        did "removed the dangling link $link"
+      else
+        actual="$(readlink -f "$link" 2>/dev/null)"
+        if [ "$actual" = "$target" ]; then
+          ok "link $name"
+          continue
+        fi
+        if ! applying; then bad "link $name points at $actual, not $target"; continue; fi
+        aside="$(aside_path "$link")"
+        mv "$link" "$aside" || { bad "could not move $link aside"; continue; }
+        did "moved $link aside to $aside (it pointed at $actual)"
+      fi
+    elif [ -e "$link" ]; then
+      # A directory or a regular file where a link belongs. Never deleted.
+      if ! applying; then bad "$name exists and is not a symlink: $link"; continue; fi
+      aside="$(aside_path "$link")"
+      mv "$link" "$aside" || { bad "could not move $link aside"; continue; }
+      did "moved $link aside to $aside (not a symlink)"
+    fi
+
+    if [ ! -e "$target" ]; then
+      bad "link target missing: $target"
+      continue
+    fi
+    if ! applying; then
+      bad "missing link: $link"
+      continue
+    fi
+    if ln -s "$target" "$link"; then
+      did "linked $name"
+      ok "link $name"
+    else
+      bad "could not create $link"
+    fi
+  done < <(curated_skills)
 }
 
 # Filled in by later tasks; defined here so the script runs from this one.
 ensure_fresh_clone() { :; }
-ensure_links()     { :; }
 ensure_claude()    { :; }
 ensure_codex()     { :; }
 ensure_skills_sh() { :; }

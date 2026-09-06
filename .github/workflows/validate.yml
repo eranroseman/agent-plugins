@@ -38,5 +38,10 @@ jobs:
           done
           echo "CODEX_PLUGIN_VALIDATOR=$RUNNER_TEMP/codex-validator/validate_plugin.py" >> "$GITHUB_ENV"
 
+      # ubuntu-latest ships shellcheck, but the lint assertion must not quietly
+      # skip if a future image drops it.
+      - name: Ensure shellcheck
+        run: command -v shellcheck || sudo apt-get install -y shellcheck
+
       - name: Run static checks
         run: tests/run.sh
