@@ -44,6 +44,36 @@ if out="$(env HOME="$H" CODEX_HOME="$H/.codex" bash "$DOCTOR" 2>&1)"; then statu
 [ "$status" -eq 1 ] || fail "bin/doctor on an empty HOME must exit 1, got $status"
 printf '%s\n' "$out" | grep -q 'FAIL:' || fail "the doctor reported no failure on an empty HOME"
 
+# A machine the doctor could not read is not a clean machine. jq is not an
+# optional harness like claude or codex, whose absence makes one half genuinely
+# inapplicable: it is the reader of this repository's own declarations, so
+# without it every check is unanswered. The home below passes the only two
+# guards that need no jq -- a clone directory and a skill root that merely
+# exist, which is exactly the converged-then-drifted machine the doctor is for
+# -- so nothing else stands between "could not read" and a false all-clear.
+J="$H/jqless"
+mkdir -p "$J/.local/share/software-development/upstream/superpowers/.git" "$J/.agents/skills" \
+  || fail "could not seed $J"
+NOJQ="$H/nojq-bin"
+mkdir -p "$NOJQ"
+for t in bash git node npx claude sed awk grep find date readlink basename dirname \
+         mv ln mkdir cp cat; do
+  p="$(command -v "$t" 2>/dev/null)" && ln -sf "$p" "$NOJQ/$t"
+done
+[ -x "$NOJQ/bash" ] || fail "the fixture needs bash on PATH"
+if out="$(env HOME="$J" CODEX_HOME="$J/.codex" PATH="$NOJQ" /bin/bash "$DOCTOR" 2>&1)"; then
+  status=0
+else
+  status=$?
+fi
+[ "$status" -ne 0 ] || fail "the doctor exited 0 on a machine it could not read:"$'\n'"$out"
+printf '%s\n' "$out" | grep -qx 'clean' \
+  && fail "the doctor called an unread machine clean:"$'\n'"$out"
+printf '%s\n' "$out" | grep -q 'jq is not on PATH' \
+  || fail "the doctor did not name the tool it was missing:"$'\n'"$out"
+printf '%s\n' "$out" | grep -q 'for want of: jq' \
+  || fail "the verdict does not say which tool left the machine unchecked:"$'\n'"$out"
+
 # The Claude half reports its own absence rather than assuming it.
 out="$(env HOME="$H" CODEX_HOME="$H/.codex" PATH="/usr/bin:/bin" bash "$DOCTOR" 2>&1 || true)"
 if command -v claude >/dev/null 2>&1 && [ -x /usr/bin/claude ]; then

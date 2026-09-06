@@ -44,6 +44,14 @@ CODEX_LIST=""
 MODE=apply
 FAILURES=0
 
+# Checks that could not run, and the tools they wanted. Only `needs` fills
+# these, never the claude and codex gates: those skip a half that is genuinely
+# inapplicable, and a machine with neither harness can still be clean. A
+# missing reader of the declarations is a different kind of absence -- nothing
+# was checked at all -- and it must not read as a healthy machine.
+UNANSWERED=0
+UNCHECKED=""
+
 # Reporting. Each later task adds the one helper it is the first to call —
 # `did` in Task 5, `skip` in Task 6, `note` in Task 9 — for the same reason the
 # path variables are staged: shellcheck reports a function nothing calls
@@ -67,6 +75,11 @@ have() { command -v "$1" >/dev/null 2>&1; }
 needs() {
   if have "$1"; then return 0; fi
   skip "$1 is not on PATH: $2"
+  UNANSWERED=$((UNANSWERED + 1))
+  case " $UNCHECKED " in
+    *" $1 "*) ;;
+    *) UNCHECKED="$UNCHECKED $1" ;;
+  esac
   return 1
 }
 
@@ -545,7 +558,20 @@ main() {
     "$REPO_ROOT/bin/setup" --check
     exit $?
   fi
-  [ "$FAILURES" -eq 0 ] || { printf '\n%s check(s) failed\n' "$FAILURES"; exit 1; }
+  # An unread machine is not a healthy one: a dead detector must not look like a
+  # converged repository. Exit 1 rather than 2 -- the doctor ran, it simply
+  # could not answer -- with a verdict worded so it cannot be mistaken for
+  # ordinary drift.
+  if [ -n "$UNCHECKED" ]; then
+    printf '\n%s check(s) could not run for want of:%s; this machine is unchecked, not verified\n' \
+      "$UNANSWERED" "$UNCHECKED"
+  fi
+  if [ "$FAILURES" -gt 0 ]; then
+    printf '\n%s check(s) failed\n' "$FAILURES"
+  fi
+  if [ "$FAILURES" -gt 0 ] || [ -n "$UNCHECKED" ]; then
+    exit 1
+  fi
   printf '\nclean\n'
   exit 0
 }
