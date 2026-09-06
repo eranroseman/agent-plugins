@@ -114,9 +114,18 @@ Round two did. Six scenarios that attach `debug this`, `broken`, `throwing`, `sl
 
 The failure concentrates where the description invites it: the bare word *diagnose* pulls `diagnosing-bugs` five times out of five onto a reproducible parser bug. On the ambiguous pair the current description is also unstable — a 3/2 split on one, and *"something's broken and I'm not sure where to start"* routed to `diagnosing-bugs` 5/5, which is backwards, since not knowing where to start is the front door's job. The rewritten description is stable and correct on both.
 
-A sixth round-two scenario is excluded: it sent 5/5 to `test-driven-development` in **both** arms, because it stated the cause was already identified, which makes writing a failing test first correct and the expectation wrong. It measured the scenario, not the descriptions.
+**Round three measured recall** — whether the skill fires when it is genuinely needed — on positives that deliberately avoid the new description's vocabulary: *"Sentry shows this crash twice a day, I have never once made it happen myself"*, *"git bisect points at a commit that only touches the README"*, *"two customers have reported it, we have never seen it internally"*. Two obvious reproducible bugs served as controls.
 
-**Limit of this evidence.** It measures description-based selection with the descriptions in context, not a live catalogue on either harness. It is a proxy, and a strong one for the mechanism at issue — the model reads descriptions and picks — but a live confirmation on both harnesses belongs to [#23](https://github.com/eranroseman/agent-plugins/issues/23)'s campaign.
+| | Current | Rewritten |
+| --- | --- | --- |
+| **Recall**, five scenarios | 24/25 | **25/25** |
+| **Control**, two scenarios | 7/10 | **10/10** |
+
+Across rounds two and three the rewritten description is **0 false positives in 35 negative trials and 25 of 25 on recall**. The current description misses one recall and three controls, two of them leaking to `test-driven-development` on a plain stack trace.
+
+**Two scenarios are excluded, and both were the author's error rather than the descriptions'.** One sent 5/5 to `test-driven-development` in *both* arms because it stated the cause was already identified, which makes writing a failing test first correct. The other — *"I've tried three different fixes and none of them helped"* — is `systematic-debugging`'s documented territory: its body lists *"You've already tried multiple fixes"* and *"Previous fix didn't work"* under **Use this ESPECIALLY when**. Both expectations were written without reading the competing skill's body first, which is the check that would have caught them.
+
+**Limits of this evidence.** It measures description-based selection with the descriptions in context, not a live catalogue on either harness. Two of eighty round-three cells returned with the safety classifier unavailable; both were current-description cells and both returned a bare skill name, so the risk to the result is negligible but it is recorded rather than dropped. It is a proxy, and a strong one for the mechanism at issue — the model reads descriptions and picks — but a live confirmation on both harnesses belongs to [#23](https://github.com/eranroseman/agent-plugins/issues/23)'s campaign.
 
 Option E from #60 — restructuring `systematic-debugging` into a three-path classifier — is **unexecutable** and is not adopted. That file arrives through a `git-subdir` entry pointing at unmodified upstream; nothing local can edit it without vendoring a second skill out of the curated set.
 
