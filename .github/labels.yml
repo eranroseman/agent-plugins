@@ -51,7 +51,7 @@
   color: 8b2fae
   description: Wayfinder map issue
 - name: wayfinder:research
-  color: 0E8A16
+  color: 0e8a16
   description: AFK research ticket
 - name: wayfinder:grilling
   color: ff0000
