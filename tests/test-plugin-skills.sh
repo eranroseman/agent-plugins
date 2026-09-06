@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC1091
 # Invariants over every skill the two plugins ship, plus the shape of the
 # authored assets that have no upstream to drift from. Each is a mechanism
 # for a rule that would otherwise live in prose:
