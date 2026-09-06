@@ -3,8 +3,11 @@
 #   red  # ff0000 - HITL, definite: a human must act/decide
 #   yellow  # ffdd00 - pending/undetermined: could resolve to either HITL or AFK
 #   green  # 0e8a16 - AFK, definite: an agent can proceed autonomously
-#   purple           - structural wayfinder labels (map, and task since its
-#                      HITL/AFK answer arrives later via a paired triage label)
+#   purple           - structural: a process's own machinery, not a state. The
+#                      wayfinder map and task labels, and upstream-drift, which
+#                      the watch queries to find the one issue it updates in
+#                      place. task is here rather than red or green because its
+#                      HITL/AFK answer arrives later via a paired triage label
 #   pastel           - type axis (bug/enhancement/documentation), deliberately
 #                      off the red/yellow/green family so it never dilutes
 #                      that signal
@@ -37,6 +40,11 @@
 - name: ready-for-human
   color: ff0000
   description: Requires human implementation
+
+# Automation
+- name: upstream-drift
+  color: 8b2fae
+  description: Filed by the scheduled upstream watch when a declared pin falls behind
 
 # Wayfinder
 - name: wayfinder:map
