@@ -1,0 +1,18 @@
+{
+  "$comment": "Skills installed through the skills.sh CLI. bin/setup applies these; bin/doctor verifies them. setup-matt-pocock-skills is deliberately absent: this plugin vendors an adapted copy of it.",
+  "sources": [
+    {
+      "repo": "mattpocock/skills",
+      "ref": "v1.2.3",
+      "skills": ["codebase-design", "domain-modeling", "grill-with-docs", "grilling",
+                 "handoff", "improve-codebase-architecture", "prototype", "research",
+                 "resolving-merge-conflicts", "teach", "to-questionnaire", "to-tickets",
+                 "triage", "wait-what", "wayfinder", "wizard", "writing-for-agents"]
+    },
+    {
+      "repo": "obra/superpowers-developing-for-claude-code",
+      "ref": "v0.3.1",
+      "skills": ["developing-claude-code-plugins", "working-with-claude-code"]
+    }
+  ]
+}
