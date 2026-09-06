@@ -59,6 +59,53 @@ These are visible choices, not silent ones. Any of them can be vetoed; each name
 - **D7. `tests/test-codex-validate.sh` gains one recorded exception, and the vendored frontmatter keeps upstream's invocation gate.** Codex's plugin validator rejects `disable-model-invocation: true` on any skill under `<plugin>/skills` — `validate_plugin.py:472` requires the field to be `false` or absent, and line 425 walks every directory under `<plugin>/skills` regardless of what the manifest's `skills` key names. Measured 2026-09-05 against a scratch copy of the plugin: upstream's `true` produces ``skill `setup-matt-pocock-skills` frontmatter field `disable-model-invocation` must be false`` and nothing else; with `false`, or with the field deleted, both validators pass. **The gate is kept anyway**, because the two harnesses gate invocation by different mechanisms and each skill should carry the one its harness reads. Claude reads the frontmatter field; Codex reads `policy.allow_implicit_invocation` in `agents/openai.yaml`, and its runtime never reads the Claude field at all — `disable_model_invocation` appears in exactly one file in openai/codex at `rust-v0.153.4`, and that file is `validate_plugin.py`; the loader reads only the yaml (`codex-rs/ext/skills/src/loader/metadata.rs:53`, `codex-rs/skills/src/model.rs:23-27`, defaulting to true when absent). Upstream mattpocock treats them as a pair: at `v1.2.3`, 21 of 35 skills carry `disable-model-invocation: true` and every one of them also carries `allow_implicit_invocation: false`; the field never appears without its yaml counterpart. Flipping ours to `false` would break that invariant to satisfy a lint that conflates the two mechanisms. So the vendored copy is byte-identical in its frontmatter, and `tests/test-codex-validate.sh` tolerates exactly this one message for exactly this one skill, with the reason recorded in the test. Veto: flip the vendored field to `false` and narrow the description to compensate — both validators then pass clean, at the cost of making a skill that rewrites `AGENTS.md` and `CLAUDE.md` model-invocable on Claude.
 - **D6. Declarations are read from `dirname "$0"/..`, not from `installLocation`.** §7.1 says the script resolves `installLocation` from `known_marketplaces.json` rather than hardcoding it; that resolution is kept, but only for the doctor's stale-clone check. Reading declarations from beside the script is what makes D5 work and what makes the script and its declarations move together.
 
+## Corrections from review, 2026-09-05 — apply these before executing Task 1
+
+A five-lens review with an adversarial verification pass ran over this plan after it was written. Fourteen findings were confirmed and **none was refuted**, which is unusual and worth taking as a signal about the areas below rather than about the plan as a whole: its structure, its measurements and its deviations otherwise held up.
+
+Two are blockers that fail on the first run. Both were re-verified by hand against the live upstreams and this machine.
+
+### B1. Both declared pins are annotated-tag shas, not commits
+
+Found independently by four of the five lenses. The Global Constraints line declares `mattpocock/skills` v1.2.3 as `835450ef244ab7335f75d95b83e7d979eae22a6d` and `obra/superpowers-developing-for-claude-code` v0.3.1 as `aa900d596cf32d20e1cd3700996505d8adf8d823`. Both are **tag objects**. `git ls-remote --tags` peels them:
+
+```
+835450ef244ab7335f75d95b83e7d979eae22a6d  refs/tags/v1.2.3
+6acc160e4e0cd062dbbbd7a1b26ae92855edf07e  refs/tags/v1.2.3^{}      <- the commit
+aa900d596cf32d20e1cd3700996505d8adf8d823  refs/tags/v0.3.1
+74afe935da49efe782907e837a27ce618498099a  refs/tags/v0.3.1^{}      <- the commit
+```
+
+Independent corroboration for the second: `~/.claude/plugins/installed_plugins.json` records `74afe935…` as the `gitCommitSha` of the already-installed `superpowers-developing-for-claude-code` plugin.
+
+`git checkout FETCH_HEAD` peels a tag, so `git rev-parse HEAD` returns the commit and Task 2's assertion `[ "$(git -C "$d" rev-parse HEAD)" = "$SHA" ]` fails on **every** run. Fix: keep the tag as the human-facing ref, and wherever a sha is compared against a checkout, use the peeled commit. Where the LICENSE and the provenance header name a commit, name the peeled one. Deriving it in the test rather than hardcoding it is better still: `git ls-remote --tags <repo> "refs/tags/$REF^{}" | cut -f1`.
+
+### B2. Neither harness is actually upgraded, only installed
+
+`ensure_claude` (Task 6 Step 3) reaches for the plugin with `claude plugin install`. Measured on 2.1.261, and observed live in this repository's own cutover on 2026-09-05: on an already-installed plugin, `install` prints "already installed", exits 0, and does **not** move the version. Only `claude plugin update <plugin> -y --scope user` does; that is what moved this machine from 0.1.0 to 0.3.0. `update` on a *not*-installed plugin exits 1, so the apply branch has to split on presence.
+
+The same gap has a Codex twin. `ensure_codex` (Task 7 Step 3) compares presence only, and `codex plugin add` is Codex's *only* upgrade verb, so an installed plugin never moves. This machine holds `~/.codex/plugins/cache/eranroseman/software-development/0.3.0`, so after the 0.3.0 to 0.4.0 bump Codex would silently stay behind and never receive the vendored scaffolder. Spec §9 step 3 calls for exactly this re-add.
+
+A dependency is not carried by its parent's update, measured, so `superpowers@eranroseman` needs the same treatment when a §10 pin bump moves its declared version.
+
+No gate catches either: S1 uses a fresh scratch home and so always takes the install path, CI has no Codex, and Task 13 Step 8's version gate reads Claude's `installed_plugins.json`.
+
+### The remaining twelve
+
+One important and eleven minor, each with its location and fix, are listed in the review record. In brief, and in the order an executor meets them:
+
+- **Task 2 Step 8, important.** The drift test greps `"at tag $REF, commit $SHA"` on one line, but the LICENSE block the step tells you to write wraps between `commit` and the sha. `grep` matches within a line, so the assertion cannot pass. Unwrap the line or match the two halves separately.
+- **Task 5 Step 1, minor.** The restricted-`PATH` tool list omits `bash`, and apply mode ends by executing `bin/setup --check` as a file, so its shebang cannot resolve. Add `bash`.
+- **Task 5 Step 2, minor.** The predicted failure cannot occur: the fixture `git init`s the clone, so the skeleton's `ensure_clone` reports OK and the doctor exits 0 clean.
+- **Task 7 Step 3, minor.** Introduces a second environment override, `SD_CODEX_MARKETPLACE_SOURCE`, which the Global Constraints and Deviation D5 both say does not exist, and which nothing reads or sets. Delete it or amend D5.
+- **Task 9 Step 3, minor.** The stale-marketplace-clone check sits last inside `report_only`, while spec §7.1 states in bold that it is the doctor's *first* check.
+- **Task 10 Step 3, minor.** The README places the thirteen symlinks inside the Codex-gated paragraph, but `main` calls `ensure_links` ungated.
+- **Task 13 Steps 2 and 7, important.** Gate S3's experiment is consumed before it can be observed: Step 2 installs 0.4.0 by explicit command, so by Step 7 there is nothing left for auto-update to deliver. Either toggle auto-update on *before* Step 2 and let it deliver the bump, or move S3 to the next release and say so.
+
+**Provenance of this section.** Written by a reviewing session, not by the plan's author. Every claim above was re-verified by hand rather than taken from the review; the two blockers were reproduced against the live upstreams and this machine.
+
+---
+
 ## File Structure
 
 ```text
