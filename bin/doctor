@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# The check mode of bin/setup: report this machine against the declarations in
+# this repository, and change nothing.
+exec "$(dirname "$0")/setup" --check "$@"

@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+# Apply and verify the machine state this repository declares.
+#
+#   bin/setup           check, apply, re-check; non-zero if anything remains
+#   bin/setup --check   check and report only (this is what bin/doctor runs)
+#
+# Declarations are read from the checkout this script lives in, never from the
+# machine:
+#   .claude-plugin/marketplace.json   the curated superpowers entry: sha,
+#                                     version, and the thirteen skill names
+#   upstream/skills.json              the skills.sh set: repo, ref, names
+#
+# The machine is reached through HOME and CODEX_HOME and nothing else, so a
+# scratch home is a complete test fixture.
+#
+# `set -e` is deliberately absent: a failing check must be reported and
+# counted, not fatal. Only a missing prerequisite or a missing declaration
+# exits early, with status 2.
+set -uo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+MARKETPLACE="$REPO_ROOT/.claude-plugin/marketplace.json"
+SKILLS_JSON="$REPO_ROOT/upstream/skills.json"
+
+# Each later task adds the variables its own checks need, beside them, rather
+# than here: a variable declared before anything reads it is a shellcheck
+# SC2034 warning, and shellcheck must exit 0 from Task 4 onward.
+CLONE_DIR="$HOME/.local/share/software-development/upstream/superpowers"
+
+MODE=apply
+FAILURES=0
+
+# Reporting. Each later task adds the one helper it is the first to call —
+# `did` in Task 5, `skip` in Task 6, `note` in Task 9 — for the same reason the
+# path variables are staged: shellcheck reports a function nothing calls
+# (SC2317) and the lint assertion requires a clean exit.
+ok()   { printf 'OK:   %s\n' "$*"; }
+bad()  { printf 'FAIL: %s\n' "$*"; FAILURES=$((FAILURES + 1)); }
+die()  { printf 'ERROR: %s\n' "$*" >&2; exit 2; }
+
+applying() { [ "$MODE" = apply ]; }
+have() { command -v "$1" >/dev/null 2>&1; }
+
+usage() {
+  cat <<'EOF'
+usage: bin/setup [--check]
+       bin/doctor
+
+bin/setup applies the machine state this repository declares, then re-checks it.
+bin/doctor is the same engine in check mode: it reports and changes nothing.
+
+Both read their declarations from the checkout the script lives in, and reach
+the machine only through HOME and CODEX_HOME.
+
+Bootstrap on a new machine:
+
+claude plugin marketplace add eranroseman/agent-plugins
+bash ~/.claude/plugins/marketplaces/eranroseman/bin/setup
+
+Update an installed machine:
+
+claude plugin marketplace update eranroseman
+codex plugin marketplace upgrade
+bash ~/.claude/plugins/marketplaces/eranroseman/bin/setup
+
+bin/setup needs git, jq, node, npx and claude, and refuses without them. codex
+is optional: its half is reported as skipped when the binary is absent.
+bin/doctor requires nothing and reports whatever it cannot check.
+
+Neither ever writes a configuration file by hand. Every settings.json and
+config.toml write is the CLI's own, made by a command run here. Two things are
+deliberately left to you and only reported: the plugin auto-update toggle in
+/plugin, and the telemetry variable documented in the plugin README.
+EOF
+}
+
+require_tools() {
+  local t missing=""
+  applying || return 0
+  for t in git jq node npx claude; do
+    have "$t" || missing="$missing $t"
+  done
+  [ -z "$missing" ] || die "bin/setup needs these on PATH:$missing (bin/doctor needs none)"
+}
+
+# The first real check, replaced wholesale in Task 5. It exists here rather
+# than as a stub so that the skeleton reports an empty machine honestly, and so
+# that CLONE_DIR, ok and bad all have a reader from this task onward.
+ensure_clone() {
+  [ -d "$CLONE_DIR/.git" ] || { bad "the pinned clone is missing: $CLONE_DIR"; return; }
+  ok "pinned clone exists"
+}
+
+# Filled in by later tasks; defined here so the script runs from this one.
+ensure_fresh_clone() { :; }
+ensure_links()     { :; }
+ensure_claude()    { :; }
+ensure_codex()     { :; }
+ensure_skills_sh() { :; }
+report_only()      { :; }
+
+main() {
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --check) MODE=check ;;
+      -h|--help) usage; exit 0 ;;
+      *) printf 'ERROR: unknown argument: %s\n\n' "$1" >&2; usage >&2; exit 2 ;;
+    esac
+    shift
+  done
+
+  require_tools
+  [ -f "$MARKETPLACE" ] || die "no declarations beside this script: $MARKETPLACE is missing"
+  [ -f "$SKILLS_JSON" ] || die "no declarations beside this script: $SKILLS_JSON is missing"
+
+  ensure_fresh_clone
+  ensure_clone
+  ensure_links
+  ensure_claude
+  ensure_codex
+  ensure_skills_sh
+  report_only
+
+  if applying; then
+    printf '\n--- re-checking ---\n'
+    "$REPO_ROOT/bin/setup" --check
+    exit $?
+  fi
+  [ "$FAILURES" -eq 0 ] || { printf '\n%s check(s) failed\n' "$FAILURES"; exit 1; }
+  printf '\nclean\n'
+  exit 0
+}
+
+main "$@"
