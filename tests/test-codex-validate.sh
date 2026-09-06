@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Run Codex's own plugin validator on every plugin. Each must pass cleanly,
-# except for one recorded bullet on one skill (Deviation D7, below) — any
-# other failure, bullet-shaped or not, fails the test.
+# except for one recorded bullet on each gated skill (Deviation D7, below) —
+# any other failure, bullet-shaped or not, fails the test.
 # The validator ships with codex-cli under ~/.codex/skills/.system; CI fetches
 # the same two files from openai/codex and points CODEX_PLUGIN_VALIDATOR at them.
 . "$(dirname "$0")/lib.sh"
@@ -19,7 +19,13 @@ for p in "$REPO_ROOT"/plugins/*/; do
   # in agents/openai.yaml, which is set to false and taken from upstream, and
   # the Codex runtime never reads the frontmatter field at all. Any other bullet
   # from the validator still fails the test.
-  known='- skill `setup-repository` frontmatter field `disable-model-invocation` must be false'
+  # Three gated skills, each carrying the field Claude reads beside the yaml
+  # policy Codex reads: the vendored scaffolder, the authored consistency
+  # audit, and the vendored adhd. tests/test-plugin-skills.sh asserts the pair.
+  known="$(printf '%s\n' \
+    '- skill `setup-repository` frontmatter field `disable-model-invocation` must be false' \
+    '- skill `consistency-audit` frontmatter field `disable-model-invocation` must be false' \
+    '- skill `adhd` frontmatter field `disable-model-invocation` must be false')"
   if ! out="$(python3 "$VALIDATOR" "$p" 2>&1)"; then
     # A non-zero exit with no `- ` bullet at all — a traceback, a missing
     # dependency, a message-format change — is not the one recorded
@@ -30,7 +36,7 @@ $out"
     # -e is required: the pattern begins with a dash and would otherwise be
     # read as options. `|| true` because both greps exit 1 when the only
     # bullet is the known one, which is the case that must pass.
-    others="$(printf '%s\n' "$out" | grep '^- ' | grep -vxF -e "$known" || true)"
+    others="$(printf '%s\n' "$out" | grep '^- ' | grep -vxF -f <(printf '%s\n' "$known") || true)"
     [ -z "$others" ] || fail "Codex validator rejected $p:
 $others"
   fi

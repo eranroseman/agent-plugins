@@ -9,6 +9,9 @@
 #     dangling name behind (the class of superpowers:brainstorming, which the
 #     curated entry excludes);
 #   - the rethink stub exists in neither plugin.
+#   - consistency-audit ships with its inspector, the inspector carries no
+#     permissionMode, and the skill names the inspector by the name a plugin
+#     agent actually resolves to.
 # Needs no network.
 . "$(dirname "$0")/lib.sh"
 
@@ -53,4 +56,22 @@ done
 RA="$REPO_ROOT/plugins/sensemaking/skills/rethink-audit/SKILL.md"
 grep -q 'software-dev:brainstorming' "$RA" || fail "rethink-audit does not name software-dev:brainstorming"
 
-printf 'plugin-skills: %s skills checked; gates paired, references resolve, rethink absent\n' "$checked"
+# consistency-audit and its inspector.
+CA="$REPO_ROOT/plugins/software-dev/skills/consistency-audit/SKILL.md"
+AG="$REPO_ROOT/plugins/software-dev/agents/consistency-audit-inspector.md"
+[ -f "$CA" ] || fail "missing $CA"
+[ -f "$AG" ] || fail "missing $AG"
+grep -qx 'disable-model-invocation: true' "$CA" || fail "consistency-audit must be user-invoked on Claude"
+[ "$(sed -n 2p "$AG")" = "name: consistency-audit-inspector" ] || fail "the inspector's name changed"
+grep -qx 'tools: Read, Bash, WebFetch, WebSearch' "$AG" || fail "the inspector's tool grant changed"
+if grep -q 'permissionMode' "$AG"; then fail "the inspector must not carry permissionMode (spec section 7.1)"; fi
+# A plugin agent resolves as <plugin>:<agent>, measured 2026-09-06: the Agent
+# tool rejects the bare name and lists caveman:cavecrew-investigator and its
+# siblings. The skill must dispatch by the name that resolves.
+[ "$(grep -c 'software-dev:consistency-audit-inspector' "$CA")" -ge 2 ] \
+  || fail "consistency-audit must dispatch software-dev:consistency-audit-inspector, at least twice"
+if grep -q '`consistency-audit-inspector`' "$CA"; then fail "consistency-audit still names the inspector bare"; fi
+grep -q 'On Codex, where a plugin cannot ship a subagent' "$CA" \
+  || fail "consistency-audit must state its Codex degradation in its own text (spec section 7.1)"
+
+printf 'plugin-skills: %s skills checked; gates paired, references resolve, rethink absent, inspector shipped\n' "$checked"

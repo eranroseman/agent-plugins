@@ -1,0 +1,5 @@
+interface:
+  display_name: "Consistency Audit"
+  short_description: "Refuted-before-reported repository audit"
+policy:
+  allow_implicit_invocation: false
