@@ -86,9 +86,23 @@ if command -v claude >/dev/null 2>&1; then
   mkdir -p "$(dirname "$CLONE")"
   cp -a "$(fetch_upstream)" "$CLONE" || fail "could not seed the pinned clone"
 
+  # A bin directory without codex, mirroring test-doctor-faults.sh: on a
+  # machine that has codex on PATH, ensure_codex is no longer a stub, and an
+  # inherited PATH would make it add the real eranroseman marketplace by
+  # cloning it over the network into this scratch CODEX_HOME on every run of
+  # this test. Excluding codex here keeps that half reporting skipped, the
+  # same as it does on the CI runner this path cannot otherwise reach.
+  BIN="$W/bin"
+  mkdir -p "$BIN"
+  for t in bash git jq node npx claude sed awk grep find date readlink basename dirname \
+           rm mv ln mkdir cp cat; do
+    p="$(command -v "$t" 2>/dev/null)" || fail "the fixture needs $t on PATH"
+    ln -sf "$p" "$BIN/$t"
+  done
+
   want="$(jq -r .version "$REPO_ROOT/$PJ")"
   if out="$(env HOME="$W/home" CODEX_HOME="$W/home/.codex" SD_MARKETPLACE_SOURCE="$W/repo" \
-      bash "$SETUP" 2>&1)"; then status=0; else status=$?; fi
+      PATH="$BIN" bash "$SETUP" 2>&1)"; then status=0; else status=$?; fi
   got="$(jq -r '.plugins["software-development@eranroseman"][0].version' \
     "$W/home/.claude/plugins/installed_plugins.json")"
   [ "$got" = "$want" ] \
@@ -97,6 +111,15 @@ if command -v claude >/dev/null 2>&1; then
     || fail "bin/setup did not converge on an upgradeable machine (exit $status):"$'\n'"$out"
 else
   printf 'SKIP: claude is not installed, so the upgrade path was not exercised\n'
+fi
+
+# The Codex half is gated the same way, and says so.
+out="$(env HOME="$H" CODEX_HOME="$H/.codex" PATH="/usr/bin:/bin" bash "$DOCTOR" 2>&1 || true)"
+if command -v codex >/dev/null 2>&1 && [ -x /usr/bin/codex ]; then
+  printf 'NOTE: codex is on the minimal PATH; the gating assertion is not exercised\n'
+else
+  printf '%s\n' "$out" | grep -q 'SKIP: codex' \
+    || fail "with codex off PATH the doctor must report the Codex half as skipped"
 fi
 
 printf 'setup-doctor: two entry points, lint clean, prerequisites split as documented\n'

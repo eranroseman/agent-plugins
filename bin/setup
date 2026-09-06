@@ -35,6 +35,10 @@ INSTALLED_PLUGINS="$HOME/.claude/plugins/installed_plugins.json"
 # main and test the wrong declarations.
 MARKETPLACE_SOURCE="${SD_MARKETPLACE_SOURCE:-eranroseman/agent-plugins}"
 
+# Codex takes a git URL rather than an owner/repo pair.
+CODEX_MARKETPLACE_SOURCE="https://github.com/eranroseman/agent-plugins.git"
+CODEX_LIST=""
+
 MODE=apply
 FAILURES=0
 
@@ -299,9 +303,64 @@ ensure_claude() {
   fi
 }
 
+codex_plugin_version() {
+  # $1 plugin name; empty when not installed. `codex plugin list --json`
+  # reports the *installed* version, read from $CODEX_HOME/plugins/cache,
+  # never config.toml (§7.4). `codex plugin add` is Codex's only upgrade
+  # verb, so presence alone is not convergence (§9 step 3).
+  printf '%s' "$CODEX_LIST" \
+    | jq -r --arg k "$1@eranroseman" '.installed[] | select(.pluginId == $k) | .version'
+}
+
+ensure_codex() {
+  local p want got
+  if ! have codex; then
+    skip "codex is not on PATH: the Codex half is unchecked and unapplied"
+    return
+  fi
+  CODEX_LIST="$(codex plugin list --json 2>/dev/null)" || { bad "codex plugin list failed"; return; }
+
+  for p in software-development sensemaking; do
+    want="$(jq -r '.version' "$REPO_ROOT/plugins/$p/.claude-plugin/plugin.json")"
+    if [ -z "$want" ] || [ "$want" = null ]; then
+      bad "could not read the declared version of $p"
+      continue
+    fi
+    got="$(codex_plugin_version "$p")"
+    if [ "$got" != "$want" ] && applying; then
+      if codex plugin marketplace list 2>/dev/null | grep -q '^eranroseman'; then
+        # Never re-run `marketplace add`: it prints "already added" and silently
+        # deletes last_revision. upgrade is a true no-op when nothing moved, and
+        # covers §9 step 1 when the human skipped it.
+        codex plugin marketplace upgrade >/dev/null 2>&1 \
+          || bad "codex plugin marketplace upgrade failed"
+      elif codex plugin marketplace add "$CODEX_MARKETPLACE_SOURCE" >/dev/null 2>&1; then
+        did "added the eranroseman marketplace to Codex"
+      else
+        bad "codex plugin marketplace add failed"
+        continue
+      fi
+      # Codex has no dependency concept, so both plugins are named explicitly,
+      # and no update verb, so add is also the upgrade.
+      if codex plugin add "$p@eranroseman" >/dev/null 2>&1; then
+        did "installed codex plugin $p $want"
+      else
+        bad "codex plugin add $p@eranroseman failed"
+        continue
+      fi
+      CODEX_LIST="$(codex plugin list --json 2>/dev/null)"
+      got="$(codex_plugin_version "$p")"
+    fi
+    if [ "$got" = "$want" ]; then
+      ok "codex plugin $p $want installed"
+    else
+      bad "codex plugin $p is ${got:-not installed}, declared $want"
+    fi
+  done
+}
+
 # Filled in by later tasks; defined here so the script runs from this one.
 ensure_fresh_clone() { :; }
-ensure_codex()     { :; }
 ensure_skills_sh() { :; }
 report_only()      { :; }
 
