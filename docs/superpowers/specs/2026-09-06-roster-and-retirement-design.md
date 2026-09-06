@@ -29,8 +29,8 @@ Four authored assets are the forcing function. `consistency-audit`, its inspecto
 | `finding-duplicate-functions` | Vendored fork → `software-dev`, with provenance, drift test, LICENSE notice (§7.2) |
 | `rethink-audit` | Authored → `sensemaking`, one reference repointed (§7.3) |
 | `rethink` | **Deleted.** Its whole body already sits inside `rethink-audit` (§7.4) |
-| `diagnosing-bugs` | Adopted, vendored → `software-dev`. Not gated (§6.1) |
-| `adhd` | Adopted, vendored → `sensemaking` (§6.2) |
+| `diagnosing-bugs` | Adopted, vendored → `software-dev`. **Not** gated — routing is its job, not the operator's (§6.1) |
+| `adhd` | Adopted, **gated**, vendored → `sensemaking`. An expensive skill whose cost is the operator's call (§6.2) |
 | `archify` | Adopted, skills.sh, pinned at `v2.16.0`. **Not** unpinnable (§6.3) |
 | `writing-clearly-and-concisely` | Curated beside `sensemaking` at `path: "dist/plugins/..."` (§6.4) |
 | The duplicated obra-dev pair | Drop the plugin, keep skills.sh — Codex's only route (§6.5) |
@@ -72,6 +72,8 @@ Three routes, in ascending cost:
 3. **Vendored** — copied into a plugin, with a provenance header, a drift test, and a LICENSE notice. Namespaced `<plugin>:<name>` and dropped from `upstream/skills.json` or it installs twice.
 
 **A skill takes route 3 only when this marketplace must change it.** Sub-project 2's §12 declined the wholesale curated route for all eighteen mattpocock skills and listed its costs; that decision stands. What it did not decline was vendoring an individual skill, which is what `brainstorming` already is: `superpowers` is curated whole, and `brainstorming` was copied out of it because its description needed narrowing.
+
+**Gate when the decision to invoke is inherently the human's; never to paper over a routing failure.** `adhd` is gated because spending five to ten times a normal answer on divergent ideation is a cost only the operator can authorise — they are in the loop by design. `diagnosing-bugs` is not gated, because an agent should reach for it unprompted when a bug resists reproduction, and requiring the operator to notice the wrong route was taken, interrupt, and type the right name is the failure rather than the fix. The two look like the same lever and are opposite decisions.
 
 **`user-invocable-only` is not a fourth route.** `skillOverrides: {"<skill>": "user-invocable-only"}` was verified to reach skills.sh skills on Claude Code 2.1.263, and it was considered here for `diagnosing-bugs`. It is rejected as a general instrument: it produces the same outcome as not adopting the skill at all — one that only a user who already knows it exists can reach — while charging a settings key, a declaration and a lockfile entry for the privilege. Where a skill needs gating, rejection is the cheaper form of the same answer. Where it needs to fire correctly, only its description can do that.
 
@@ -118,13 +120,23 @@ A sixth round-two scenario is excluded: it sent 5/5 to `test-driven-development`
 
 Option E from #60 — restructuring `systematic-debugging` into a three-path classifier — is **unexecutable** and is not adopted. That file arrives through a `git-subdir` entry pointing at unmodified upstream; nothing local can edit it without vendoring a second skill out of the curated set.
 
-### 6.2 `adhd` — adopt, vendor into `sensemaking`
+### 6.2 `adhd` — adopt, gate, vendor into `sensemaking`
 
-`UditAkhourii/adhd` at sha `53ab5576b77f`, a single-file skill, installed nowhere today. Its stock description claims *"fuzzy-debugging decisions"*, which collides with `systematic-debugging`'s *"any bug… before proposing fixes"*. One forced change, so route 3.
+`UditAkhourii/adhd`, MIT, v0.1.4, pushed 2026-08-29. **Not the single-file skill the tickets describe**: a TypeScript CLI — `src/engine.ts`, `src/llm.ts`, `bench/`, `EVALS.md` — plus one skill at `skills/adhd/SKILL.md`, and a `.claude-plugin/marketplace.json` of its own. Only the skill is taken: its body states the loop runs "inside Claude with no install required", so `npm install -g adhd-agent` is an optional accelerant rather than a dependency.
 
-The spec must author the replacement description itself, since none exists anywhere: bound or drop the fuzzy-debugging clause, keep the routing content inside the first 122 characters, and keep it one line. The repository ships no `agents/` directory, so `agents/openai.yaml` is authored here for the Codex side.
+**It is not gated, and it should be.** From its own body:
 
-**Correct the record while writing it.** #80 and #111 both eliminate the skills.sh route by inferring install shape from repository shape. Upstream's own prescribed install is `npx skills add UditAkhourii/adhd`, so that route was open; it is foreclosed by the decision to edit the description, which is the honest reason to close it. #111's rung 2 — forking — is not adopted: it buys merge flow for a file unchanged since 2026-06-04 and byte-identical at the pin and at HEAD, at the price of a repository and permanent merge duty.
+> This skill is expensive. About 10 Agent calls, 30 to 90 seconds wall clock, 5 to 10x a single answer. **Do not pay that cost when a direct answer is better. Run this gate before Phase 1.**
+
+The skill defends its own cost by asking the model to talk itself out of running — prose at the bottom of the ladder. `disable-model-invocation: true` makes it structural, and it places `adhd` with the five gated escalation skills already on the roster: `wayfinder`, `handoff`, `teach`, `to-questionnaire`, `wait-what`. All five are gated upstream, verified on this machine. That is the class it belongs to.
+
+**Gating dissolves two collisions, not one.** Its description claims *"brainstorm/ideate intents, or open-ended design, architecture, naming, API/SDK surface"*, which runs into `software-dev:brainstorming`, and *"fuzzy-debugging decisions"*, which runs into `systematic-debugging`. A gated skill competes for neither. The parent spec's standing instruction — that `adhd`, if adopted, is checked against `brainstorming`'s narrowed description — is discharged this way rather than by a second rewrite.
+
+Its description is also **over 500 characters** against Codex's 122, so Codex sees a fragment ending inside the cognitive-frame list. On Codex the equivalent gate is `policy.allow_implicit_invocation: false`; the repository ships no `agents/` directory, so `agents/openai.yaml` is authored here.
+
+Two changes — the gate and the Codex yaml — so route 3.
+
+**Correct the record while writing it.** #80 and #111 both eliminate the skills.sh route by inferring install shape from repository shape. Upstream prescribes `npx skills add UditAkhourii/adhd`, so that route was open; it is foreclosed by the decision to gate, which is the honest reason to close it. #111's rung 2, forking, is not adopted: it buys merge flow at the price of a repository and permanent merge duty.
 
 ### 6.3 `archify` — adopt, skills.sh, pinned
 
@@ -166,6 +178,10 @@ Three things ship with it or the decision is half-executed. **This is a migratio
 
 Drop the **plugin**, keep skills.sh. Keeping the plugin would leave Claude with two copies and Codex with one, since skills.sh is Codex's only route.
 
+**Nothing can enforce absence.** A plugin manifest carries `dependencies` and no inverse, on either harness — Claude's keys are `author dependencies description homepage hooks keywords license name repository version`, Codex's the same shape plus `interface` and `skills`. There is no `conflicts`, no `replaces`, no `provides`. So a plugin cannot declare that installing it should remove something else, and the only available mechanism is detection.
+
+This design creates three such cases: this pair, `writing-clearly-and-concisely@agent-toolkit` against the curated entry (§6.4), and `adhd` if it is ever installed from its own marketplace alongside the vendored copy. `bin/setup` already does this once, for `setup-matt-pocock-skills`, as a one-off `note`. That becomes a **declared conflict list** the doctor checks — a table of "if this is installed, ours is duplicated", reported rather than repaired, since removing another marketplace's plugin is not this script's business.
+
 ### 6.6 Roster items closed without work
 
 **`grilling` versus `brainstorming`** needs nothing. The descriptions are disjoint, `skillOverrides` was removed on 2026-09-05, and the stale prose in both global files was deleted on 2026-09-06.
@@ -174,9 +190,15 @@ Drop the **plugin**, keep skills.sh. Keeping the plugin would leave Claude with 
 
 **Prior-art search** is not closable as solved-by-`research`, which the earlier draft of this spec assumed. `research` is twelve lines with no corpus routing, citation graph, screening or gate. But `research-vault#82` is stale on all three of its load-bearing premises: its blocker closed 2026-09-04, its structural question was overtaken when prior-art search became **R26, a phase inside a specified-but-unbuilt `writing-reqs` skill**, and its landscape survey omits the upstream the author vendored three days before writing it — now live vault-side as `find-sources`. It is replaced by a narrower item on [#10](https://github.com/eranroseman/agent-plugins/issues/10).
 
-**The requirements skills** are a deferral with a defective brief, not a decision. The work split into `writing-reqs` (39 requirements) and `sourcing` (19), both specified and unconfirmed in `research-vault/docs/superpowers/reqs/`. [#19](https://github.com/eranroseman/agent-plugins/issues/19) is the durable home and currently attributes #72's language to #81; it is repaired rather than acted on.
+**The requirements skills are not deferred, because the need is not established.** The work was specified as `writing-reqs` (39 requirements) and `sourcing` (19), both unconfirmed, in `research-vault/docs/superpowers/reqs/`. The research that was meant to close a perceived gap **widened the frame instead** and left the author unconvinced that a skill is the right answer to it.
 
-**`consistency-audit` versus adversarial verification** ([#79](https://github.com/eranroseman/research-vault/issues/79)) is not a boundary dispute, because it has no second party: **no skill, command, agent or template named adversarial-verification exists** on this machine or in either marketplace. `consistency-audit` already implements every component of the method it is supposedly bounded against — an Iron Law forbidding unrefuted findings, two independent readers, a skeptic that did not raise the candidate, a four-way verdict taxonomy, a published refuted list, and an author-adjudication gate. The ticket is reframed, not adjudicated.
+"Deferred" would be the wrong word to leave in the record: it invites a later session to treat the specification as approved work waiting for a slot. **The need analysis is the work**, and it precedes any decision about `writing-reqs`, its prior-art phase, or competitive analysis. [#19](https://github.com/eranroseman/agent-plugins/issues/19) is the durable home; its body currently attributes #72's language to #81 and is repaired to say this instead.
+
+**`consistency-audit` versus adversarial verification** ([#79](https://github.com/eranroseman/research-vault/issues/79)) **closes.** It has no second party — **no skill, command, agent or template named adversarial-verification exists** on this machine or in either marketplace — and no skill is wanted.
+
+The evidence is this design's own construction. Two survey passes ran 143 agents over the prior tickets, every VERIFIED claim re-checked by an independent agent instructed to reject it unless the evidence reproduced, and **61 claims were downgraded**. That is adversarial verification performed at scale, driven by prompt alone, with no skill in existence and none missed. Agents do this when asked; a skill would be codifying a capability that is already reliable on request.
+
+`consistency-audit` separately implements the whole method internally — an Iron Law forbidding unrefuted findings, two independent readers, a skeptic that did not raise the candidate, a four-way verdict taxonomy, a published refuted list, and an author-adjudication gate — so there is nothing left for a second artifact to own.
 
 ## 7. The four authored assets
 
@@ -276,7 +298,7 @@ Migrate, prove, then delete. The gate is the only step that requires evidence ra
 2. `sensemaking`: `rethink-audit` with its reference repointed
 3. `software-dev`: `consistency-audit` + inspector minus `permissionMode`; `finding-duplicate-functions` with provenance, drift test, LICENSE notice
 4. Delete the `rethink` stub from both locations
-5. `diagnosing-bugs` vendored into `software-dev`; `adhd` vendored into `sensemaking` with an authored `agents/openai.yaml`; `archify` declared in `upstream/skills.json` at `v2.16.0`; `ARCHIFY_UPDATE_CHECK_DISABLED=1` set by `bin/setup`; `test-skills-pin.sh` count to 19; `upstream-watch`'s prerelease filter widened
+5. `diagnosing-bugs` vendored into `software-dev`; `adhd` vendored into `sensemaking`, gated on both harnesses, with an authored `agents/openai.yaml`; `archify` declared in `upstream/skills.json` at `v2.16.0`; `ARCHIFY_UPDATE_CHECK_DISABLED=1` set by `bin/setup`; `test-skills-pin.sh` count to 19; `upstream-watch`'s prerelease filter widened
 6. `writing-clearly-and-concisely` curated at `dist/plugins/…`; the `agent-toolkit` install removed
 7. The `superpowers-developing-for-claude-code` plugin uninstalled
 8. **Gate.** Measured on this machine: every migrated skill loads from its plugin on both harnesses; the eight `harness-backup` symlinks are gone; `bin/doctor` reports clean; `claude plugin list` and `codex plugin list` agree with the manifests
@@ -293,12 +315,13 @@ Step 11 is why the order runs this way: **the retirement makes its own precondit
 | `diagnosing-bugs` at rung 4, hard-gated (#60, #75) | Not adopted | A lapsed recommendation. Two of three premises dead, and gating charges attention on every hard bug for the outcome rejection gives free |
 | Option E, the three-path classifier in `systematic-debugging` (#60) | Not adopted | Unexecutable against a `git-subdir` install of unmodified upstream |
 | `archify` is unpinnable (#110) | **Refuted** | `#` is the ref selector; `bin/setup:441` has used it since 2026-09-05 |
-| Fork `UditAkhourii/adhd` (#111 rung 2) | Not adopted | Merge flow for a file unchanged since 2026-06-04, at the price of a repository and permanent merge duty |
+| Fork `UditAkhourii/adhd` (#111 rung 2) | Not adopted | Buys merge flow for one skill file at the price of a repository and permanent merge duty. The survey's supporting claim, that the file is unchanged since 2026-06-04, is dropped: the repository was pushed 2026-08-29 and per-file staleness was not verified |
 | `adhd` cannot use skills.sh (#80, #111) | **Refuted** | Both inferred install shape from repository shape; upstream prescribes `npx skills add` |
 | The backup-to-intent inversion (#64) | Not adopted | Its mechanism was declined in sub-project 2's §3 and §7.6 |
 | A `--capture` mode (#62) | Not adopted | Moot once nothing is backed up |
 | `research` covers prior-art search | **Refuted** | Twelve lines; no corpus routing, citation graph, screening or gate |
-| `consistency-audit` versus adversarial-verification as a boundary (#79) | Reframed | No second party exists to bound it against |
+| `consistency-audit` versus adversarial-verification as a boundary (#79) | **Closed** | No second party exists, and none is wanted: 143 agents in this design's own surveys performed adversarial verification on prompt alone, downgrading 61 claims |
+| An adversarial-verification skill | Not adopted | The capability is reliable on request; a skill would codify what already works |
 
 ## 12. Mechanism claims and their sources
 
@@ -320,8 +343,9 @@ Two claims are marked weaker than their sources suggested. Plan mode's exact Bas
 ## 13. Open items carried forward
 
 - The `diagnosing-bugs` routing clause is measured by proxy (§6.1); live confirmation on both harnesses belongs to [#23](https://github.com/eranroseman/agent-plugins/issues/23).
-- `writing-reqs` and `sourcing` are specified and unbuilt; [#19](https://github.com/eranroseman/agent-plugins/issues/19)'s brief is repaired, not acted on.
-- Prior-art search for the software-dev side is R26 inside an unbuilt skill.
+- `writing-reqs` and `sourcing` are specified and unbuilt, and the **need analysis precedes them** — the research meant to close the gap widened the frame instead. [#19](https://github.com/eranroseman/agent-plugins/issues/19)'s brief is repaired to say so.
+- Prior-art search and competitive analysis sit inside `writing-reqs` and wait on the same need analysis.
+- A declared conflict list for `bin/doctor` (§6.5), since no manifest can express absence.
 - `neuroarxiv` ([#88](https://github.com/eranroseman/research-vault/issues/88)) is untouched here.
 - Whether `upstream-watch`'s schedule works is [#24](https://github.com/eranroseman/agent-plugins/issues/24), and gates nothing in this spec.
 - `research-vault#53` is unmaintained. This spec supersedes it for every question above.
