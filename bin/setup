@@ -321,7 +321,7 @@ ensure_codex() {
   CODEX_LIST="$(codex plugin list --json 2>/dev/null)" || { bad "codex plugin list failed"; return; }
 
   for p in software-development sensemaking; do
-    want="$(jq -r '.version' "$REPO_ROOT/plugins/$p/.claude-plugin/plugin.json")"
+    want="$(jq -r '.version' "$REPO_ROOT/plugins/$p/.codex-plugin/plugin.json")"
     if [ -z "$want" ] || [ "$want" = null ]; then
       bad "could not read the declared version of $p"
       continue
