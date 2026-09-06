@@ -44,6 +44,21 @@
         "./writing-plans",
         "./writing-skills"
       ]
+    },
+    {
+      "name": "writing-clearly-and-concisely",
+      "description": "softaworks/agent-toolkit, curated: one skill, Strunk's rules for prose humans read.",
+      "category": "documentation",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/softaworks/agent-toolkit.git",
+        "path": "dist/plugins/writing-clearly-and-concisely",
+        "ref": "main",
+        "sha": "3027f20f3181758385a1bb8c022d4041dfb4de84"
+      },
+      "version": "0.1.0",
+      "strict": false,
+      "skills": ["./skills/writing-clearly-and-concisely"]
     }
   ]
 }
