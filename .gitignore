@@ -1,0 +1,10 @@
+# The SDD skill's workspace. Its Finish step deletes it, but a plan that stops
+# early leaves it behind, and `git add -A` has twice swept working files into an
+# unrelated commit in this repository's history.
+.superpowers/
+
+# The vendored finding-duplicate-functions skill ships Python. A stray
+# __pycache__ under it breaks tests/test-vendored-duplicates.sh, which asserts
+# an exact file set against upstream.
+__pycache__/
+*.pyc
