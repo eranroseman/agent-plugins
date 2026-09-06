@@ -123,11 +123,17 @@ The block:
 
 ### Design discipline
 
-Eliminate the problem > add a mechanism > add a rule; prose is the last resort — and when you use it, name the rungs you ruled out and why.
+Eliminate the problem > add a mechanism > add a rule; prose is the last resort.
+
+Climb from the top and stop at the first rung that holds. A rule nobody can enforce is the weakest thing you can ship, and it goes stale silently. When prose really is the last resort, **say which higher rungs you tried and why they were unavailable** — an unexplained rule is indistinguishable from a lazy one, and the next reader cannot tell whether to re-attempt the climb.
 
 ### Task reports
 
-Every Concern names a durable home when written — an issue, a spec entry, or a recorded decline — and the plan closes only when all of them have landed.
+The SDD skill never commits its `.superpowers/sdd/` reports, and its Finish step
+deletes the workspace — a report is not a durable home. Reports name a
+destination per Concern at write time; a plan's workspace closes only after
+every Concern's disposition has landed in that home — an issue, a spec entry, or
+a recorded decline.
 ```
 
 Write `### Git` always, as a one-line summary of Section D's answer ending with

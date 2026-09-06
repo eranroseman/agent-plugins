@@ -173,14 +173,11 @@ grep -qx '### Git' <<<"$block" || fail "the block carries no Git section"
 grep -qx '### Design discipline' <<<"$block" || fail "the block carries no Design discipline section"
 grep -qF 'Eliminate the problem > add a mechanism > add a rule' <<<"$block" \
   || fail "the Design discipline section does not carry the ladder"
-grep -qF 'name the rungs you ruled out and why' <<<"$block" \
+grep -qF 'say which higher rungs you tried and why they were unavailable' <<<"$block" \
   || fail "the ladder lost its enforceable half, the obligation to justify landing on prose"
 grep -qx '### Task reports' <<<"$block" || fail "the block carries no Task reports section"
-# The rule no longer names `.superpowers/sdd/`: an agent running SDD learns the
-# workspace's path and fate from SDD itself, so the anchor was assumable weight
-# in a file every agent loads. What it cannot learn elsewhere is the closed set
-# of durable homes, and that a decline is one of them.
-grep -qF 'Concern' <<<"$block" || fail "the task-reports rule lost its subject"
+grep -q '.superpowers/sdd/' <<<"$block" || fail "the task-reports rule lost its subject"
+grep -qF 'Concern' <<<"$block" || fail "the task-reports rule lost its unit of work"
 grep -qF 'a recorded decline' <<<"$block" \
   || fail "the task-reports rule lost the closed set of durable homes"
 
