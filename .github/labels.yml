@@ -3,14 +3,20 @@
 #   red  # ff0000 - HITL, definite: a human must act/decide
 #   yellow  # ffdd00 - pending/undetermined: could resolve to either HITL or AFK
 #   green  # 0e8a16 - AFK, definite: an agent can proceed autonomously
-#   purple           - structural: a process's own machinery, not a state. The
-#                      wayfinder map and task labels, and upstream-drift, which
-#                      the watch queries to find the one issue it updates in
-#                      place. task is here rather than red or green because its
-#                      HITL/AFK answer arrives later via a paired triage label
-#   pastel           - type axis (bug/enhancement/documentation), deliberately
-#                      off the red/yellow/green family so it never dilutes
-#                      that signal
+#   purple           - structural wayfinder labels (map, and task since its
+#                      HITL/AFK answer arrives later via a paired triage label)
+#   pastel           - type axis: what kind of issue this is, one of
+#                      bug/enhancement/documentation/upstream-drift and
+#                      mutually exclusive across them. Deliberately off the
+#                      red/yellow/green family so it never dilutes that signal
+#
+# An issue carries one type and one state. They are separate axes because the
+# type is known at filing and the state is not: upstream-watch.yml opens a drift
+# report with `--label upstream-drift --label needs-triage`, because whether an
+# agent can take the bump depends on reading the upstream diff, which nothing
+# has done yet. A drift report is a type like any other; that the watch also
+# queries its label to find the one issue it updates in place is an
+# implementation detail, not a meaning.
 #   gray  # cfd3d7 - wontfix, terminal, outside the signal entirely
 
 # GitHub
@@ -23,6 +29,9 @@
 - name: documentation
   color: d6ecfc
   description: Improvements or additions to documentation
+- name: upstream-drift
+  color: fadec8
+  description: Filed by the scheduled upstream watch when a declared pin falls behind
 
 # Triage
 - name: wontfix
@@ -40,11 +49,6 @@
 - name: ready-for-human
   color: ff0000
   description: Requires human implementation
-
-# Automation
-- name: upstream-drift
-  color: 8b2fae
-  description: Filed by the scheduled upstream watch when a declared pin falls behind
 
 # Wayfinder
 - name: wayfinder:map
