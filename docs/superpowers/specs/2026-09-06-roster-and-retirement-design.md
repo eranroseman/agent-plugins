@@ -190,7 +190,9 @@ MIT, © 2026 Leonardo Flores, `softaworks/agent-toolkit` at sha `3027f20f3181`. 
 
 The `dist` and source trees are byte-identical at this sha, and a test asserts that equality at the pin the way `test-upstream-pin.sh` asserts the thirteen directories.
 
-Three things ship with it or the decision is half-executed. **This is a migration, not a new adoption** — `writing-clearly-and-concisely@agent-toolkit` is installed on this machine right now at the identical sha, and leaving it produces two catalog entries emitting the same string. Upstream ships no plugin manifest and no version, so Claude fell back to the sha prefix; the version field is decided here rather than inherited. And **curation reaches Claude only** — Codex gains the skill through `bin/setup`'s symlinks or not at all.
+Three things ship with it or the decision is half-executed. **This is a migration, not a new adoption** — `writing-clearly-and-concisely@agent-toolkit` is installed on this machine right now at the identical sha, and leaving it produces two catalog entries emitting the same string. Upstream ships no plugin manifest and no version, so Claude fell back to the sha prefix `3027f20f3181`. **The entry declares `"version": "0.1.0"`, authored here.** There is nothing upstream to mirror, unlike the `superpowers` entry which carries upstream's own `6.3.0`, so this number is ours and means only "this marketplace's first release of this entry".
+
+That makes one obligation explicit rather than implied: sub-project 2's §9 makes `version` the sole update gate, and §10 requires a pin bump to move both `sha` and `version` together. For an entry whose version cannot be inherited, forgetting the second half means the new sha never reaches an installed copy. `tests/test-upstream-pin.sh` asserts that coupling for `superpowers`; the equivalent assertion covers this entry. And **curation reaches Claude only** — Codex gains the skill through `bin/setup`'s symlinks or not at all.
 
 ### 6.5 A pattern across all three candidates
 
