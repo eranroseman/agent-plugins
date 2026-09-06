@@ -72,8 +72,10 @@ if command -v claude >/dev/null 2>&1; then
     || fail "could not add the copied marketplace"
   env HOME="$W/home" claude plugin install software-development@eranroseman -y --scope user \
     >/dev/null 2>&1 || fail "could not seed the 0.0.1 install"
-  # Back to the declared version, and refresh the catalogue the CLI reads:
-  # bin/setup does not refresh it, so the fixture must.
+  # Back to the declared version, and refresh the catalogue, mirroring the
+  # documented real-machine step. Measured 2026-09-05: a directory-source
+  # marketplace is read live, so `update` moves without this line; a
+  # github-source one is a local clone and would be stale.
   cp "$REPO_ROOT/$PJ" "$W/repo/$PJ"
   env HOME="$W/home" claude plugin marketplace update eranroseman >/dev/null 2>&1 \
     || fail "could not refresh the copied marketplace"
