@@ -15,11 +15,21 @@ jq -e . "$S" >/dev/null 2>&1 || fail "$S is not well-formed JSON"
 # through skills.sh as well would leave the unadapted copy, whose file-pick
 # rule writes CLAUDE.md, one invocation away from the adapted one.
 if jq -e '[.sources[].skills[]] | index("setup-matt-pocock-skills")' "$S" >/dev/null 2>&1; then
-  fail "setup-matt-pocock-skills is vendored by this plugin; it must not also be declared here"
+  fail "setup-matt-pocock-skills is vendored by this plugin as an adapted copy whose file-pick rule differs; declaring it here too would install the unadapted one beside it"
 fi
 
+# mattpocock's process skills are not adopted: superpowers owns those slots.
+# Author's ruling 2026-09-06, restating knowledge-harness #72 and settling the
+# one case that had drifted from it. grill-with-docs IS adopted, per that
+# ticket's 2026-08-31 amendment, and is declared.
+for n in to-spec to-tickets implement tdd code-review; do
+  if jq -e --arg n "$n" '[.sources[].skills[]] | index($n)' "$S" >/dev/null 2>&1; then
+    fail "$n collides with a superpowers skill and is not adopted; it must not be declared"
+  fi
+done
+
 total="$(jq '[.sources[].skills[]] | length' "$S")"
-[ "$total" -eq 19 ] || fail "expected 19 declared skills, got $total"
+[ "$total" -eq 18 ] || fail "expected 18 declared skills, got $total"
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT

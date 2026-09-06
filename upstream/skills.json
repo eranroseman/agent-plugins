@@ -4,15 +4,32 @@
     {
       "repo": "mattpocock/skills",
       "ref": "v1.2.3",
-      "skills": ["codebase-design", "domain-modeling", "grill-with-docs", "grilling",
-                 "handoff", "improve-codebase-architecture", "prototype", "research",
-                 "resolving-merge-conflicts", "teach", "to-questionnaire", "to-tickets",
-                 "triage", "wait-what", "wayfinder", "wizard", "writing-for-agents"]
+      "skills": [
+        "codebase-design",
+        "domain-modeling",
+        "grill-with-docs",
+        "grilling",
+        "handoff",
+        "improve-codebase-architecture",
+        "prototype",
+        "research",
+        "resolving-merge-conflicts",
+        "teach",
+        "to-questionnaire",
+        "triage",
+        "wait-what",
+        "wayfinder",
+        "wizard",
+        "writing-for-agents"
+      ]
     },
     {
       "repo": "obra/superpowers-developing-for-claude-code",
       "ref": "v0.3.1",
-      "skills": ["developing-claude-code-plugins", "working-with-claude-code"]
+      "skills": [
+        "developing-claude-code-plugins",
+        "working-with-claude-code"
+      ]
     }
   ]
 }
