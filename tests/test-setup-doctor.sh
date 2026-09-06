@@ -133,4 +133,21 @@ else
     || fail "with codex off PATH the doctor must report the Codex half as skipped"
 fi
 
+# Report-only checks: present on every run, never repaired.
+out="$(env HOME="$H" CODEX_HOME="$H/.codex" bash "$DOCTOR" 2>&1 || true)"
+printf '%s\n' "$out" | grep -q 'telemetry' \
+  || fail "the doctor does not report the telemetry variable"
+printf '%s\n' "$out" | grep -q 'auto-update' \
+  || fail "the doctor does not report the auto-update state"
+
+# A scratch HOME whose marketplace entry is a directory has no clone to compare,
+# so the staleness check must skip rather than fail.
+mkdir -p "$H/.claude/plugins"
+cat > "$H/.claude/plugins/known_marketplaces.json" <<JSON
+{"eranroseman":{"source":{"source":"directory","path":"$REPO_ROOT"},"installLocation":"$REPO_ROOT"}}
+JSON
+out="$(env HOME="$H" CODEX_HOME="$H/.codex" bash "$DOCTOR" 2>&1 || true)"
+printf '%s\n' "$out" | grep -q 'SKIP: the marketplace source is a directory' \
+  || fail "a directory marketplace source must skip the staleness check, not fail it"
+
 printf 'setup-doctor: two entry points, lint clean, prerequisites split as documented\n'

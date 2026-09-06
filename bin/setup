@@ -30,6 +30,7 @@ SKILL_ROOT="$HOME/.agents/skills"
 KNOWN_MARKETPLACES="$HOME/.claude/plugins/known_marketplaces.json"
 INSTALLED_PLUGINS="$HOME/.claude/plugins/installed_plugins.json"
 LOCKFILE="$HOME/.agents/.skill-lock.json"
+CODEX_SKILLS="${CODEX_HOME:-$HOME/.codex}/skills"
 
 # The only override. CI points this at the checkout under test, because
 # `claude plugin marketplace add eranroseman/agent-plugins` would clone origin
@@ -52,6 +53,7 @@ bad()  { printf 'FAIL: %s\n' "$*"; FAILURES=$((FAILURES + 1)); }
 die()  { printf 'ERROR: %s\n' "$*" >&2; exit 2; }
 did()  { printf 'DID:  %s\n' "$*"; }
 skip() { printf 'SKIP: %s\n' "$*"; }
+note() { printf 'NOTE: %s\n' "$*"; }
 
 applying() { [ "$MODE" = apply ]; }
 have() { command -v "$1" >/dev/null 2>&1; }
@@ -399,9 +401,81 @@ ensure_skills_sh() {
   done < <(jq -r '.sources[] as $s | $s.skills[] | [$s.repo, $s.ref, .] | @tsv' "$SKILLS_JSON")
 }
 
-# Filled in by later tasks; defined here so the script runs from this one.
-ensure_fresh_clone() { :; }
-report_only()      { :; }
+ensure_fresh_clone() {
+  local loc source_kind head tip
+
+  # Is this script's own clone behind upstream main? A stale script applies
+  # stale pins. Resolved with ls-remote, never HEAD against origin/main: on
+  # 2026-09-05 all three read the same sha on a clone 22 commits behind.
+  source_kind="$(jq -r '.eranroseman.source.source // empty' "$KNOWN_MARKETPLACES" 2>/dev/null)"
+  loc="$(jq -r '.eranroseman.installLocation // empty' "$KNOWN_MARKETPLACES" 2>/dev/null)"
+  if [ -z "$source_kind" ]; then
+    skip "the eranroseman marketplace is not registered; the staleness check needs it"
+  elif [ "$source_kind" != "github" ]; then
+    skip "the marketplace source is a directory, so there is no clone to compare"
+  elif [ ! -d "$loc/.git" ]; then
+    skip "no git clone at $loc; the staleness check needs one"
+  else
+    head="$(git -C "$loc" rev-parse HEAD 2>/dev/null)"
+    tip="$(git -C "$loc" ls-remote origin refs/heads/main 2>/dev/null | cut -f1)"
+    if [ -z "$tip" ]; then
+      skip "could not reach origin to resolve main; the staleness check is unanswered"
+    elif [ "$head" = "$tip" ]; then
+      ok "the marketplace clone is at origin/main"
+    else
+      bad "the marketplace clone is at $head, origin main is at $tip: run 'claude plugin marketplace update eranroseman' and re-run this script from the refreshed clone"
+    fi
+  fi
+}
+
+report_only() {
+  local v set_names="" link actual name
+
+  # 1. The telemetry variable. Setup writes it nowhere: the exposure is one
+  # browser request per Visual Companion page load, and the write would be the
+  # riskiest thing in this script. The plugin README documents what it prevents.
+  for v in SUPERPOWERS_DISABLE_TELEMETRY DISABLE_TELEMETRY CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC; do
+    if [ -n "${!v:-}" ]; then
+      set_names="$set_names $v"
+    elif jq -e --arg k "$v" '.env[$k] // empty' "$HOME/.claude/settings.json" >/dev/null 2>&1; then
+      set_names="$set_names $v(settings.json)"
+    fi
+  done
+  if [ -n "$set_names" ]; then
+    note "telemetry is disabled by:$set_names"
+  else
+    note "no telemetry-disabling variable is set; see the plugin README (this script never sets one)"
+  fi
+
+  # 2. Auto-update. A consent decision, made once in /plugin under Marketplaces.
+  if jq -e '.extraKnownMarketplaces.eranroseman.autoUpdate == true' \
+       "$HOME/.claude/settings.json" >/dev/null 2>&1; then
+    note "marketplace auto-update is on for eranroseman"
+  else
+    note "marketplace auto-update is off for eranroseman; turn it on in /plugin if you want releases without an update command"
+  fi
+
+  # 3. Redundant Codex links: anything under CODEX_HOME/skills that resolves
+  # into the shared root Codex already reads directly, deduping by resolved
+  # path. Reported generically; their removal is sub-project 5's call.
+  if [ -d "$CODEX_SKILLS" ]; then
+    local redundant=0
+    for link in "$CODEX_SKILLS"/*; do
+      [ -L "$link" ] || continue
+      actual="$(readlink -f "$link" 2>/dev/null)"
+      case "$actual" in
+        "$SKILL_ROOT"/*) redundant=$((redundant + 1)) ;;
+      esac
+    done
+    [ "$redundant" -gt 0 ] && note "$redundant link(s) under $CODEX_SKILLS resolve into $SKILL_ROOT, which Codex already reads directly; they are redundant and are left alone"
+  fi
+
+  # 4. A skills.sh copy of a skill this plugin vendors.
+  if [ -f "$LOCKFILE" ] \
+     && jq -e '.skills["setup-matt-pocock-skills"]' "$LOCKFILE" >/dev/null 2>&1; then
+    note "setup-matt-pocock-skills is installed through skills.sh, but this plugin vendors an adapted copy; remove the unadapted one with 'npx skills remove setup-matt-pocock-skills -g'"
+  fi
+}
 
 main() {
   while [ $# -gt 0 ]; do
