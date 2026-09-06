@@ -18,4 +18,7 @@ SDD consumes `writing-plans`' plan-file format, so vendoring SDD without
 `writing-plans` means adapting its substrate: workable, but a fork maintained
 forever, forfeiting upstream convergence.
 
-Evidence: [2026-08-25 coding-companion plugins comparison](../archive/2026-08-25-coding-companion-plugins-comparison.md).
+The full comparison behind this — three analysis passes, the second of which
+reached the opposite conclusion — was a working paper, absorbed here and not
+kept in the tree. It is in this repository's history at `347aba2`, and in
+`eranroseman/research-vault` at `docs/product-landscape/2026-08-25-coding-companion-plugins-comparison.md`.
