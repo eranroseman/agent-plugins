@@ -87,6 +87,7 @@ printf '%s\n' "$out" | grep -q 'FAIL' || fail "doctor reported no FAIL line"
 sd="$(jq -r .version "$REPO_ROOT/plugins/software-dev/.claude-plugin/plugin.json")"
 sm="$(jq -r .version "$REPO_ROOT/plugins/sensemaking/.claude-plugin/plugin.json")"
 sp="$(jq -r '.plugins[] | select(.name == "superpowers") | .version' "$MARKETPLACE")"
+wcc="$(jq -r '.plugins[] | select(.name == "writing-clearly-and-concisely") | .version' "$MARKETPLACE")"
 
 # The skills.sh apply branch, which the pinned lockfile below deliberately
 # turns into a no-op and so leaves untested. `npx` inherits the loop's stdin --
@@ -110,7 +111,8 @@ cat > "$H2/.claude/plugins/installed_plugins.json" <<JSON
 {"version":2,"plugins":{
   "software-dev@eranroseman":[{"scope":"user","version":"$sd"}],
   "sensemaking@eranroseman":[{"scope":"user","version":"$sm"}],
-  "superpowers@eranroseman":[{"scope":"user","version":"$sp"}]}}
+  "superpowers@eranroseman":[{"scope":"user","version":"$sp"}],
+  "writing-clearly-and-concisely@eranroseman":[{"scope":"user","version":"$wcc"}]}}
 JSON
 # No lockfile at all, so every declared skill is unpinned and the apply branch
 # runs for each. No codex on this PATH, so that half reports skipped.
@@ -180,7 +182,8 @@ cat > "$H/.claude/plugins/installed_plugins.json" <<JSON
 {"version":2,"plugins":{
   "software-dev@eranroseman":[{"scope":"user","version":"$sd"}],
   "sensemaking@eranroseman":[{"scope":"user","version":"$sm"}],
-  "superpowers@eranroseman":[{"scope":"user","version":"$sp"}]}}
+  "superpowers@eranroseman":[{"scope":"user","version":"$sp"}],
+  "writing-clearly-and-concisely@eranroseman":[{"scope":"user","version":"$wcc"}]}}
 JSON
 jq '{version: 3,
      skills: (reduce (.sources[] as $s | $s.skills[] |

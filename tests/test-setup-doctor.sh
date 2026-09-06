@@ -63,10 +63,14 @@ printf '%s\n' "$out" | grep -q 'FAIL:' || fail "the doctor reported no failure o
 # A machine the doctor could not read is not a clean machine. jq is not an
 # optional harness like claude or codex, whose absence makes one half genuinely
 # inapplicable: it is the reader of this repository's own declarations, so
-# without it every check is unanswered. The home below passes the only two
-# guards that need no jq -- a clone directory and a skill root that merely
-# exist, which is exactly the converged-then-drifted machine the doctor is for
-# -- so nothing else stands between "could not read" and a false all-clear.
+# without it every check is unanswered. ensure_clones now opens on `needs jq`
+# unconditionally, so a missing clone reports nothing on its own without jq
+# any more; the only guard left that needs none is ensure_links' skill-root
+# check. The home below passes it -- a skill root that merely exists, which is
+# exactly the converged-then-drifted machine the doctor is for -- so nothing
+# else stands between "could not read" and a false all-clear. The clone
+# directory is seeded too, though it no longer changes this outcome either
+# way; left in place as harmless rather than pulled out of a passing fixture.
 J="$H/jqless"
 mkdir -p "$J/.local/share/software-dev/upstream/superpowers/.git" "$J/.agents/skills" \
   || fail "could not seed $J"
