@@ -37,9 +37,22 @@ Three problems, each with evidence.
 | Config files | **Setup never hand-edits one.** Every `settings.json` and `config.toml` write is the CLI's own, made by a command setup runs (§7.6). |
 | The two global instruction files | Emptied to one paragraph each, which sub-project 6 then removes (§4). |
 
-## 4. Where a rule lives
+## 4. Whether a rule should exist, and where it lives
 
-The rule that governs everything else in this design.
+### 4.0 The prior question
+
+**Eliminate the problem > add a mechanism > add a rule; prose is the last resort.** This repository's `AGENTS.md` carries it; it is a root line in `research-vault`'s, where it has been applied repeatedly. It runs *before* the placement test below, because the cheapest rule is the one that never has to exist.
+
+This design is mostly the rule working. The `-g` rule was **eliminated**: once `bin/setup` owns the skills.sh invocations, no human types the command, so the rule has no audience (§4.1). Codex's hook is prevented by a **mechanism**, moving the file off the fallback path, rather than by a rule asking nobody to load it (§6). The README and `bin/setup --help` are held together by a **test**, not by an instruction to keep them in sync (§11). The `grilling` collision was **eliminated** at its cause, by narrowing a description, after which both the prose rule and the `skillOverrides` mute were deleted.
+
+Two rules did ship as prose, and the climb is recorded here so a later reader can re-attempt it rather than assume it was skipped.
+
+- **Worktree cleanup**, in the hook payload. *Eliminate* would mean `superpowers:finishing-a-development-branch` accepting `.claude/worktrees/` in its allowlist, or `EnterWorktree` writing somewhere it already accepts. Both are other people's repositories, and upstream states a 94% pull-request rejection rate. Configuration is not available either: measured 2026-09-06, `.claude/worktrees` is a hardcoded literal in 24 places in the Claude Code binary, `worktreeRoot` is a computed local rather than a setting, and the path appears in neither the settings nor the CLI reference. *Mechanism* would mean vendoring that skill to patch one line, which trades a rung on this ladder for a worse rung on the adoption ladder and breaks the property that all thirteen curated skills are taken straight from upstream. Prose is genuinely last here.
+- **Task reports**, in each repository's `AGENTS.md`. *Eliminate* would mean `superpowers:subagent-driven-development` not deleting its workspace at Finish, or writing its reports somewhere durable by default. Upstream again. *Mechanism* would mean a hook blocking that deletion until each Concern has landed, which is both invasive and fragile, since it would have to understand what "landed" means. Prose, placed beside the tracker declaration it depends on.
+
+### The placement test
+
+Once a rule survives §4.0, this decides its home.
 
 - True for **every installer** of this plugin, with evidence of the problem, and depending on nothing beyond the plugin and its declared dependencies: the SessionStart hook payload. Claude only, since a Codex plugin manifest has no instructions component and the [hook spec](2026-09-04-session-start-hook-design.md) §6 ships Codex no hook.
 - True for **this repository**: the repository's own `AGENTS.md`, written by the setup skill in §8.

@@ -16,6 +16,12 @@ Default five canonical labels (needs-triage, needs-info, ready-for-agent, ready-
 
 Single-context (root `CONTEXT.md` + `docs/adr/`). See `docs/agents/domain.md`.
 
+### Design discipline
+
+Eliminate the problem > add a mechanism > add a rule; prose is the last resort.
+
+Climb from the top and stop at the first rung that holds. A rule nobody can enforce is the weakest thing you can ship, and it goes stale silently. When prose really is the last resort, **say which higher rungs you tried and why they were unavailable** — an unexplained rule is indistinguishable from a lazy one, and the next reader cannot tell whether to re-attempt the climb.
+
 ### Task reports
 
 The SDD skill never commits its `.superpowers/sdd/` reports, and its Finish step
