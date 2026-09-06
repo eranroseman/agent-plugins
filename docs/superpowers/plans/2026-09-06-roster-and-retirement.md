@@ -40,6 +40,8 @@ None of the expected outputs below are predictions. On 2026-09-06 the whole repo
 Measured, and load-bearing:
 
 - **`claude plugin update` does not install a newly declared dependency.** In a scratch `HOME` on claude 2.1.263: install `software-dev` 0.6.0 from a directory marketplace, declare the `writing-clearly-and-concisely` entry and add it to `dependencies`, bump to 0.7.0, `claude plugin marketplace update eranroseman`, `claude plugin update software-dev@eranroseman` → "updated from 0.6.0 to 0.7.0", and `installed_plugins.json` still lists three plugins. `claude plugin install writing-clearly-and-concisely@eranroseman --scope user` then installs it at `0.1.0`, into `cache/eranroseman/writing-clearly-and-concisely/0.1.0/skills/writing-clearly-and-concisely/`, 216 KB, and `claude plugin details` lists one skill. This is why Task 9's `ensure_claude` installs a missing curated entry by name (Deviation D5).
+- **`claude plugin update` does move an auto-installed dependency.** Same scratch `HOME`: `sensemaking` was installed as a dependency (`"auto": true` in the registry), the copy's manifest was bumped to `0.2.0`, `marketplace update`, then `claude plugin update sensemaking@eranroseman` → "updated from 0.1.0 to 0.2.0". Task 9's `sensemaking` block rests on this, and the upgrade fixture now exercises it on every run.
+- **`claude plugin marketplace remove` leaves the cache behind, every version of it.** Same scratch `HOME`: after `uninstall software-dev@eranroseman` and `marketplace remove eranroseman`, `cache/eranroseman/` still held `sensemaking/0.1.0`, `sensemaking/0.2.0`, `software-dev/0.6.0` and `superpowers/6.3.0`. Issue #25's `superpowers-dev` residue is this mechanism, and Task 12's two marketplace removals will produce two more, which Task 12 removes before the gate.
 - **A plugin agent is not reachable by its bare name.** `Agent(subagent_type: "cavecrew-investigator")` on this machine fails with `Agent type 'cavecrew-investigator' not found. Available agents: caveman:cavecrew-builder, caveman:cavecrew-investigator, …`. The inspector becomes `software-dev:consistency-audit-inspector` and the skill dispatches it by that name (Deviation D3).
 - **Both validators, run against the assembled plugins.** `claude plugin validate --strict` passes on `software-dev` with an `agents/` directory and on `sensemaking` with `adhd`. Codex's `validate_plugin.py` emits exactly three bullets across both: ``skill `consistency-audit` frontmatter field `disable-model-invocation` must be false``, the same for `setup-repository`, and the same for `adhd`. Task 3 and Task 5 record them.
 - **The prototype `bin/doctor` on this machine**, non-OK lines, before any machine change: four `FAIL:` lines that are exactly the not-yet-converged state (the `writing-clearly-and-concisely` clone, its link target, its plugin, and the marketplace clone being behind origin), and these `NOTE:` lines: the telemetry variable, auto-update, the eighteen redundant Codex links, `Claude: skill brainstorming resolves to 2 different trees: …/cache/eranroseman/superpowers/6.3.0/brainstorming (74edf03ea6d2), …/cache/eranroseman/software-dev/0.6.0/skills/brainstorming (4a2033c06acf)`, `Codex: no skill name resolves to more than one tree`, and `plugin cache for an unregistered marketplace: /home/eranr/.claude/plugins/cache/superpowers-dev (left alone; remove it by hand)`. The first cut of the check, pooled across harnesses, also fired seven times on `caveman`, whose Claude copy is a pinned 2026-08-10 cache and whose Codex copy tracks upstream `main`; that is Deviation D7's evidence.
@@ -1537,6 +1539,46 @@ In `tests/test-setup-doctor.sh`, directly after `cp -a "$(fetch_upstream)" "$CLO
                   | [.name, .source.url, .source.sha] | @tsv' "$MARKETPLACE")
 ```
 
+Then make the same fixture exercise the dependency-update path, which nothing did before. Three edits in the same `if command -v claude` block:
+
+Replace
+
+```bash
+  PJ="plugins/software-dev/.claude-plugin/plugin.json"
+  cp -a "$REPO_ROOT" "$W/repo" || fail "could not copy the checkout into $W"
+  jq '.version = "0.0.1"' "$REPO_ROOT/$PJ" > "$W/lowered" || fail "could not lower the version"
+  cp "$W/lowered" "$W/repo/$PJ"
+```
+
+with
+
+```bash
+  PJ="plugins/software-dev/.claude-plugin/plugin.json"
+  # sensemaking too: it installs as a dependency, and a parent's update does
+  # not carry it, so its own update path is exercised here on every run.
+  PJS="plugins/sensemaking/.claude-plugin/plugin.json"
+  cp -a "$REPO_ROOT" "$W/repo" || fail "could not copy the checkout into $W"
+  jq '.version = "0.0.1"' "$REPO_ROOT/$PJ" > "$W/lowered" || fail "could not lower the version"
+  cp "$W/lowered" "$W/repo/$PJ"
+  jq '.version = "0.0.1"' "$REPO_ROOT/$PJS" > "$W/lowered-s" || fail "could not lower sensemaking's version"
+  cp "$W/lowered-s" "$W/repo/$PJS"
+```
+
+Directly after `cp "$REPO_ROOT/$PJ" "$W/repo/$PJ"` add the line `cp "$REPO_ROOT/$PJS" "$W/repo/$PJS"`.
+
+And directly after the four lines that read `got` and assert `bin/setup left software-dev at $got, declared $want`, add:
+
+```bash
+  want_s="$(jq -r .version "$REPO_ROOT/$PJS")"
+  got_s="$(jq -r '.plugins["sensemaking@eranroseman"][0].version' \
+    "$W/home/.claude/plugins/installed_plugins.json")"
+  [ "$got_s" = "$want_s" ] \
+    || fail "bin/setup left sensemaking at $got_s, declared $want_s; a dependency does not move with its parent:"$'\n'"$out"
+```
+
+Run: `bash tests/test-setup-doctor.sh`
+Expected: `FAIL: bin/setup left sensemaking at 0.0.1, declared 0.1.0; a dependency does not move with its parent:` followed by the run's output, exit 1. The current engine verifies `sensemaking` is present and never compares its version.
+
 - [ ] **Step 3: Generalise the engine**
 
 Six edits to `bin/setup`, top to bottom.
@@ -2264,19 +2306,28 @@ codex plugin list --json | jq -r '.installed[].pluginId'
 grep -n 'agent-toolkit' ~/.codex/config.toml
 ```
 
-Expected: the Claude commands succeed; the Codex list no longer names `writing-clearly-and-concisely@agent-toolkit`; the `grep` prints nothing. If it prints a `[plugins."writing-clearly-and-concisely@agent-toolkit"]` or `[marketplaces.agent-toolkit]` table, that is the orphan sub-project 2 §7.4 warns about: **report it to the user and stop**; the script never hand-edits `config.toml`, and neither does this task.
+Expected: the Claude commands succeed; the Codex list no longer names `writing-clearly-and-concisely@agent-toolkit`; the `grep` prints nothing. Then `ls ~/.claude/plugins/cache/`: expect `agent-toolkit` and `superpowers-developing-for-claude-code-dev` still listed — `marketplace remove` leaves the cache behind (measured; it is how #25's residue came to be) — and Step 4 removes them. If it prints a `[plugins."writing-clearly-and-concisely@agent-toolkit"]` or `[marketplaces.agent-toolkit]` table, that is the orphan sub-project 2 §7.4 warns about: **report it to the user and stop**; the script never hand-edits `config.toml`, and neither does this task.
 
 - [ ] **Step 4: Remove what the deleted repositories will leave dangling, and the residue**
 
-Show the user this list and wait for their go. The eight links point into `~/harness-backup`; the two agent files are hand-made copies of a file the plugin now ships (Deviation D4); the cache directory is issue #25's residue.
+Show the user this list and wait for their go. The eight links point into `~/harness-backup`; the two agent files are hand-made copies of a file the plugin now ships (Deviation D4); the three cache directories are residue — issue #25's, plus the two Step 3 just orphaned — and each would otherwise be a `NOTE:` at the gate.
 
 ```bash
 for s in consistency-audit finding-duplicate-functions rethink rethink-audit; do
   ls -l ~/.claude/skills/$s ~/.codex/skills/$s
 done
 ls -l ~/.claude/agents/consistency-audit-inspector.md ~/.codex/agents/consistency-audit-inspector.md
-ls ~/.claude/plugins/cache/superpowers-dev/superpowers/
+ls ~/.claude/plugins/cache/
+# A .in_use/<pid> marker names a session holding the plugin; none may be live.
+for d in superpowers-dev agent-toolkit superpowers-developing-for-claude-code-dev; do
+  for m in ~/.claude/plugins/cache/$d/*/*/.in_use/*; do
+    [ -e "$m" ] || continue
+    kill -0 "$(basename "$m")" 2>/dev/null && echo "LIVE: $m"
+  done
+done
 ```
+
+Expected: the three names in the listing, and no `LIVE:` line. A `LIVE:` line names a running Claude session that loaded the old plugin; end it (or wait for it) before removing that cache.
 
 Then, after the go:
 
@@ -2285,7 +2336,9 @@ for s in consistency-audit finding-duplicate-functions rethink rethink-audit; do
   rm ~/.claude/skills/$s ~/.codex/skills/$s
 done
 rm ~/.claude/agents/consistency-audit-inspector.md ~/.codex/agents/consistency-audit-inspector.md
-rm -rf ~/.claude/plugins/cache/superpowers-dev
+rm -rf ~/.claude/plugins/cache/superpowers-dev \
+       ~/.claude/plugins/cache/agent-toolkit \
+       ~/.claude/plugins/cache/superpowers-developing-for-claude-code-dev
 rmdir ~/.codex/plugins/cache/superpowers-dev 2>/dev/null || true   # empty on 2026-09-06
 ls -la ~/.claude/skills ~/.codex/skills | grep -c harness-backup
 ```
@@ -2298,7 +2351,7 @@ Expected: `0`. `rm` on a symlink removes the link, never its target; nothing und
 bash ~/.claude/plugins/marketplaces/eranroseman/bin/doctor 2>&1 | tee /tmp/roster-doctor.log | grep -v '^OK:'
 ```
 
-Expected: exactly these non-OK lines, and `clean`, exit 0:
+Expected: exactly this set of non-OK lines, in any order (the registry's order shifts when a plugin is added, and the two paths in the `brainstorming` line may swap), and `clean`, exit 0:
 
 ```
 NOTE: no telemetry-disabling variable is set; see the plugin README (this script never sets one)
@@ -2310,7 +2363,7 @@ NOTE: Codex: no skill name resolves to more than one tree
 clean
 ```
 
-Any other `NOTE:` — an unregistered cache, a second duplicated name — is a finding to resolve before going on. `18` may read `14` if the redundant Codex links were cleaned up; either is fine.
+Any other `NOTE:` — an unregistered cache, a second duplicated name — is a finding to resolve before going on. The count of redundant Codex links stays `18`: the four links removed in Step 4 pointed into `~/harness-backup`, never into `~/.agents/skills`, so they were never counted.
 
 ```bash
 claude plugin list 2>&1 | grep -A1 '@eranroseman\|@agent-toolkit\|superpowers-developing'
