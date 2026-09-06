@@ -70,7 +70,31 @@ other than `0`, `false`, `no`, or `off`. On Claude Code an `env` entry in
 does, since its shell runs `bash -lc`. `~/.bashrc` does not work, because it
 returns early for non-interactive shells.
 
-If you never accept the Visual Companion offer, the request never happens.
+Setting it prevents exactly one thing: the `<img>` tag on the Visual Companion's
+page. Set, the page renders without the logo and the caption changes; unset, one
+browser request goes to `primeradiant.com` per page load. No setup step writes
+the variable for you — the write would touch a file the CLI owns, for a request
+that has never fired on a machine that has never accepted the offer. If you
+never accept it, the request never happens.
+
+## Updates
+
+Claude Code can update this plugin for you. Third-party marketplaces default to
+auto-update off, so it is a choice you make once:
+
+1. Run `/plugin`.
+2. Open Marketplaces.
+3. Select `eranroseman`.
+4. Turn auto-update on.
+
+With it on, Claude Code refreshes the marketplace and updates installed plugins
+after a session starts, with a random delay of up to ten minutes, then either
+prompts for `/reload-plugins` or loads the new version at the next launch. The
+marketplace names `superpowers` at a fixed sha, so auto-update delivers this
+repository's releases and never drags in upstream's HEAD.
+
+Without it, and on Codex either way, the repository README's Update section has
+the two commands to run.
 
 ## License
 

@@ -150,4 +150,35 @@ out="$(env HOME="$H" CODEX_HOME="$H/.codex" bash "$DOCTOR" 2>&1 || true)"
 printf '%s\n' "$out" | grep -q 'SKIP: the marketplace source is a directory' \
   || fail "a directory marketplace source must skip the staleness check, not fail it"
 
+# Every fenced block in the README's install and update sections must appear
+# verbatim in the usage text, so a command cannot be documented in one place and
+# not the other.
+help_text="$("$SETUP" --help 2>&1)"
+blocks=0
+# Extract each fenced block from README.md and require it in the usage text.
+# \036 is the record separator awk prints between blocks; no README carries it.
+extract_blocks() {
+  awk '
+    /^```/ { infence = !infence; if (!infence) print "\036"; next }
+    infence { print }
+  ' "$1"
+}
+buf=""
+while IFS= read -r line; do
+  if [ "$line" = "$(printf '\036')" ]; then
+    [ -n "$buf" ] || continue
+    case "$help_text" in
+      *"$buf"*) blocks=$((blocks + 1)) ;;
+      *) fail "a README fenced block is missing from bin/setup --help: $buf" ;;
+    esac
+    buf=""
+  elif [ -z "$buf" ]; then
+    buf="$line"
+  else
+    buf="$buf
+$line"
+  fi
+done < <(extract_blocks "$REPO_ROOT/README.md")
+[ "$blocks" -ge 2 ] || fail "expected at least two fenced README blocks, found $blocks"
+
 printf 'setup-doctor: two entry points, lint clean, prerequisites split as documented\n'
