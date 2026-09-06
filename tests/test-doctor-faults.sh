@@ -172,7 +172,8 @@ printf '%s\n' "$out" | grep -q -- '--- re-checking ---' || fail "bin/setup did n
 [ "$(readlink -f "$SKILLS/writing-plans")" = "$CLONE/skills/writing-plans" ] \
   || fail "the repaired link points elsewhere"
 [ -L "$SKILLS/writing-skills" ] || fail "the squatting file was not replaced by a link"
-ls "$SKILLS" | grep -q 'aside' || fail "nothing was moved aside; squatters must be kept, not deleted"
+set -- "$SKILLS"/*aside*
+[ -e "$1" ] || fail "nothing was moved aside; squatters must be kept, not deleted"
 # A dangling link is a squatter too: moved aside with its target named, never
 # deleted. Its target may be a volume that is merely unmounted, and the DID
 # line is the only record of where it pointed.

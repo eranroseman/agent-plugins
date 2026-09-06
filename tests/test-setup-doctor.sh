@@ -12,11 +12,21 @@ DOCTOR="$REPO_ROOT/bin/doctor"
 [ -x "$DOCTOR" ] || fail "bin/doctor missing or not executable"
 
 if command -v shellcheck >/dev/null 2>&1; then
-  shellcheck "$SETUP" "$DOCTOR" "$REPO_ROOT/bin/bump-superpowers" \
+  # Every shell file this repository authors, not just bin/. Two exclusions,
+  # both structural rather than per-site: SC1091 because the tests source
+  # lib.sh through a path shellcheck cannot follow, and SC2016 because the
+  # expected-output strings are single-quoted on purpose and must not expand.
+  # The vendored skills' scripts are upstream's and are covered by the drift
+  # tests instead.
+  shellcheck -e SC1091 -e SC2016 \
+    "$SETUP" "$DOCTOR" "$REPO_ROOT/bin/bump-superpowers" \
     "$REPO_ROOT/bin/upstream-watch" \
-    || fail "shellcheck reported problems in bin/"
+    "$REPO_ROOT/plugins/software-dev/hooks/session-start" \
+    "$REPO_ROOT/tests/run.sh" "$REPO_ROOT/tests/lib.sh" \
+    "$REPO_ROOT"/tests/test-*.sh \
+    || fail "shellcheck reported problems"
 else
-  printf 'SKIP: shellcheck is not installed; bin/ was not linted\n'
+  printf 'SKIP: shellcheck is not installed; the shell files were not linted\n'
 fi
 
 # bin/doctor is the same engine in check mode, not a second implementation.

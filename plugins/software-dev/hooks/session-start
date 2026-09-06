@@ -24,6 +24,7 @@ escape_for_json() {
   # U+000E-U+001F. NUL cannot occur in a bash string; \n \r \t are handled above.
   local i byte esc
   for i in 1 2 3 4 5 6 7 8 11 12 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31; do
+    # shellcheck disable=SC2059  # the octal escape IS the format string here
     printf -v byte "\\$(printf '%03o' "$i")"
     printf -v esc '\\u%04x' "$i"
     s="${s//"$byte"/$esc}"

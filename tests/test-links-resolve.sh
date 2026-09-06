@@ -17,8 +17,10 @@ docs="README.md AGENTS.md CLAUDE.md"
 for r in plugins/*/README.md; do [ -f "$r" ] && docs="$docs $r"; done
 
 checked=0
+scanned=0
 for f in $docs; do
   [ -f "$f" ] || continue
+  scanned=$((scanned + 1))
   dir="$(dirname "$f")"
   # [text](target) — skip external URLs and bare anchors
   while IFS= read -r target; do
@@ -36,4 +38,4 @@ for f in $docs; do
 done
 
 printf 'links-resolve: %s relative link(s) across %s maintained document(s) resolve\n' \
-  "$checked" "$(printf '%s\n' $docs | wc -l)"
+  "$checked" "$scanned"
