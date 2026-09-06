@@ -36,6 +36,12 @@ maintain ADRs and a glossary — project artifacts, not general ones.
 
 - `rethink-audit`: clean-slate redesign audit of an existing module, service,
   or feature. Design and architecture only; it applies no changes.
+- `adhd`: parallel divergent ideation under five isolated cognitive frames,
+  scored, clustered and deepened. About ten agent calls and five to ten times
+  the cost of one answer, so it is user-invoked on both harnesses: `/adhd
+  <problem>`. Vendored from `UditAkhourii/adhd` at a pinned commit; the
+  provenance header at the top of `SKILL.md` names it and the two local
+  changes.
 
 ## Install
 
