@@ -25,7 +25,7 @@ SKILLS_JSON="$REPO_ROOT/upstream/skills.json"
 # Each later task adds the variables its own checks need, beside them, rather
 # than here: a variable declared before anything reads it is a shellcheck
 # SC2034 warning, and shellcheck must exit 0 from Task 4 onward.
-CLONE_DIR="$HOME/.local/share/software-development/upstream/superpowers"
+CLONE_DIR="$HOME/.local/share/software-dev/upstream/superpowers"
 SKILL_ROOT="$HOME/.agents/skills"
 KNOWN_MARKETPLACES="$HOME/.claude/plugins/known_marketplaces.json"
 INSTALLED_PLUGINS="$HOME/.claude/plugins/installed_plugins.json"
@@ -259,7 +259,7 @@ ensure_links() {
 }
 
 plugin_version() {
-  jq -r '.version' "$REPO_ROOT/plugins/software-development/.claude-plugin/plugin.json"
+  jq -r '.version' "$REPO_ROOT/plugins/software-dev/.claude-plugin/plugin.json"
 }
 
 installed_version() {
@@ -277,7 +277,7 @@ ensure_claude() {
   want="$(plugin_version)"
   [ -n "$want" ] || { bad "could not read the declared plugin version"; return; }
 
-  installed_sd="$(installed_version software-development)"
+  installed_sd="$(installed_version software-dev)"
   if [ "$installed_sd" != "$want" ] && applying; then
     if [ -z "$installed_sd" ]; then
       # Adding is a clean no-op on re-run, but only add when the marketplace is
@@ -296,10 +296,10 @@ ensure_claude() {
       # "error: unknown option". Where the flag does exist it only waives the
       # confirmation for a plugin installed by running a marketplace-declared
       # command, or one fetched through a headersHelper, and this is neither.
-      if claude plugin install software-development@eranroseman --scope user >/dev/null 2>&1; then
-        did "installed software-development@eranroseman (with sensemaking and superpowers)"
+      if claude plugin install software-dev@eranroseman --scope user >/dev/null 2>&1; then
+        did "installed software-dev@eranroseman (with sensemaking and superpowers)"
       else
-        bad "claude plugin install software-development@eranroseman failed"
+        bad "claude plugin install software-dev@eranroseman failed"
       fi
     else
       # install is a no-op on an already-installed plugin: it prints "already
@@ -308,19 +308,19 @@ ensure_claude() {
       # marketplaces). update is the only verb that moves it, and it exits 0
       # when it decides nothing needs moving, so the re-read below is what
       # reports success.
-      claude plugin update software-development@eranroseman >/dev/null 2>&1 \
-        || bad "claude plugin update software-development@eranroseman failed"
-      if [ "$(installed_version software-development)" = "$want" ]; then
-        did "updated software-development@eranroseman from $installed_sd to $want"
+      claude plugin update software-dev@eranroseman >/dev/null 2>&1 \
+        || bad "claude plugin update software-dev@eranroseman failed"
+      if [ "$(installed_version software-dev)" = "$want" ]; then
+        did "updated software-dev@eranroseman from $installed_sd to $want"
       fi
     fi
   fi
 
-  installed_sd="$(installed_version software-development)"
+  installed_sd="$(installed_version software-dev)"
   if [ "$installed_sd" = "$want" ]; then
-    ok "software-development@eranroseman $want installed"
+    ok "software-dev@eranroseman $want installed"
   else
-    bad "software-development@eranroseman is ${installed_sd:-not installed}, declared $want"
+    bad "software-dev@eranroseman is ${installed_sd:-not installed}, declared $want"
   fi
 
   # The two dependencies install and enable themselves; verify rather than act.
@@ -366,7 +366,7 @@ ensure_codex() {
   needs jq "the declared plugin versions cannot be read, so the Codex half is unchecked" || return
   CODEX_LIST="$(codex plugin list --json 2>/dev/null)" || { bad "codex plugin list failed"; return; }
 
-  for p in software-development sensemaking; do
+  for p in software-dev sensemaking; do
     want="$(jq -r '.version' "$REPO_ROOT/plugins/$p/.codex-plugin/plugin.json")"
     if [ -z "$want" ] || [ "$want" = null ]; then
       bad "could not read the declared version of $p"

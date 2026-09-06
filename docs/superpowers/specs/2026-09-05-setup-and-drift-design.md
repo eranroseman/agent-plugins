@@ -1,4 +1,4 @@
-# software-development: setup, drift, and the placement of rules
+# software-dev: setup, drift, and the placement of rules
 
 **Status:** approved design, 2026-09-05. Sub-project 2 of 7 in the [layout and tracer spec](2026-09-04-software-development-layout-and-tracer-design.md) §11, **merged with the former sub-project 4** on 2026-09-05.
 **Scope:** how a machine reaches the intended state and stays there. The declarations this repository carries, the script that applies and verifies them, the scheduled job that watches upstream, the skill that scaffolds a repository, and the emptying of the two global instruction files.
@@ -159,7 +159,7 @@ It does **not** require `gh` authentication or an SSH key: a keyless machine fal
 
 ### 7.3 What it applies
 
-**Claude.** `claude plugin marketplace add`, then `claude plugin install software-development@eranroseman -y --scope user`, which installs and enables `sensemaking` and `superpowers` as dependencies. Both commands are clean no-ops on re-run. That is the whole Claude half: setup does not enable auto-update, which is the user's call (§9).
+**Claude.** `claude plugin marketplace add`, then `claude plugin install software-dev@eranroseman -y --scope user`, which installs and enables `sensemaking` and `superpowers` as dependencies. Both commands are clean no-ops on re-run. That is the whole Claude half: setup does not enable auto-update, which is the user's call (§9).
 
 **Codex.** `codex plugin marketplace add` once, then `codex plugin add` for **both** plugins, because Codex has no dependency concept. **Never re-run `codex plugin marketplace add`:** it prints "already added" and silently deletes `last_revision`. Use `codex plugin marketplace upgrade`, which is a true no-op when upstream is unchanged.
 
@@ -220,13 +220,13 @@ It also writes a third thing this design needs: the **task-reports rule**, besid
 
 **The plugin vendors and adapts rather than composing.** Composition was the first design and it fails on paper, which is why the reasoning is recorded rather than the conclusion alone. `grill-with-docs` is the precedent for composing, but it only has to *call* two skills that each do their own job; this case has to make `setup-matt-pocock-skills` do something it explicitly refuses. Its file-pick rule is absolute: "If `CLAUDE.md` exists, edit it. Else if `AGENTS.md` exists, edit it... Never create `AGENTS.md` when `CLAUDE.md` already exists." A wrapper cannot reorder that check, so in any repository that has a `CLAUDE.md`, the skill writes its block there and the wrapper would have to move that content into `AGENTS.md` and rewrite `CLAUDE.md` as the import. That is undoing its work, not adding to it, and it holds for two of the four possible starting states.
 
-So the skill is vendored into `software-development` at a pinned upstream ref, with a provenance header naming it, exactly as `brainstorming` is.
+So the skill is vendored into `software-dev` at a pinned upstream ref, with a provenance header naming it, exactly as `brainstorming` is.
 
 **The adaptation is smaller than the vendoring, because only one of its six files changes.** The skill ships five seed templates beside its `SKILL.md`: `issue-tracker-github.md`, `issue-tracker-gitlab.md`, `issue-tracker-local.md`, `triage-labels.md` and `domain.md`. All five are taken byte-for-byte, since this design changes where the block is written and what else goes in it, not what a tracker or label or domain-doc file says. Only `SKILL.md` is edited, and only in three places: the file-pick rule becomes "write `AGENTS.md`, and make `CLAUDE.md` a one-line `@AGENTS.md` import"; a Git section is added; and the task-reports rule is added.
 
 The drift test therefore asserts two different things. The five templates must be byte-identical to upstream at the pin, which is a strict equality like `test-vendored-brainstorming.sh` uses. `SKILL.md` must differ only in those three regions, which is the looser assertion the same test already makes for `brainstorming`'s description and header. Keeping the templates strict is what makes a re-vendor cheap: an upstream change to a template is a clean overwrite, and only a change to `SKILL.md` needs judgement.
 
-Shipping it bumps `software-development` to **0.4.0** in both manifests. §9's `version` field is the sole update gate, so without a bump the skill never reaches an installed copy, and `bin/doctor`'s version check would compare 0.3.0 against 0.3.0 and report clean. `tests/test-hook.sh` pins the version in two assertions and moves with it.
+Shipping it bumps `software-dev` to **0.4.0** in both manifests. §9's `version` field is the sole update gate, so without a bump the skill never reaches an installed copy, and `bin/doctor`'s version check would compare 0.3.0 against 0.3.0 and report clean. `tests/test-hook.sh` pins the version in two assertions and moves with it.
 
 **Update, 2026-09-06 (0.5.0).** The two paragraphs above describe 0.4.0 as shipped; five further changes followed as bounded work, and the counts in them have moved.
 
@@ -275,7 +275,7 @@ Triggered by the issue from §6, done by a human and an agent on a branch. **No 
 
 For `superpowers` a bump moves four coupled artifacts by three different mechanisms, and three existing tests fail until all four move.
 
-- **Substituted**, because they carry the sha as a literal: `source.sha` in `.claude-plugin/marketplace.json`, and the `at commit <sha>` line in `plugins/software-development/LICENSE`.
+- **Substituted**, because they carry the sha as a literal: `source.sha` in `.claude-plugin/marketplace.json`, and the `at commit <sha>` line in `plugins/software-dev/LICENSE`.
 - **Regenerated from the new clone**, because they carry no sha and are coupled by content: `hooks/payload.md`, which contains no 40-character string at all and whose only build recipe currently lives inside `tests/test-hook.sh`; and `skills/brainstorming/`, re-vendored, where the sha appears only in the provenance header.
 - **Read, not written**: `version` in the marketplace entry is copied from upstream's own `.claude-plugin/plugin.json` at the new sha, which is what `test-upstream-pin.sh` already asserts.
 

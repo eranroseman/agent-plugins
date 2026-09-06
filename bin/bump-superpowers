@@ -16,7 +16,7 @@ set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 MARKETPLACE="$REPO_ROOT/.claude-plugin/marketplace.json"
-PLUGIN="$REPO_ROOT/plugins/software-development"
+PLUGIN="$REPO_ROOT/plugins/software-dev"
 UPSTREAM_URL="https://github.com/obra/superpowers.git"
 
 die() { printf 'ERROR: %s\n' "$*" >&2; exit 2; }
@@ -45,7 +45,7 @@ emit_payload() {
   pre="${tmpl%%\$\{using_superpowers_escaped\}*}"
   post="${tmpl#*\$\{using_superpowers_escaped\}}"
   printf '%b' "$pre"
-  printf '%s' "$(sed '30s/superpowers:brainstorming/software-development:brainstorming/' "$src")"
+  printf '%s' "$(sed '30s/superpowers:brainstorming/software-dev:brainstorming/' "$src")"
   printf '%b\n' "$post"
 }
 
@@ -156,6 +156,6 @@ revendor_brainstorming "$work" "$new_sha"
 
 printf '\nBumped %s -> %s, version %s. Review the diff:\n' "$old_sha" "$new_sha" "$new_version"
 printf '  git diff -- %s %s\n' \
-  "plugins/software-development/hooks/payload.md" \
-  "plugins/software-development/skills/brainstorming"
+  "plugins/software-dev/hooks/payload.md" \
+  "plugins/software-dev/skills/brainstorming"
 printf 'Then run: bash tests/run.sh\n'

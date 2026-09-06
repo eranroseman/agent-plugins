@@ -1,7 +1,7 @@
 {
   "name": "sensemaking",
   "version": "0.1.0",
-  "description": "Skills shared by software-development and research-vault.",
+  "description": "Skills shared by software-dev and research-vault.",
   "author": { "name": "Eran Roseman", "url": "https://github.com/eranroseman" },
   "homepage": "https://github.com/eranroseman/agent-plugins",
   "repository": "https://github.com/eranroseman/agent-plugins",
@@ -10,8 +10,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Sensemaking",
-    "shortDescription": "Skills shared by software-development and research-vault",
-    "longDescription": "Clean-slate redesign audits and other sensemaking skills, shared by `software-development` and `research-vault`.",
+    "shortDescription": "Skills shared by software-dev and research-vault",
+    "longDescription": "Clean-slate redesign audits and other sensemaking skills, shared by `software-dev` and `research-vault`.",
     "developerName": "Eran Roseman",
     "category": "Productivity",
     "capabilities": ["Instructions"],

@@ -1,8 +1,12 @@
-# software-development: repository layout, manifests, and tracer bullet
+# software-dev: repository layout, manifests, and tracer bullet
 
 **Status:** approved design, 2026-09-04. Sub-project 1 of 7 (see §11).
 **Scope:** the public repository `eranroseman/agent-plugins` as a marketplace hosting two plugins, the curated upstream `superpowers` entry, the Codex route, and the tracer bullet that proves the layout on both harnesses.
 **Not in scope:** setup automation, hook payload redesign, drift monitoring, roster decisions, harness-backup retirement, research-vault integration. Each is its own sub-project (§11).
+
+**Renamed 2026-09-06 (0.6.0).** The plugin was `software-development` through 0.5.5. `/software-development:setup-repository` is 38 characters, against 26 for `/sensemaking:rethink-audit` and 21 for `/caveman:caveman-init`, and it truncates in a narrow editor pane — the picker shows the plugin and hides the skill, which is the half that says what the command does. `software-dev` is 12, the same band as `superpowers` and `sensemaking`, and preserves the meaning exactly. Three shorter candidates were rejected: `engineering` and `coding` each name one half of a plugin whose skills divide into process and engineering, so either one mislabels the other half; `building` is short and neutral but too vague to say what the plugin is for. The prose below and in the other two specs is updated to the new name; the plans under `docs/superpowers/plans/` are left as they were written. This file keeps its original filename, which still carries the old name, because sixteen references point at it.
+
+A rename is not an update: `version` gates content, not identity, so the old plugin has to be uninstalled and the new one installed on both harnesses rather than moved by `claude plugin update`. Bumped to 0.6.0 to mark the break.
 
 ## 1. Evidence standard
 
@@ -12,14 +16,14 @@ Five map positions were reversed by the author during this design. §11.2 record
 
 ## 2. Goal
 
-Ship one public repository that installs, on Claude Code and Codex, a curated software-development harness:
+Ship one public repository that installs, on Claude Code and Codex, a curated software-dev harness:
 
-- `software-development`: the glue plugin. Ships the narrowed `brainstorming` skill and a SessionStart hook. Depends on `sensemaking` and the curated `superpowers`.
-- `sensemaking`: the shared plugin, installed by both `software-development` and, later, `research-vault`. Starts with `rethink-audit`.
+- `software-dev`: the glue plugin. Ships the narrowed `brainstorming` skill and a SessionStart hook. Depends on `sensemaking` and the curated `superpowers`.
+- `sensemaking`: the shared plugin, installed by both `software-dev` and, later, `research-vault`. Starts with `rethink-audit`.
 - `superpowers`: obra's upstream, taken as-is by a curated marketplace entry that drops `brainstorming`. No fork.
 - `mattpocock/skills`: upstream, taken as a declared subset through the skills.sh installer. Unchanged mechanism.
 
-`software-development` is a glue layer over two upstream packs, not a home for copies of them.
+`software-dev` is a glue layer over two upstream packs, not a home for copies of them.
 
 ## 3. Decisions
 
@@ -28,9 +32,9 @@ Ship one public repository that installs, on Claude Code and Codex, a curated so
 | Repository count | One: this repo hosts the marketplace and both plugins. `research-vault` stays in its own repo and is listed here by git URL once public. |
 | Marketplace name | `eranroseman` (`eroseman` belongs to an unrelated GitHub account). |
 | superpowers | Curated marketplace entry named `superpowers`, `git-subdir` at `path: skills`, `strict: false`, pinned by `sha`, listing 13 of 14 skill directories. `brainstorming` is the one dropped. |
-| brainstorming | Vendored into `software-development` from upstream HEAD, **name kept**, only the description changed. Visual Companion kept. |
+| brainstorming | Vendored into `software-dev` from upstream HEAD, **name kept**, only the description changed. Visual Companion kept. |
 | using-superpowers | Kept in the curated entry (Codex needs `references/codex-tools.md`). Its line 30 still names `superpowers:brainstorming`; our hook payload repoints it. |
-| SessionStart hook | `software-development` ships its own. Upstream's hook is not loaded (it sits outside the `skills` subdir). |
+| SessionStart hook | `software-dev` ships its own. Upstream's hook is not loaded (it sits outside the `skills` subdir). |
 | Codex superpowers route | Symlinks from a clone pinned to the same sha, into `~/.codex/skills/`. Not a Codex plugin install. |
 | mattpocock | skills.sh lockfile subset, declared in this repo (format decided in sub-project 2). `grilling` stays model-invocable; its `skillOverrides` mute is removed in the same motion the narrowed `brainstorming` lands. |
 | sensemaking contents at tracer | `rethink-audit`, copied as-is from `harness-backup`. Adaptation is sub-project 5. |
@@ -42,7 +46,7 @@ eranroseman/agent-plugins
 ├── .claude-plugin/marketplace.json        Claude marketplace (§5.1)
 ├── .agents/plugins/marketplace.json       Codex marketplace (§5.2)
 ├── plugins/
-│   ├── software-development/
+│   ├── software-dev/
 │   │   ├── .claude-plugin/plugin.json     (§6.1)
 │   │   ├── .codex-plugin/plugin.json      (§6.2)
 │   │   ├── skills/brainstorming/          vendored, see §7
@@ -76,18 +80,18 @@ Component directories sit at each plugin root, never inside `.claude-plugin/`.
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "eranroseman",
   "owner": { "name": "Eran Roseman", "url": "https://github.com/eranroseman" },
-  "description": "Eran Roseman's plugins: a curated software-development harness and the shared sensemaking skills.",
+  "description": "Eran Roseman's plugins: a curated software-dev harness and the shared sensemaking skills.",
   "plugins": [
     {
-      "name": "software-development",
-      "source": "./plugins/software-development",
+      "name": "software-dev",
+      "source": "./plugins/software-dev",
       "description": "Glue over superpowers and mattpocock/skills: narrowed brainstorming, session-start bridge rules.",
       "category": "development"
     },
     {
       "name": "sensemaking",
       "source": "./plugins/sensemaking",
-      "description": "Skills shared by software-development and research-vault.",
+      "description": "Skills shared by software-dev and research-vault.",
       "category": "productivity"
     },
     {
@@ -129,7 +133,7 @@ Why this shape:
 - This is the exact shape of `amd-skills` in `anthropics/claude-plugins-official`: `git-subdir`, `path: skills`, `strict: false`, 4 of 8 upstream skill directories listed. Exclusion by a first-party marketplace is precedent, not a guess.
 - The entry name `superpowers` keeps the `superpowers:` namespace. Every one of the 26 qualified cross-references in the 13 skills resolves unchanged. Cross-directory references inside those skills are sibling-relative (`../requesting-code-review/code-reviewer.md`), so they resolve under a `skills`-rooted plugin. No skill uses `${CLAUDE_PLUGIN_ROOT}`.
 - `sha` is the pin; `ref` is documentation. `version` is set so that users receive an update only when the string changes. Bumping both together is a deliberate update.
-- `dependencies` declared by `software-development` resolve inside this marketplace, so no `allowCrossMarketplaceDependenciesOn` is needed.
+- `dependencies` declared by `software-dev` resolve inside this marketplace, so no `allowCrossMarketplaceDependenciesOn` is needed.
 
 ### 5.2 `.agents/plugins/marketplace.json`
 
@@ -139,8 +143,8 @@ Why this shape:
   "interface": { "displayName": "Eran Roseman" },
   "plugins": [
     {
-      "name": "software-development",
-      "source": { "source": "local", "path": "./plugins/software-development" },
+      "name": "software-dev",
+      "source": { "source": "local", "path": "./plugins/software-dev" },
       "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
       "category": "Developer Tools"
     },
@@ -158,40 +162,40 @@ Codex has no dependency concept and cannot subset a plugin's `skills/` directory
 
 ## 6. Plugin manifests
 
-### 6.1 `plugins/software-development/.claude-plugin/plugin.json`
+### 6.1 `plugins/software-dev/.claude-plugin/plugin.json`
 
 ```json
 {
-  "name": "software-development",
+  "name": "software-dev",
   "version": "0.1.0",
   "description": "Glue over superpowers and mattpocock/skills for Claude Code and Codex.",
   "author": { "name": "Eran Roseman", "url": "https://github.com/eranroseman" },
   "homepage": "https://github.com/eranroseman/agent-plugins",
   "repository": "https://github.com/eranroseman/agent-plugins",
   "license": "MIT",
-  "keywords": ["software-development", "superpowers", "skills", "workflow"],
+  "keywords": ["software-dev", "superpowers", "skills", "workflow"],
   "dependencies": ["sensemaking", "superpowers"]
 }
 ```
 
-Installing `software-development@eranroseman` installs both dependencies at the same scope and enables them; disabling either while `software-development` is enabled fails with a chained-command hint; `claude plugin uninstall software-development --prune` removes them if nothing else needs them. Hooks load from the default path `hooks/hooks.json`. *Amended 2026-09-04: the hook file is now `hooks/claude-hooks.json`, declared in this manifest; see the [hook spec](2026-09-04-session-start-hook-design.md) §5.*
+Installing `software-dev@eranroseman` installs both dependencies at the same scope and enables them; disabling either while `software-dev` is enabled fails with a chained-command hint; `claude plugin uninstall software-dev --prune` removes them if nothing else needs them. Hooks load from the default path `hooks/hooks.json`. *Amended 2026-09-04: the hook file is now `hooks/claude-hooks.json`, declared in this manifest; see the [hook spec](2026-09-04-session-start-hook-design.md) §5.*
 
-### 6.2 `plugins/software-development/.codex-plugin/plugin.json`
+### 6.2 `plugins/software-dev/.codex-plugin/plugin.json`
 
 ```json
 {
-  "name": "software-development",
+  "name": "software-dev",
   "version": "0.1.0",
   "description": "Glue over superpowers and mattpocock/skills for Claude Code and Codex.",
   "author": { "name": "Eran Roseman", "url": "https://github.com/eranroseman" },
   "homepage": "https://github.com/eranroseman/agent-plugins",
   "repository": "https://github.com/eranroseman/agent-plugins",
   "license": "MIT",
-  "keywords": ["software-development", "superpowers", "skills", "workflow"],
+  "keywords": ["software-dev", "superpowers", "skills", "workflow"],
   "skills": "./skills/",
   "interface": {
     "displayName": "Software Development",
-    "shortDescription": "Curated software-development harness",
+    "shortDescription": "Curated software-dev harness",
     "longDescription": "Narrowed brainstorming front door plus session-start bridge rules over the superpowers spine and mattpocock's engineering skills.",
     "developerName": "Eran Roseman",
     "category": "Developer Tools",
@@ -212,7 +216,7 @@ Claude manifest: `name` `sensemaking`, `version` `0.1.0`, MIT, no `dependencies`
 
 ## 7. The vendored `brainstorming` skill
 
-Source: `obra/superpowers` at `b36e0829`, directory `skills/brainstorming/` (8 files, 2,030 lines: `SKILL.md` 250, `visual-companion.md` 299, `spec-document-reviewer-prompt.md` 49, `scripts/` 1,432). Copied whole into `plugins/software-development/skills/brainstorming/`.
+Source: `obra/superpowers` at `b36e0829`, directory `skills/brainstorming/` (8 files, 2,030 lines: `SKILL.md` 250, `visual-companion.md` 299, `spec-document-reviewer-prompt.md` 49, `scripts/` 1,432). Copied whole into `plugins/software-dev/skills/brainstorming/`.
 
 Changes, and only these:
 
@@ -260,7 +264,7 @@ The Visual Companion's server fetches a logo from an external site unless `SUPER
 
 `hooks/session-start` reads `hooks/payload.md`, JSON-escapes it, and prints `{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "..."}}`. That envelope is what Claude Code documents and what Codex requires; one output serves both harnesses. *Amended 2026-09-04: the script now reads two files, `hooks/payload.md` and `hooks/payload-rules.md`, and joins them into the envelope as the [hook spec](2026-09-04-session-start-hook-design.md) §4 describes; Codex is offered no hook at all, see the [hook spec](2026-09-04-session-start-hook-design.md) §6.*
 
-Payload for the tracer bullet: the text of upstream `skills/using-superpowers/SKILL.md` at `b36e0829`, wrapped in the same `<EXTREMELY_IMPORTANT>` frame upstream uses, with exactly one edit: line 30, `superpowers:brainstorming` becomes `software-development:brainstorming`. Line 22 ("invoke the brainstorming skill first") is a bare-name mention and stays. `<SUBAGENT-STOP>` stays. The lean-router redesign, the admission test, and the bridge rules are sub-project 3; this payload exists so that the tracer measures a like-for-like replacement of upstream's injection.
+Payload for the tracer bullet: the text of upstream `skills/using-superpowers/SKILL.md` at `b36e0829`, wrapped in the same `<EXTREMELY_IMPORTANT>` frame upstream uses, with exactly one edit: line 30, `superpowers:brainstorming` becomes `software-dev:brainstorming`. Line 22 ("invoke the brainstorming skill first") is a bare-name mention and stays. `<SUBAGENT-STOP>` stays. The lean-router redesign, the admission test, and the bridge rules are sub-project 3; this payload exists so that the tracer measures a like-for-like replacement of upstream's injection.
 
 Claude Code concatenates every matching SessionStart hook's `additionalContext` and runs matching hooks in parallel, so five other plugins' hooks keep composing with this one. Upstream superpowers' hook does not load (§5.1), so there is no duplicate injection.
 
@@ -270,7 +274,7 @@ Claude Code concatenates every matching SessionStart hook's `additionalContext` 
 
 ```bash
 codex plugin marketplace add https://github.com/eranroseman/agent-plugins.git
-codex plugin add software-development@eranroseman
+codex plugin add software-dev@eranroseman
 codex plugin add sensemaking@eranroseman
 ```
 
@@ -283,7 +287,7 @@ Both `add` commands are explicit because Codex has no dependency field.
 ```bash
 REPO=/path/to/this/checkout
 SHA="$(jq -r '.plugins[] | select(.name == "superpowers") | .source.sha' "$REPO/.claude-plugin/marketplace.json")"
-CLONE=~/.local/share/software-development/upstream/superpowers
+CLONE=~/.local/share/software-dev/upstream/superpowers
 git clone https://github.com/obra/superpowers.git "$CLONE"
 git -C "$CLONE" checkout "$SHA"
 for s in $(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$REPO/.claude-plugin/marketplace.json" | sed 's#^\./##'); do
@@ -298,7 +302,7 @@ Gate G2 exists because Codex prefixes plugin skills with the plugin name (its ca
 
 **Corrected 2026-09-04 by the cutover (§14, gate G2). The premise above is false on this route, and the fallback this paragraph used to prescribe must not be taken.** Codex namespaces the symlinked skills `superpowers:` by itself: it resolves the symlink, walks up from `skills/<name>` to the clone root, finds `.codex-plugin/plugin.json` with `"name": "superpowers"`, and namespaces from that manifest. All 13 appear as `superpowers:<name>` in the session catalog while other skills in the same root appear bare, so 25 of the 26 qualified references resolve natively and the problem this gate was written to test does not arise. The 26th, `using-superpowers/SKILL.md:30`, names `superpowers:brainstorming`, which curation removes on both harnesses; it fails by curation rather than by namespacing, and §14 records it.
 
-The fallback recorded here was a plugin install of upstream (`codex plugin marketplace add https://github.com/obra/superpowers.git --ref v6.3.0` then `codex plugin add superpowers@superpowers-dev`). Taking it would install all 14 upstream skills, putting `superpowers:brainstorming` back beside `software-development:brainstorming` on Codex and defeating the curation this design exists to achieve. It is retained here only so the reversal is legible; it is not a remedy for anything.
+The fallback recorded here was a plugin install of upstream (`codex plugin marketplace add https://github.com/obra/superpowers.git --ref v6.3.0` then `codex plugin add superpowers@superpowers-dev`). Taking it would install all 14 upstream skills, putting `superpowers:brainstorming` back beside `software-dev:brainstorming` on Codex and defeating the curation this design exists to achieve. It is retained here only so the reversal is legible; it is not a remedy for anything.
 
 One consequence for sub-project 4: the `superpowers:` namespace on Codex is inherited from upstream's `.codex-plugin/plugin.json`, not from anything this repository controls. An upstream plugin rename would move every qualified reference on Codex without moving the pinned sha. §10.4 records the resulting drift signal.
 
@@ -315,7 +319,7 @@ Claude Code:
 1. `claude plugin uninstall superpowers@superpowers-dev` at user scope.
 2. From `/home/eranr/memoria-vault`, `claude plugin uninstall superpowers@superpowers-dev --scope project`. That project-scope entry (same `installPath`, different sha `3dcbd5c4`) is a second install and survives step 1.
 3. `claude plugin marketplace add eranroseman/agent-plugins`.
-4. `claude plugin install software-development@eranroseman`. This pulls `sensemaking` and the curated `superpowers`.
+4. `claude plugin install software-dev@eranroseman`. This pulls `sensemaking` and the curated `superpowers`.
 5. Delete `skillOverrides.grilling` from `~/.claude/settings.json`, then refresh the `harness-backup` copy.
 6. Leave the `superpowers-dev` marketplace registered until every gate passes; remove it afterwards.
 
@@ -332,10 +336,10 @@ Every gate is checked on the live machine after cutover. Each has a recorded fal
 
 | Gate | Passes when | Fallback if it fails |
 | --- | --- | --- |
-| G1 Claude catalog | `superpowers:brainstorming` is absent; the 13 `superpowers:*` skills, `software-development:brainstorming`, and `sensemaking:rethink-audit` are present (`claude plugin details`, then a session's skill list) | Fork `obra/superpowers` with `brainstorming` deleted and depend on the fork (the map's approach) |
+| G1 Claude catalog | `superpowers:brainstorming` is absent; the 13 `superpowers:*` skills, `software-dev:brainstorming`, and `sensemaking:rethink-audit` are present (`claude plugin details`, then a session's skill list) | Fork `obra/superpowers` with `brainstorming` deleted and depend on the fork (the map's approach) |
 | G2 Codex names | `$writing-plans` invokes from the symlink; an SDD-shaped prompt on Codex follows the `superpowers:test-driven-development` mention rather than stalling on it | **None. Superseded 2026-09-04 (§14).** G2 passed because Codex namespaces the symlinked skills itself. The plugin-install fallback this cell named would reinstall `brainstorming` on Codex and must not be taken — see §9.2 |
 | G3 Claude hook | Our payload appears once at startup, `/clear`, and `/compact`; no upstream injection | Investigate; there is no design alternative, only a defect |
-| G4 Codex hook | Codex either loads `hooks/hooks.json` by manifest fallback after the trust prompt (a `software-development@eranroseman:hooks/hooks.json:session_start:0:0` entry appears under `[hooks.state]` in `~/.codex/config.toml` and the payload appears once in a session) or does not; either outcome is recorded and sub-project 3 designs against it | None needed; the outcome is an input |
+| G4 Codex hook | Codex either loads `hooks/hooks.json` by manifest fallback after the trust prompt (a `software-dev@eranroseman:hooks/hooks.json:session_start:0:0` entry appears under `[hooks.state]` in `~/.codex/config.toml` and the payload appears once in a session) or does not; either outcome is recorded and sub-project 3 designs against it | None needed; the outcome is an input |
 | G5 Front door | `/brainstorming` resolves on Claude to ours; its terminal step reaches `superpowers:writing-plans` | Defect, fix in place |
 
 Fresh-machine reproducibility is not a gate here. It belongs to sub-project 2.
@@ -430,15 +434,15 @@ Not reversed: `sensemaking` exists and is shared by both products; the map's mea
 
 ## 14. Tracer results, 2026-09-04
 
-Cutover performed on this machine per §10.1, in one sitting. Claude Code 2.1.220, codex-cli 0.147.0. One `claude plugin install software-development@eranroseman` pulled `sensemaking` and the curated `superpowers` as dependencies, which is the live confirmation of what `tests/test-references-resolve.sh` guards statically. The `superpowers-dev` marketplace was removed last, after every gate had been answered, per §10.1 step 6 — it is the source the Codex rollback path re-adds from, so removing it earlier would have discarded the rollback while gates were still open.
+Cutover performed on this machine per §10.1, in one sitting. Claude Code 2.1.220, codex-cli 0.147.0. One `claude plugin install software-dev@eranroseman` pulled `sensemaking` and the curated `superpowers` as dependencies, which is the live confirmation of what `tests/test-references-resolve.sh` guards statically. The `superpowers-dev` marketplace was removed last, after every gate had been answered, per §10.1 step 6 — it is the source the Codex rollback path re-adds from, so removing it earlier would have discarded the rollback while gates were still open.
 
 | Gate | Result | Evidence |
 | --- | --- | --- |
-| G1 Claude catalog | PASS | `claude plugin details superpowers@eranroseman`: 13 skills, 0 hooks, no `brainstorming` (its only occurrence in that output is inside the entry's own description text). `software-development@eranroseman`: 1 skill (`brainstorming`), 1 SessionStart hook. `sensemaking@eranroseman`: 1 skill (`rethink-audit`). A post-cutover session, asked to print every namespaced skill matching `brainstorming`, `rethink-audit` or `:writing-plans`, printed exactly `software-development:brainstorming`, `sensemaking:rethink-audit`, `superpowers:writing-plans` — no `superpowers:brainstorming` — and its full list carried all 13 curated names under the `superpowers:` prefix |
-| G2 Codex names | PASS | `$writing-plans` loaded from `~/.local/share/software-development/upstream/superpowers/skills/writing-plans/SKILL.md`, the symlink target, so the pinned clone is what Codex read. The SDD-shaped prompt did not stall and did not fall back to bare names: it named all six skills in the qualified form (`superpowers:writing-plans`, `:using-git-worktrees`, `:subagent-driven-development`, `:test-driven-development`, `:requesting-code-review`, `:finishing-a-development-branch`). Codex namespaces the symlinked skills `superpowers:` by itself — see the first observation below |
-| G3 Claude hook | PASS | Standalone-line count of `You have superpowers.`: 1 at startup, 1 after `/clear`, 1 after `/compact`. The startup and post-`/compact` injections were each read back and carried our line-30 edit, `software-development:brainstorming` in the Skill Priority list where upstream names `superpowers:brainstorming` — which is what distinguishes a real pass from a count of 1 produced by the wrong hook. The `/clear` payload was not re-read; that leg rests on its count plus the startup content check earlier in the same session |
-| G4 Codex hook | IGNORED | No trust prompt appeared on either `codex plugin add`. No `[hooks.state]` entry exists for `software-development@eranroseman`; the only three are `ponytail@ponytail`. In-session count 0. The hook files shipped intact in the plugin cache (`hooks/hooks.json`, `hooks/payload.md`, `hooks/session-start` mode 755) and the manifest omits `hooks` exactly as §6.2 specifies |
-| G5 Front door | PASS | `/software-development:brainstorming` loaded and opened with its classification step. Asked what it had loaded, it answered `software-development:brainstorming` with a description beginning "Design front door of the superpowers spine". `writing-plans` resolves to `superpowers:writing-plans`, the only namespaced `writing-plans` in the list. Deviation: the invocation line shows `/software-development:brainstorming`. Claude Code's slash-command picker expands a typed prefix to the full namespaced id on selection, so the transcript cannot show whether the bare `/brainstorming` this gate's wording assumes was typed — the bare form is untested. G5 passes regardless, because `software-development:brainstorming` is the only `brainstorming` in the catalog and there is nothing else the bare form could resolve to. Re-confirmed in a session started after `superpowers-dev` was removed |
+| G1 Claude catalog | PASS | `claude plugin details superpowers@eranroseman`: 13 skills, 0 hooks, no `brainstorming` (its only occurrence in that output is inside the entry's own description text). `software-dev@eranroseman`: 1 skill (`brainstorming`), 1 SessionStart hook. `sensemaking@eranroseman`: 1 skill (`rethink-audit`). A post-cutover session, asked to print every namespaced skill matching `brainstorming`, `rethink-audit` or `:writing-plans`, printed exactly `software-dev:brainstorming`, `sensemaking:rethink-audit`, `superpowers:writing-plans` — no `superpowers:brainstorming` — and its full list carried all 13 curated names under the `superpowers:` prefix |
+| G2 Codex names | PASS | `$writing-plans` loaded from `~/.local/share/software-dev/upstream/superpowers/skills/writing-plans/SKILL.md`, the symlink target, so the pinned clone is what Codex read. The SDD-shaped prompt did not stall and did not fall back to bare names: it named all six skills in the qualified form (`superpowers:writing-plans`, `:using-git-worktrees`, `:subagent-driven-development`, `:test-driven-development`, `:requesting-code-review`, `:finishing-a-development-branch`). Codex namespaces the symlinked skills `superpowers:` by itself — see the first observation below |
+| G3 Claude hook | PASS | Standalone-line count of `You have superpowers.`: 1 at startup, 1 after `/clear`, 1 after `/compact`. The startup and post-`/compact` injections were each read back and carried our line-30 edit, `software-dev:brainstorming` in the Skill Priority list where upstream names `superpowers:brainstorming` — which is what distinguishes a real pass from a count of 1 produced by the wrong hook. The `/clear` payload was not re-read; that leg rests on its count plus the startup content check earlier in the same session |
+| G4 Codex hook | IGNORED | No trust prompt appeared on either `codex plugin add`. No `[hooks.state]` entry exists for `software-dev@eranroseman`; the only three are `ponytail@ponytail`. In-session count 0. The hook files shipped intact in the plugin cache (`hooks/hooks.json`, `hooks/payload.md`, `hooks/session-start` mode 755) and the manifest omits `hooks` exactly as §6.2 specifies |
+| G5 Front door | PASS | `/software-dev:brainstorming` loaded and opened with its classification step. Asked what it had loaded, it answered `software-dev:brainstorming` with a description beginning "Design front door of the superpowers spine". `writing-plans` resolves to `superpowers:writing-plans`, the only namespaced `writing-plans` in the list. Deviation: the invocation line shows `/software-dev:brainstorming`. Claude Code's slash-command picker expands a typed prefix to the full namespaced id on selection, so the transcript cannot show whether the bare `/brainstorming` this gate's wording assumes was typed — the bare form is untested. G5 passes regardless, because `software-dev:brainstorming` is the only `brainstorming` in the catalog and there is nothing else the bare form could resolve to. Re-confirmed in a session started after `superpowers-dev` was removed |
 
 Observations carried to later sub-projects:
 

@@ -5,15 +5,15 @@
   "description": "Eran Roseman's plugins for software development, plus the sensemaking skills they share with research-vault.",
   "plugins": [
     {
-      "name": "software-development",
-      "source": "./plugins/software-development",
+      "name": "software-dev",
+      "source": "./plugins/software-dev",
       "description": "Glue over superpowers and mattpocock/skills: narrowed brainstorming, plus a SessionStart hook on Claude Code.",
       "category": "development"
     },
     {
       "name": "sensemaking",
       "source": "./plugins/sensemaking",
-      "description": "Skills shared by software-development and research-vault.",
+      "description": "Skills shared by software-dev and research-vault.",
       "category": "productivity"
     },
     {

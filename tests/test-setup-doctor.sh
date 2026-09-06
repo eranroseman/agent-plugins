@@ -52,7 +52,7 @@ printf '%s\n' "$out" | grep -q 'FAIL:' || fail "the doctor reported no failure o
 # exist, which is exactly the converged-then-drifted machine the doctor is for
 # -- so nothing else stands between "could not read" and a false all-clear.
 J="$H/jqless"
-mkdir -p "$J/.local/share/software-development/upstream/superpowers/.git" "$J/.agents/skills" \
+mkdir -p "$J/.local/share/software-dev/upstream/superpowers/.git" "$J/.agents/skills" \
   || fail "could not seed $J"
 NOJQ="$H/nojq-bin"
 mkdir -p "$NOJQ"
@@ -93,7 +93,7 @@ fi
 if command -v claude >/dev/null 2>&1; then
   W="$(mktemp -d)"
   trap 'rm -rf "$H" "$W"' EXIT
-  PJ="plugins/software-development/.claude-plugin/plugin.json"
+  PJ="plugins/software-dev/.claude-plugin/plugin.json"
   cp -a "$REPO_ROOT" "$W/repo" || fail "could not copy the checkout into $W"
   jq '.version = "0.0.1"' "$REPO_ROOT/$PJ" > "$W/lowered" || fail "could not lower the version"
   cp "$W/lowered" "$W/repo/$PJ"
@@ -101,7 +101,7 @@ if command -v claude >/dev/null 2>&1; then
   mkdir -p "$W/home"
   env HOME="$W/home" claude plugin marketplace add "$W/repo" >/dev/null 2>&1 \
     || fail "could not add the copied marketplace"
-  env HOME="$W/home" claude plugin install software-development@eranroseman --scope user \
+  env HOME="$W/home" claude plugin install software-dev@eranroseman --scope user \
     >/dev/null 2>&1 || fail "could not seed the 0.0.1 install"
   # Back to the declared version, and refresh the catalogue, mirroring the
   # documented real-machine step. Measured 2026-09-05: a directory-source
@@ -113,7 +113,7 @@ if command -v claude >/dev/null 2>&1; then
 
   # The pinned clone, seeded from the shared checkout, so the only thing left
   # for bin/setup to converge is the Claude half.
-  CLONE="$W/home/.local/share/software-development/upstream/superpowers"
+  CLONE="$W/home/.local/share/software-dev/upstream/superpowers"
   mkdir -p "$(dirname "$CLONE")"
   cp -a "$(fetch_upstream)" "$CLONE" || fail "could not seed the pinned clone"
 
@@ -145,10 +145,10 @@ if command -v claude >/dev/null 2>&1; then
   want="$(jq -r .version "$REPO_ROOT/$PJ")"
   if out="$(env HOME="$W/home" CODEX_HOME="$W/home/.codex" SD_MARKETPLACE_SOURCE="$W/repo" \
       PATH="$BIN" bash "$SETUP" 2>&1)"; then status=0; else status=$?; fi
-  got="$(jq -r '.plugins["software-development@eranroseman"][0].version' \
+  got="$(jq -r '.plugins["software-dev@eranroseman"][0].version' \
     "$W/home/.claude/plugins/installed_plugins.json")"
   [ "$got" = "$want" ] \
-    || fail "bin/setup left software-development at $got, declared $want:"$'\n'"$out"
+    || fail "bin/setup left software-dev at $got, declared $want:"$'\n'"$out"
   [ "$status" -eq 0 ] \
     || fail "bin/setup did not converge on an upgradeable machine (exit $status):"$'\n'"$out"
 else
@@ -221,6 +221,6 @@ $line"
     || fail "expected at least $min fenced Install/Update block(s) in $readme, found $blocks"
 }
 check_readme_blocks "$REPO_ROOT/README.md" 2
-check_readme_blocks "$REPO_ROOT/plugins/software-development/README.md" 1
+check_readme_blocks "$REPO_ROOT/plugins/software-dev/README.md" 1
 
 printf 'setup-doctor: two entry points, lint clean, prerequisites split as documented\n'

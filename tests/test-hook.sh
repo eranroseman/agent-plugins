@@ -17,7 +17,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-H="$REPO_ROOT/plugins/software-development/hooks"
+H="$REPO_ROOT/plugins/software-dev/hooks"
 [ -f "$H/payload.md" ] || fail "missing $H/payload.md"
 [ -f "$H/payload-rules.md" ] || fail "missing $H/payload-rules.md"
 [ -f "$H/claude-hooks.json" ] || fail "missing $H/claude-hooks.json"
@@ -34,7 +34,7 @@ expected="$(mktemp)"
 bash "$REPO_ROOT/bin/bump-superpowers" --emit-payload "$UP" > "$expected" \
   || fail "bin/bump-superpowers --emit-payload failed"
 diff "$expected" "$H/payload.md" || fail "payload.md != the recipe's output for the pinned clone"
-[ "$(grep -c 'software-development:brainstorming' "$H/payload.md")" -eq 1 ] || fail "expected exactly one software-development:brainstorming"
+[ "$(grep -c 'software-dev:brainstorming' "$H/payload.md")" -eq 1 ] || fail "expected exactly one software-dev:brainstorming"
 if grep -q 'superpowers:brainstorming' "$H/payload.md"; then fail "a superpowers:brainstorming reference survived"; fi
 
 # (1b) the authored rules file: non-empty, exactly one trailing newline, and
@@ -56,7 +56,7 @@ done < <(grep -o 'superpowers:[a-z-]*' "$H/payload-rules.md" | sed 's/^superpowe
 # itself resolves payload.md via dirname "$0" and never reads the variable, so
 # the ${CLAUDE_PLUGIN_ROOT} expansion asserted in section 3 is checked as a
 # string and not exercised as an expansion.
-out="$(CLAUDE_PLUGIN_ROOT="$REPO_ROOT/plugins/software-development" "$H/session-start")"
+out="$(CLAUDE_PLUGIN_ROOT="$REPO_ROOT/plugins/software-dev" "$H/session-start")"
 printf '%s' "$out" | jq -e '.hookSpecificOutput.hookEventName == "SessionStart"' >/dev/null \
   || fail "output is not the SessionStart envelope: $out"
 [ "$(printf '%s' "$out" | jq 'keys | length')" -eq 1 ] || fail "envelope has extra top-level keys"
@@ -68,7 +68,7 @@ len="$(printf '%s' "$out" | jq '.hookSpecificOutput.additionalContext | length')
 
 # (3) wiring: the Claude manifest declares the hook file, and nothing sits at
 # the path Codex loads by fallback when its manifest has no hooks key.
-PLUGIN="$REPO_ROOT/plugins/software-development"
+PLUGIN="$REPO_ROOT/plugins/software-dev"
 HJ="$H/claude-hooks.json"
 [ -z "$(find "$REPO_ROOT/plugins" -name hooks.json)" ] || fail "no plugins/**/hooks/hooks.json may exist: Codex loads that path by fallback"
 [ "$(jq -r '.hooks.SessionStart[0].matcher' "$HJ")" = 'startup|clear|compact' ] || fail "matcher"
@@ -76,8 +76,8 @@ HJ="$H/claude-hooks.json"
 [ "$(jq -r '.hooks.SessionStart[0].hooks[0].command' "$HJ")" = '"${CLAUDE_PLUGIN_ROOT}/hooks/session-start"' ] || fail "hook command"
 [ "$(jq -r 'keys | join(",")' "$HJ")" = 'hooks' ] || fail "claude-hooks.json top level must contain only 'hooks'"
 [ "$(jq -r '.hooks' "$PLUGIN/.claude-plugin/plugin.json")" = './hooks/claude-hooks.json' ] || fail "Claude manifest must declare hooks: ./hooks/claude-hooks.json"
-[ "$(jq -r '.version' "$PLUGIN/.claude-plugin/plugin.json")" = '0.5.5' ] || fail "Claude manifest version must be 0.5.5"
-[ "$(jq -r '.version' "$PLUGIN/.codex-plugin/plugin.json")" = '0.5.5' ] || fail "Codex manifest version must be 0.5.5"
+[ "$(jq -r '.version' "$PLUGIN/.claude-plugin/plugin.json")" = '0.6.0' ] || fail "Claude manifest version must be 0.6.0"
+[ "$(jq -r '.version' "$PLUGIN/.codex-plugin/plugin.json")" = '0.6.0' ] || fail "Codex manifest version must be 0.6.0"
 [ "$(jq 'has("hooks")' "$PLUGIN/.codex-plugin/plugin.json")" = 'false' ] || fail "Codex manifest must not declare hooks"
 [ "$(jq '.interface.capabilities | index("Lifecycle hooks")' "$PLUGIN/.codex-plugin/plugin.json")" = 'null' ] || fail "Codex manifest must not claim Lifecycle hooks"
 

@@ -9,7 +9,7 @@
 # Needs network access.
 . "$(dirname "$0")/lib.sh"
 
-V="$REPO_ROOT/plugins/software-development/skills/setup-repository"
+V="$REPO_ROOT/plugins/software-dev/skills/setup-repository"
 [ -d "$V" ] || fail "missing $V"
 
 REF="v1.2.3"
@@ -218,7 +218,7 @@ done < <(find "$U/.." -mindepth 1 -maxdepth 1 -type d -printf '%f\n')
 [ "$named" -gt 0 ] || fail "SKILL.md names no upstream skill at all; the resolution check went vacuous"
 
 # The LICENSE's third provenance notice names the same ref and commit.
-grep -q "at tag $REF, commit $SHA" "$REPO_ROOT/plugins/software-development/LICENSE" \
+grep -q "at tag $REF, commit $SHA" "$REPO_ROOT/plugins/software-dev/LICENSE" \
   || fail "LICENSE provenance does not name $REF / $SHA"
 
 printf 'vendored-scaffolder: matches mattpocock/skills %s except header + declared regions; %s skill name(s) resolve\n' "$REF" "$named"

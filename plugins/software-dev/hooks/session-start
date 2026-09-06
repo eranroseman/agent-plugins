@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SessionStart hook for the software-development plugin, Claude Code only.
+# SessionStart hook for the software-dev plugin, Claude Code only.
 #
 # Reads hooks/payload.md and hooks/payload-rules.md (next to this script),
 # joins them with one blank line, and prints the result as the

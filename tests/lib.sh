@@ -26,7 +26,7 @@ fetch_upstream() {
   local sha dir
   sha="$(upstream_sha)" || fail "could not read the pinned sha from $MARKETPLACE"
   [ "${#sha}" -eq 40 ] || fail "no 40-char pinned sha in $MARKETPLACE (got '$sha')"
-  dir="${UPSTREAM_DIR:-${TMPDIR:-/tmp}/software-development-upstream-superpowers}"
+  dir="${UPSTREAM_DIR:-${TMPDIR:-/tmp}/software-dev-upstream-superpowers}"
   if [ -d "$dir/.git" ] && [ "$(git -C "$dir" rev-parse HEAD)" = "$sha" ]; then
     printf '%s\n' "$dir"
     return

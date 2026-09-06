@@ -1,4 +1,4 @@
-# software-development
+# software-dev
 
 Eran Roseman's glue plugin for software development. It is a thin
 layer over two upstream skill packs, not a home for copies of them.
@@ -21,7 +21,7 @@ What it ships:
 - `hooks/session-start`, Claude Code only: a SessionStart hook that injects
   `hooks/payload.md`, upstream's `using-superpowers` text with its one
   `superpowers:brainstorming` reference repointed at
-  `software-development:brainstorming`, followed by `hooks/payload-rules.md`,
+  `software-dev:brainstorming`, followed by `hooks/payload-rules.md`,
   this plugin's own working rules. The Claude manifest declares the hook as
   `hooks/claude-hooks.json`.
 

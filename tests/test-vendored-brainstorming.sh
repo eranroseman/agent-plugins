@@ -4,7 +4,7 @@
 # frontmatter, and line 3 (the description). Needs network access.
 . "$(dirname "$0")/lib.sh"
 
-V="$REPO_ROOT/plugins/software-development/skills/brainstorming"
+V="$REPO_ROOT/plugins/software-dev/skills/brainstorming"
 [ -d "$V" ] || fail "missing $V"
 UP="$(fetch_upstream)" || fail "could not fetch upstream at $(upstream_sha)"
 U="$UP/skills/brainstorming"
@@ -44,7 +44,7 @@ diff <(sed '3d' "$U/SKILL.md") <(sed -e '3d' -e '5,9d' "$V/SKILL.md") \
   || fail "SKILL.md changed beyond the header and the description"
 
 # The LICENSE's provenance notice names the same commit as the pin.
-grep -q "at commit $sha)" "$REPO_ROOT/plugins/software-development/LICENSE" \
+grep -q "at commit $sha)" "$REPO_ROOT/plugins/software-dev/LICENSE" \
   || fail "LICENSE provenance sha != marketplace sha"
 
 printf 'vendored-brainstorming: matches upstream %s except header + description\n' "$sha"

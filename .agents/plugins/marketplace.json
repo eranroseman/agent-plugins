@@ -3,8 +3,8 @@
   "interface": { "displayName": "Eran Roseman" },
   "plugins": [
     {
-      "name": "software-development",
-      "source": { "source": "local", "path": "./plugins/software-development" },
+      "name": "software-dev",
+      "source": { "source": "local", "path": "./plugins/software-dev" },
       "policy": { "installation": "AVAILABLE", "authentication": "ON_INSTALL" },
       "category": "Developer Tools"
     },

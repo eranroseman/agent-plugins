@@ -1,6 +1,6 @@
 # sensemaking
 
-Skills shared by `software-development` and, later, `research-vault`.
+Skills shared by `software-dev` and, later, `research-vault`.
 
 ## Skills
 
@@ -9,7 +9,7 @@ Skills shared by `software-development` and, later, `research-vault`.
 
 ## Install
 
-Claude Code: installing `software-development@eranroseman` pulls this plugin
+Claude Code: installing `software-dev@eranroseman` pulls this plugin
 in as a dependency. To install it alone:
 
     claude plugin marketplace add eranroseman/agent-plugins

@@ -10,7 +10,7 @@ SETUP="$REPO_ROOT/bin/setup"
 H="$(mktemp -d)"
 trap 'rm -rf "$H"' EXIT
 
-CLONE="$H/.local/share/software-development/upstream/superpowers"
+CLONE="$H/.local/share/software-dev/upstream/superpowers"
 SKILLS="$H/.agents/skills"
 mkdir -p "$CLONE" "$SKILLS" || fail "could not seed $H"
 
@@ -61,7 +61,7 @@ printf '%s\n' "$out" | grep -q 'FAIL' || fail "doctor reported no FAIL line"
 # The declared versions, read once: both fixtures below seed an
 # installed_plugins.json carrying them, so the Claude half reports OK without
 # running a command.
-sd="$(jq -r .version "$REPO_ROOT/plugins/software-development/.claude-plugin/plugin.json")"
+sd="$(jq -r .version "$REPO_ROOT/plugins/software-dev/.claude-plugin/plugin.json")"
 sm="$(jq -r .version "$REPO_ROOT/plugins/sensemaking/.claude-plugin/plugin.json")"
 sp="$(jq -r '.plugins[] | select(.name == "superpowers") | .version' "$MARKETPLACE")"
 
@@ -74,7 +74,7 @@ sp="$(jq -r '.plugins[] | select(.name == "superpowers") | .version' "$MARKETPLA
 # of installing anything, so this needs no network.
 H2="$(mktemp -d)"
 trap 'rm -rf "$H" "$H2"' EXIT
-CLONE2="$H2/.local/share/software-development/upstream/superpowers"
+CLONE2="$H2/.local/share/software-dev/upstream/superpowers"
 mkdir -p "$CLONE2" "$H2/.agents/skills" "$H2/.claude/plugins" || fail "could not seed $H2"
 git -C "$CLONE2" init -q || fail "git init failed in $CLONE2"
 git -C "$CLONE2" -c user.email=t@example.com -c user.name=t \
@@ -84,7 +84,7 @@ while IFS= read -r s; do
 done < <(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$MARKETPLACE" | sed 's#^\./##')
 cat > "$H2/.claude/plugins/installed_plugins.json" <<JSON
 {"version":2,"plugins":{
-  "software-development@eranroseman":[{"scope":"user","version":"$sd"}],
+  "software-dev@eranroseman":[{"scope":"user","version":"$sd"}],
   "sensemaking@eranroseman":[{"scope":"user","version":"$sm"}],
   "superpowers@eranroseman":[{"scope":"user","version":"$sp"}]}}
 JSON
@@ -154,7 +154,7 @@ fi
 mkdir -p "$H/.claude/plugins"
 cat > "$H/.claude/plugins/installed_plugins.json" <<JSON
 {"version":2,"plugins":{
-  "software-development@eranroseman":[{"scope":"user","version":"$sd"}],
+  "software-dev@eranroseman":[{"scope":"user","version":"$sd"}],
   "sensemaking@eranroseman":[{"scope":"user","version":"$sm"}],
   "superpowers@eranroseman":[{"scope":"user","version":"$sp"}]}}
 JSON
