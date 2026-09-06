@@ -76,7 +76,14 @@ old_sha="$(jq -r '.plugins[] | select(.name == "superpowers") | .source.sha' "$M
 [ "$new_sha" != "$old_sha" ] || die "already pinned at $new_sha"
 
 work="$(mktemp -d)"
-trap 'rm -rf "$work"' EXIT
+payload_tmp=""
+license_tmp=""
+cleanup() {
+  rm -rf "$work"
+  [ -n "$payload_tmp" ] && rm -f "$payload_tmp"
+  [ -n "$license_tmp" ] && rm -f "$license_tmp"
+}
+trap cleanup EXIT
 fetch_at "$work" "$new_sha"
 
 new_version="$(jq -r '.version' "$work/.claude-plugin/plugin.json")"
@@ -95,15 +102,26 @@ if jq --arg s "$new_sha" --arg v "$new_version" \
 else
   die "could not rewrite $MARKETPLACE"
 fi
-tmp="$(mktemp)"
-if sed "s/at commit $old_sha/at commit $new_sha/" "$PLUGIN/LICENSE" > "$tmp"; then
-  mv "$tmp" "$PLUGIN/LICENSE" || die "could not replace the LICENSE"
+license_tmp="$(mktemp "$PLUGIN/LICENSE.XXXXXX")"
+if sed "s/at commit $old_sha/at commit $new_sha/" "$PLUGIN/LICENSE" > "$license_tmp"; then
+  grep -q "at commit $new_sha" "$license_tmp" \
+    || die "sed found no 'at commit $old_sha' in the LICENSE to replace; re-audit the phrasing"
+  mv "$license_tmp" "$PLUGIN/LICENSE" || die "could not replace the LICENSE"
+  license_tmp=""
 else
   die "could not rewrite the LICENSE"
 fi
 
-# 2. regenerated: the payload, then the vendored brainstorming tree
-emit_payload "$work" > "$PLUGIN/hooks/payload.md" || die "could not write payload.md"
+# 2. regenerated: the payload, then the vendored brainstorming tree. Written
+# through a temporary beside the destination so a die inside emit_payload
+# cannot truncate the shipped payload.md.
+payload_tmp="$(mktemp "$PLUGIN/hooks/payload.md.XXXXXX")"
+if emit_payload "$work" > "$payload_tmp"; then
+  mv "$payload_tmp" "$PLUGIN/hooks/payload.md" || die "could not replace payload.md"
+  payload_tmp=""
+else
+  die "could not write payload.md"
+fi
 
 # The narrowed description, verbatim. tests/test-vendored-brainstorming.sh
 # carries the same string; the two must stay identical.
@@ -114,10 +132,10 @@ revendor_brainstorming() {
   src="$up/skills/brainstorming/SKILL.md"
   dest="$PLUGIN/skills/brainstorming"
   [ -f "$src" ] || die "no skills/brainstorming/SKILL.md at $sha"
-  rm -rf "$dest"
-  cp -R "$up/skills/brainstorming" "$dest" || die "could not copy skills/brainstorming"
   [ "$(sed -n 4p "$src")" = "---" ] \
     || die "upstream brainstorming frontmatter is no longer three lines; re-audit the vendoring"
+  rm -rf "$dest"
+  cp -R "$up/skills/brainstorming" "$dest" || die "could not copy skills/brainstorming"
   tmp="$(mktemp)"
   {
     sed -n '1,2p' "$src"
