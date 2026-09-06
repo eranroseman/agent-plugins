@@ -242,6 +242,14 @@ Two mechanisms replaced hand-work in the same pass. The drift test now diffs bot
 
 This repository's Codex-only rule moved out of `## Agent skills` into a `## Codex only` heading at the end of `AGENTS.md`. It is hand-added and outside the six sections the scaffolder writes, so the new heading also marks the boundary between what the skill owns and what this repository added. Its scan-family list is kept deliberately long pending a behavioural test ([#21](https://github.com/eranroseman/agent-plugins/issues/21)).
 
+**Update, 2026-09-06 (0.5.4).** The skill's `triage` detection was broken on every machine this marketplace sets up, and the fix is a deletion rather than a better test.
+
+Upstream's Explore step offers two ways to answer "is `triage` installed?": a `triage` folder alongside the skill, or `triage` in the model's available skills. Both fail here. `bin/setup` installs the declared skills into `~/.agents/skills`, not beside the vendored copy; and `triage` carries `disable-model-invocation: true`, so it never enters the available-skills list — eight of the eighteen declared skills are invisible the same way. The skill therefore concluded "not installed" on a correctly set-up machine, skipped Section B, omitted `### Triage labels` from the block, and never wrote `docs/agents/triage-labels.md`. In a repository that already had that sub-block, the in-place update would have deleted it.
+
+The first fix drafted was a third place to look, `~/.agents/skills/triage/`. That is a better test, which is the mechanism rung. The rung above it was available and was taken instead: **this marketplace always installs `triage`** — `upstream/skills.json` declares it, `bin/setup` installs it, `bin/doctor` verifies it — so the conditional has no live alternative branch. The bullet now states that as a fact and tells the reader not to test, naming why a test would answer wrongly. The five downstream "only when `triage` is installed" clauses are left untouched: they are satisfied vacuously, which costs no divergence from upstream where rewriting them would have cost five more regions.
+
+The drift test gains a sixth region per side for that one line, and the provenance header grows to eight lines.
+
 ## 9. Updating an installation
 
 **Claude, once the user enables auto-update: nothing to run.** Claude Code refreshes the marketplace and updates installed plugins on disk after a session starts, with a random delay of up to ten minutes, then either prompts for `/reload-plugins` or loads the new versions at the next launch. Third-party marketplaces default to auto-update off, which is why this has never happened; the `eranroseman` entry has no `autoUpdate` key today.

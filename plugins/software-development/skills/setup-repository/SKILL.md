@@ -6,9 +6,10 @@ disable-model-invocation: true
 <!-- Vendored from https://github.com/mattpocock/skills at tag v1.2.3, commit 6acc160e4e0cd062dbbbd7a1b26ae92855edf07e
      path: skills/engineering/setup-matt-pocock-skills/
      MIT, (c) 2026 Matt Pocock. Local changes: in this file, the frontmatter
-     name and description, the title, the tracker explainer's skill list, the
-     file-pick rule under '4. Write', Section D in step 2, and the Agent skills
-     block it writes; in agents/openai.yaml, the Codex display name.
+     name and description, the title, the triage detection in step 1, the
+     tracker explainer's skill list, the file-pick rule under '4. Write',
+     Section D in step 2, and the Agent skills block it writes; in
+     agents/openai.yaml, the Codex display name.
 -->
 
 # Setup Repository
@@ -33,7 +34,7 @@ Look at the current repo to understand its starting state. Read whatever exists;
 - `docs/adr/` and any `src/*/docs/adr/` directories
 - `docs/agents/` — does this skill's prior output already exist?
 - `.scratch/` — sign that a local-markdown issue tracker convention is already in use
-- Is the `triage` skill installed? (a `triage` skill folder alongside this one, or `triage` in your available skills.) This decides whether Section B runs at all.
+- The `triage` skill is always installed here: this marketplace declares it and `bin/setup` installs it. Section B always runs. Do not test for it — `triage` is gated, so it never appears in your available skills and any test answers "no" on a correct machine.
 - Monorepo signals — a `pnpm-workspace.yaml`, a `workspaces` field in `package.json`, or a populated `packages/*` with its own `src/`. Present only in a genuinely large multi-package repo; their absence means single-context, which is almost every repo.
 
 ### 2. Present findings and ask

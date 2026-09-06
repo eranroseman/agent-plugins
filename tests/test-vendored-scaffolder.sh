@@ -74,12 +74,13 @@ expected_header="$(printf '%s\n' \
   "<!-- Vendored from https://github.com/mattpocock/skills at tag $REF, commit $SHA" \
   "     path: skills/engineering/setup-matt-pocock-skills/" \
   "     MIT, (c) 2026 Matt Pocock. Local changes: in this file, the frontmatter" \
-  "     name and description, the title, the tracker explainer's skill list, the" \
-  "     file-pick rule under '4. Write', Section D in step 2, and the Agent skills" \
-  "     block it writes; in agents/openai.yaml, the Codex display name." \
+  "     name and description, the title, the triage detection in step 1, the" \
+  "     tracker explainer's skill list, the file-pick rule under '4. Write'," \
+  "     Section D in step 2, and the Agent skills block it writes; in" \
+  "     agents/openai.yaml, the Codex display name." \
   "-->")"
-[ "$(sed -n '6,12p' "$V/SKILL.md")" = "$expected_header" ] \
-  || fail "lines 6-12 are not the provenance header"
+[ "$(sed -n '6,13p' "$V/SKILL.md")" = "$expected_header" ] \
+  || fail "lines 6-13 are not the provenance header"
 
 # Below the frontmatter and the header, strip each side's declared regions by
 # that side's own sentinels and require the remainder to be identical.
@@ -122,6 +123,8 @@ up_body="$(strip_regions upstream "$d/up.md" \
   "# Setup Matt Pocock's Skills" \
   '> Explainer: The "issue tracker" is where issues live for this repo. Skills like `to-tickets`, `triage`, and `to-spec` read from and write to it — they need to know whether to call `gh issue create`, write a markdown file under `.scratch/`, or follow some other workflow you describe. Pick the place you actually track work for this repo.' \
   '> Explainer: The "issue tracker" is where issues live for this repo. Skills like `to-tickets`, `triage`, and `to-spec` read from and write to it — they need to know whether to call `gh issue create`, write a markdown file under `.scratch/`, or follow some other workflow you describe. Pick the place you actually track work for this repo.' \
+  '- Is the `triage` skill installed? (a `triage` skill folder alongside this one, or `triage` in your available skills.) This decides whether Section B runs at all.' \
+  '- Is the `triage` skill installed? (a `triage` skill folder alongside this one, or `triage` in your available skills.) This decides whether Section B runs at all.' \
   '**Pick the file to edit:**' \
   'Never create `AGENTS.md` when `CLAUDE.md` already exists (or vice versa) — always edit the one that'"'"'s already there.' \
   '### 3. Confirm and edit' \
@@ -129,12 +132,14 @@ up_body="$(strip_regions upstream "$d/up.md" \
   '```markdown' \
   'Include the `### Triage labels` sub-block, and write `docs/agents/triage-labels.md`, only when `triage` is installed and Section B ran. When it isn'"'"'t, both are omitted.')"
 
-sed '1,12d' "$V/SKILL.md" > "$d/ours.md" || fail "could not strip our frontmatter and header"
+sed '1,13d' "$V/SKILL.md" > "$d/ours.md" || fail "could not strip our frontmatter and header"
 our_body="$(strip_regions vendored "$d/ours.md" \
   '# Setup Repository' \
   '# Setup Repository' \
   '> Explainer: The "issue tracker" is where issues live for this repo. `triage` reads from and writes to it — it needs to know whether to call `gh issue create`, write a markdown file under `.scratch/`, or follow some other workflow you describe. Pick the place you actually track work for this repo.' \
   '> Explainer: The "issue tracker" is where issues live for this repo. `triage` reads from and writes to it — it needs to know whether to call `gh issue create`, write a markdown file under `.scratch/`, or follow some other workflow you describe. Pick the place you actually track work for this repo.' \
+  '- The `triage` skill is always installed here: this marketplace declares it and `bin/setup` installs it. Section B always runs. Do not test for it — `triage` is gated, so it never appears in your available skills and any test answers "no" on a correct machine.' \
+  '- The `triage` skill is always installed here: this marketplace declares it and `bin/setup` installs it. Section B always runs. Do not test for it — `triage` is gated, so it never appears in your available skills and any test answers "no" on a correct machine.' \
   '**Write `AGENTS.md`, and make `CLAUDE.md` an import:**' \
   'Never leave the block in `CLAUDE.md` alone: a Claude-only carrier leaves Codex reading nothing.' \
   '**Section D — Git convention.** Default to **merge locally**. Ask which of the three this repo uses:' \
