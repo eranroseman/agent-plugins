@@ -12,13 +12,13 @@ VALIDATOR="${CODEX_PLUGIN_VALIDATOR:-$HOME/.codex/skills/.system/plugin-creator/
 found=0
 for p in "$REPO_ROOT"/plugins/*/; do
   [ -f "$p/.codex-plugin/plugin.json" ] || fail "$p has no .codex-plugin/plugin.json"
-  # One recorded exception. validate_plugin.py requires Claude's
+  # The recorded exceptions. validate_plugin.py requires Claude's
   # disable-model-invocation to be false or absent, on every directory under
-  # <plugin>/skills. The vendored scaffolder keeps upstream's `true` because
-  # that is the field Claude reads; Codex reads policy.allow_implicit_invocation
-  # in agents/openai.yaml, which is set to false and taken from upstream, and
-  # the Codex runtime never reads the frontmatter field at all. Any other bullet
-  # from the validator still fails the test.
+  # <plugin>/skills. Every gated skill keeps `true` because that is the field
+  # Claude reads; Codex reads policy.allow_implicit_invocation in
+  # agents/openai.yaml, which is set to false, and the Codex runtime never
+  # reads the frontmatter field at all. Any other bullet from the validator
+  # still fails the test.
   # Three gated skills, each carrying the field Claude reads beside the yaml
   # policy Codex reads: the vendored scaffolder, the authored consistency
   # audit, and the vendored adhd. tests/test-plugin-skills.sh asserts the pair.
@@ -33,9 +33,10 @@ for p in "$REPO_ROOT"/plugins/*/; do
     # below with an empty $others.
     printf '%s\n' "$out" | grep -q '^- ' || fail "Codex validator failed on $p with no bullets:
 $out"
-    # -e is required: the pattern begins with a dash and would otherwise be
-    # read as options. `|| true` because both greps exit 1 when the only
-    # bullet is the known one, which is the case that must pass.
+    # -f with a process substitution, not -e: there is more than one pattern
+    # and each begins with a dash, which would otherwise be read as options.
+    # `|| true` because both greps exit 1 when the only bullets are the known
+    # ones, which is the case that must pass.
     others="$(printf '%s\n' "$out" | grep '^- ' | grep -vxF -f <(printf '%s\n' "$known") || true)"
     [ -z "$others" ] || fail "Codex validator rejected $p:
 $others"
