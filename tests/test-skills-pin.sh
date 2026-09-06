@@ -2,9 +2,10 @@
 # upstream/skills.json must be well-formed, every declared ref must exist as a
 # tag on its repo, and every listed skill name must resolve to exactly one
 # SKILL.md at that ref, the way `skills add --skill <name>` resolves it. The
-# two declared sources use different layouts -- mattpocock/skills nests a
-# category level, obra/superpowers-developing-for-claude-code is flat -- so
-# the search is by directory basename, not by a hardcoded path. Needs network.
+# three declared sources use different layouts -- mattpocock/skills nests a
+# category level, obra/superpowers-developing-for-claude-code and tt-a1i/archify
+# are flat -- so the search is by directory basename, not by a hardcoded path.
+# Needs network.
 . "$(dirname "$0")/lib.sh"
 
 S="$REPO_ROOT/upstream/skills.json"

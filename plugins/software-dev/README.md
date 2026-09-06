@@ -57,8 +57,8 @@ spec in the repository records the evidence.
 
 ## Environment
 
-Nothing here needs configuring to work. One optional variable is worth knowing
-about, and no setup step sets it for you.
+Nothing here needs configuring to work. Two optional variables are worth
+knowing about, and no setup step sets either for you.
 
 The brainstorming skill's Visual Companion is an opt-in browser view, offered
 only when a question is genuinely clearer shown than described. When its page
