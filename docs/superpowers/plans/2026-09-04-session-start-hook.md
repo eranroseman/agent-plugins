@@ -514,7 +514,7 @@ claude plugin details software-development@eranroseman
 
 Expected in the details output: version `0.3.0`, `Hooks (1) SessionStart`. Quit every Claude Code instance and start a new one.
 
-- [ ] **Step 2: G3 rerun. Verify before you delete anything.**
+- [x] **Step 2: G3 rerun. Verify before you delete anything.** — PASS on all three legs, 2026-09-05
 
 In a fresh Claude Code session in any directory, ask:
 
@@ -523,6 +523,14 @@ In a fresh Claude Code session in any directory, ask:
 Expected: `1`, and the paragraph printed back. Run `/clear`, ask again: `1` and the paragraph. Then produce enough conversation to compact (several substantial exchanges), run `/compact`, and ask again: `1` and the paragraph. If `/compact` answers "Not enough messages to compact", the compact leg has not run; add history and retry.
 
 A count of `1` without the paragraph means the old cache is still loaded: check that `claude plugin details` reports `0.3.0` and restart. **Do not proceed to Step 3 until the paragraph comes back**, because until then `~/.claude/CLAUDE.md` is its only carrier.
+
+**Observed 2026-09-05, all three legs PASS.**
+
+- **Startup:** count `1`, under `<EXTREMELY_IMPORTANT>` in the SessionStart hook block. The worktree paragraph appeared twice, once from `~/.claude/CLAUDE.md` and once from "software-development: working rules". That second occurrence is the discriminating evidence, because 0.1.0 shipped no rules file at all.
+- **After `/clear`:** the question was asked without the trailing period, so the literal answer was `0`, and the session volunteered the near-miss itself: "`You have superpowers.` (trailing period) in SessionStart hook block". The injection was present; the zero was a wording artifact.
+- **After `/compact`:** asked as two counts, `# software-development: working rules` and `You have superpowers.` including the period. Answer `1 and 1`. Before compaction it was `2 and 1`, the extra heading being a `cat` of `payload-rules.md` in that session's history, which compaction dropped.
+
+**One limit worth recording rather than glossing.** A count of `1` after `/compact` cannot by itself distinguish a fresh injection from an old one surviving compaction, and unlike the tracer there is no payload difference to discriminate with, since both would be 0.3.0. The reading rests on two things: compaction replaces history with a summary, and the session reported that the summary's own mentions of both strings "sit inline in backticks, not standalone lines", so the single standalone occurrence is a live injection rather than preserved text. That is the same inline-versus-standalone trap the tracer hit, handled correctly here.
 
 - [ ] **Step 3: Move the worktree rule out of the user file**
 
