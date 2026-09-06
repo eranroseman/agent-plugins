@@ -1,7 +1,26 @@
 # agent-plugins
 
-The source repository for the `eranroseman` plugin marketplace, which serves
-both Claude Code and Codex. It hosts three plugins:
+One command puts the same agent skills on Claude Code and Codex, and one script
+tells you when a machine has drifted from them.
+
+## Why
+
+Skills reach an agent by three different routes: a curated upstream, a separate
+installer with its own lockfile, and skills written here. Two harnesses consume
+them differently — Codex has no dependency concept and no update verb, so
+anything Claude resolves automatically has to be done explicitly there. And
+upstreams move underneath all of it.
+
+Done by hand that is a dozen decisions repeated on every machine, with no way
+to answer "is this machine still what I think it is". The alternative is not a
+better memory: it is a repository that states the intended machine state, a
+script that converges a machine to it, and the same script in check mode to
+report what does not match. A daily watch says when an upstream has moved past
+a pin, and never moves one itself.
+
+## What it ships
+
+Three marketplace entries:
 
 - `software-dev`: the glue plugin. obra/superpowers' `brainstorming`
   skill vendored with a narrowed description, plus a SessionStart hook on
@@ -10,7 +29,8 @@ both Claude Code and Codex. It hosts three plugins:
 - `sensemaking`: skills shared with `research-vault`, starting with
   `rethink-audit`.
 - `superpowers`: obra/superpowers taken straight from upstream at a pinned
-  commit, 13 of its 14 skills. `brainstorming` is the one left out. This entry
+  commit — every skill except `brainstorming`, which ships adapted in
+  `software-dev`. This entry
   is Claude Code only; Codex gets the same skills by symlink, created by
   `bin/setup` as described in Install below.
 
@@ -34,7 +54,7 @@ marketplace and installs both local plugins there. When it is not, that half
 is reported as skipped and nothing else changes.
 
 What the run leaves behind: both plugins installed on each harness present, a
-clone of obra/superpowers at the pinned sha, thirteen symlinks into it under
+clone of obra/superpowers at the pinned sha, a symlink per curated skill under
 `~/.agents/skills` — Codex's documented user skill root, created whether or
 not Codex is present — and the declared skills.sh set installed at its
 declared refs.
@@ -57,7 +77,7 @@ bash ~/.claude/plugins/marketplaces/eranroseman/bin/setup
 
 Everything after that is the script's own work: re-adding the Codex plugins,
 since Codex has no update verb; re-fetching the pinned clone; re-verifying the
-thirteen links; and re-running `skills add` per declared skill. With auto-update
+symlinks; and re-running `skills add` per declared skill. With auto-update
 enabled, Claude Code refreshes itself and the first command is unnecessary.
 
 Claude Code loads the new versions at the next launch or after
@@ -72,24 +92,3 @@ touch the network: the two pin checks, the two vendored-skill drift checks, the
 hook payload check, and the engine's own test, whose upgrade-path assertion
 fetches the pinned upstream tree when `claude` is on `PATH`. CI runs the same
 script, plus an end-to-end `bin/setup` run against a scratch `HOME`.
-
-## Design
-
-Four specs under `docs/superpowers/specs/`. Each records what it decided and why
-the alternatives were declined, so a question about the shape of this repository
-usually has one of them as its answer.
-
-- **`2026-09-04-software-development-layout-and-tracer-design.md`** — the
-  marketplace layout, both plugins' manifests, the curated `superpowers` entry,
-  and the decomposition into seven sub-projects (§11).
-- **`2026-09-04-session-start-hook-design.md`** — what the SessionStart hook
-  injects, and the standard a rule must meet to enter an always-on carrier:
-  evidence that the problem exists, and dependence on nothing beyond the plugin.
-  Why Codex is offered no hook.
-- **`2026-09-05-setup-and-drift-design.md`** — `bin/setup`, `bin/doctor` and the
-  upstream watch. Why the engine is a script rather than a skill (§3, §14); why
-  the mattpocock skills arrive through skills.sh rather than a curated entry
-  (§12); what the scripts deliberately do not set (§7.4, §7.6).
-- **`2026-09-06-roster-and-retirement-design.md`** — which plugin holds a skill
-  and why (§4); the three adoption routes and when each applies (§5); the roster
-  item by item (§6); the retirement of two repositories (§8, §9).
