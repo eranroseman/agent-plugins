@@ -75,7 +75,21 @@ script, plus an end-to-end `bin/setup` run against a scratch `HOME`.
 
 ## Design
 
-`docs/superpowers/specs/2026-09-04-software-development-layout-and-tracer-design.md`.
+Four specs under `docs/superpowers/specs/`. Each records what it decided and why
+the alternatives were declined, so a question about the shape of this repository
+usually has one of them as its answer.
 
-`docs/superpowers/specs/2026-09-05-setup-and-drift-design.md` covers `bin/setup`,
-`bin/doctor`, and the upstream watch.
+- **`2026-09-04-software-development-layout-and-tracer-design.md`** — the
+  marketplace layout, both plugins' manifests, the curated `superpowers` entry,
+  and the decomposition into seven sub-projects (§11).
+- **`2026-09-04-session-start-hook-design.md`** — what the SessionStart hook
+  injects, and the standard a rule must meet to enter an always-on carrier:
+  evidence that the problem exists, and dependence on nothing beyond the plugin.
+  Why Codex is offered no hook.
+- **`2026-09-05-setup-and-drift-design.md`** — `bin/setup`, `bin/doctor` and the
+  upstream watch. Why the engine is a script rather than a skill (§3, §14); why
+  the mattpocock skills arrive through skills.sh rather than a curated entry
+  (§12); what the scripts deliberately do not set (§7.4, §7.6).
+- **`2026-09-06-roster-and-retirement-design.md`** — which plugin holds a skill
+  and why (§4); the three adoption routes and when each applies (§5); the roster
+  item by item (§6); the retirement of two repositories (§8, §9).
