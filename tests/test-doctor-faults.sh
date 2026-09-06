@@ -10,7 +10,8 @@ SETUP="$REPO_ROOT/bin/setup"
 H="$(mktemp -d)"
 trap 'rm -rf "$H"' EXIT
 
-CLONE="$H/.local/share/software-dev/upstream/superpowers"
+UPSTREAM="$H/.local/share/software-dev/upstream"
+CLONE="$UPSTREAM/superpowers"
 SKILLS="$H/.agents/skills"
 mkdir -p "$CLONE" "$SKILLS" || fail "could not seed $H"
 
@@ -22,6 +23,28 @@ git -C "$CLONE" -c user.email=t@example.com -c user.name=t \
 while IFS= read -r s; do
   mkdir -p "$CLONE/skills/$s"
 done < <(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$MARKETPLACE" | sed 's#^\./##')
+
+# Every other curated entry gets the same treatment: a clone with no origin,
+# at a sha that cannot be the declared one, carrying its skill directories so
+# the links have targets. Without it, apply mode would clone the real upstream
+# over the network into this scratch HOME on every run.
+seed_other_clones() {
+  local name path skill dir
+  while IFS="$(printf '\t')" read -r name path skill; do
+    [ -n "$name" ] || continue
+    [ "$name" != superpowers ] || continue
+    dir="$UPSTREAM/$name"
+    if [ ! -d "$dir/.git" ]; then
+      mkdir -p "$dir" || fail "could not seed $dir"
+      git -C "$dir" init -q || fail "git init failed in $dir"
+      git -C "$dir" -c user.email=t@example.com -c user.name=t \
+        commit -q --allow-empty -m seed || fail "could not seed a commit in $dir"
+    fi
+    mkdir -p "$dir/$path/$skill"
+  done < <(jq -r '.plugins[] | select(.source.source? == "git-subdir") as $p
+                  | $p.skills[] | [$p.name, $p.source.path, (. | sub("^\\./"; ""))] | @tsv' "$MARKETPLACE")
+}
+seed_other_clones
 
 ln -s "$H/nowhere" "$SKILLS/writing-plans"            # dangling
 mkdir -p "$SKILLS/executing-plans"                    # a directory where a link belongs
@@ -48,7 +71,7 @@ if out="$(env HOME="$H" CODEX_HOME="$H/.codex" bash "$DOCTOR" 2>&1)"; then statu
 [ "$status" -eq 1 ] || fail "doctor exited $status on a machine with five seeded faults"
 
 for pat in \
-  'pinned clone is at' \
+  'pinned clone superpowers is at' \
   'dangling link' \
   'executing-plans exists and is not a symlink' \
   'writing-skills exists and is not a symlink' \
@@ -82,6 +105,7 @@ git -C "$CLONE2" -c user.email=t@example.com -c user.name=t \
 while IFS= read -r s; do
   mkdir -p "$CLONE2/skills/$s"
 done < <(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$MARKETPLACE" | sed 's#^\./##')
+UPSTREAM="$H2/.local/share/software-dev/upstream" seed_other_clones
 cat > "$H2/.claude/plugins/installed_plugins.json" <<JSON
 {"version":2,"plugins":{
   "software-dev@eranroseman":[{"scope":"user","version":"$sd"}],

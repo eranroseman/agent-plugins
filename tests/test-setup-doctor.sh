@@ -110,9 +110,14 @@ if command -v claude >/dev/null 2>&1; then
   W="$(mktemp -d)"
   trap 'rm -rf "$H" "$W"' EXIT
   PJ="plugins/software-dev/.claude-plugin/plugin.json"
+  # sensemaking too: it installs as a dependency, and a parent's update does
+  # not carry it, so its own update path is exercised here on every run.
+  PJS="plugins/sensemaking/.claude-plugin/plugin.json"
   cp -a "$REPO_ROOT" "$W/repo" || fail "could not copy the checkout into $W"
   jq '.version = "0.0.1"' "$REPO_ROOT/$PJ" > "$W/lowered" || fail "could not lower the version"
   cp "$W/lowered" "$W/repo/$PJ"
+  jq '.version = "0.0.1"' "$REPO_ROOT/$PJS" > "$W/lowered-s" || fail "could not lower sensemaking's version"
+  cp "$W/lowered-s" "$W/repo/$PJS"
 
   mkdir -p "$W/home"
   env HOME="$W/home" claude plugin marketplace add "$W/repo" >/dev/null 2>&1 \
@@ -124,6 +129,7 @@ if command -v claude >/dev/null 2>&1; then
   # marketplace is read live, so `update` moves without this line; a
   # github-source one is a local clone and would be stale.
   cp "$REPO_ROOT/$PJ" "$W/repo/$PJ"
+  cp "$REPO_ROOT/$PJS" "$W/repo/$PJS"
   env HOME="$W/home" claude plugin marketplace update eranroseman >/dev/null 2>&1 \
     || fail "could not refresh the copied marketplace"
 
@@ -132,6 +138,15 @@ if command -v claude >/dev/null 2>&1; then
   CLONE="$W/home/.local/share/software-dev/upstream/superpowers"
   mkdir -p "$(dirname "$CLONE")"
   cp -a "$(fetch_upstream)" "$CLONE" || fail "could not seed the pinned clone"
+  # Every other curated entry's clone, the same way, so bin/setup has nothing
+  # to fetch: the CI end-to-end job is where the real clone is exercised.
+  while IFS="$(printf '\t')" read -r name url sha; do
+    [ -n "$name" ] || continue
+    [ "$name" != superpowers ] || continue
+    cp -a "$(fetch_pinned "$url" "$sha" "${TMPDIR:-/tmp}/software-dev-upstream-$name")" \
+      "$(dirname "$CLONE")/$name" || fail "could not seed the $name clone"
+  done < <(jq -r '.plugins[] | select(.source.source? == "git-subdir")
+                  | [.name, .source.url, .source.sha] | @tsv' "$MARKETPLACE")
 
   # A bin directory without codex, mirroring test-doctor-faults.sh: on a
   # machine that has codex on PATH, ensure_codex is no longer a stub, and an
@@ -165,6 +180,11 @@ if command -v claude >/dev/null 2>&1; then
     "$W/home/.claude/plugins/installed_plugins.json")"
   [ "$got" = "$want" ] \
     || fail "bin/setup left software-dev at $got, declared $want:"$'\n'"$out"
+  want_s="$(jq -r .version "$REPO_ROOT/$PJS")"
+  got_s="$(jq -r '.plugins["sensemaking@eranroseman"][0].version' \
+    "$W/home/.claude/plugins/installed_plugins.json")"
+  [ "$got_s" = "$want_s" ] \
+    || fail "bin/setup left sensemaking at $got_s, declared $want_s; a dependency does not move with its parent:"$'\n'"$out"
   [ "$status" -eq 0 ] \
     || fail "bin/setup did not converge on an upgradeable machine (exit $status):"$'\n'"$out"
 else
