@@ -79,7 +79,7 @@ coarser than the smallest safe steps `migrate:` names.
 - Correctness bugs, security holes, and performance regressions route to a
   normal review pass.
 - When the requirements are themselves still open — a new idea rather than a
-  known job — `superpowers:brainstorming` elicits them in dialogue first, and
+  known job — `software-dev:brainstorming` elicits them in dialogue first, and
   its spec becomes this method's `requires:`.
 - A scoped tactical question ("why is this function slow", "rename this") gets
   a direct answer, not a re-derivation. Flag it when the honest answer is "the
