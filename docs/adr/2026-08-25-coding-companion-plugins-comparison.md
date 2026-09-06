@@ -1,7 +1,7 @@
-<!-- Adopted from eranroseman/research-vault (private) at
-     docs/product-landscape/2026-08-25-coding-companion-plugins-comparison.md,
-     copied 2026-09-06 so this repository's specs do not depend on a private
-     document that may move or be deleted.
+<!-- Why obra/superpowers is this marketplace's base and mattpocock/skills
+     supplements it. Written 2026-08-25 in eranroseman/research-vault (private)
+     at docs/product-landscape/, copied here 2026-09-06 so this repository's
+     specs do not depend on a private document that may move or be deleted.
 
      One section was removed: "Cross-check against harness-backup (2026-08-25)",
      48 lines. It reproduced the contents of a private repository — settings
