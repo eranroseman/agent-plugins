@@ -58,6 +58,18 @@ note() { printf 'NOTE: %s\n' "$*"; }
 applying() { [ "$MODE" = apply ]; }
 have() { command -v "$1" >/dev/null 2>&1; }
 
+# A tool a check cannot run without. require_tools has already refused in apply
+# mode, so this only ever speaks for the doctor, where nothing may be fatal and
+# no check may fall silent: without jq the sha reads empty and the doctor calls
+# the declarations malformed, then iterates an empty skill list and an empty
+# skill set without a word. Each caller reports its own half, the way the
+# claude and codex gates already do.
+needs() {
+  if have "$1"; then return 0; fi
+  skip "$1 is not on PATH: $2"
+  return 1
+}
+
 usage() {
   cat <<'EOF'
 usage: bin/setup [--check]
@@ -113,14 +125,17 @@ aside_path() { printf '%s.aside.%s' "$1" "$(date +%Y%m%d%H%M%S)"; }
 
 ensure_clone() {
   local sha have
+  # The clone's presence needs no jq, so it is answered before the guard below
+  # rather than swallowed by it.
+  if [ ! -d "$CLONE_DIR/.git" ] && ! applying; then
+    bad "the pinned clone is missing: $CLONE_DIR"
+    return
+  fi
+  needs jq "the declared sha cannot be read, so the pinned clone is unchecked" || return
   sha="$(declared_sha)"
   [ "${#sha}" -eq 40 ] || { bad "the superpowers entry carries no 40-character sha"; return; }
 
   if [ ! -d "$CLONE_DIR/.git" ]; then
-    if ! applying; then
-      bad "the pinned clone is missing: $CLONE_DIR"
-      return
-    fi
     mkdir -p "$(dirname "$CLONE_DIR")" || { bad "could not create $(dirname "$CLONE_DIR")"; return; }
     # Never chained with &&: a failed clone would short-circuit the checkout
     # and leave the directory at whatever it happened to be.
@@ -164,11 +179,22 @@ ensure_links() {
     bad "the skill root is missing: $SKILL_ROOT"
     return
   fi
+  # After the skill root, which needs no jq: without the curated list the loop
+  # below iterates nothing and reports nothing at all.
+  needs jq "the curated skill list cannot be read, so no link is checked" || return
 
   while IFS= read -r name; do
     [ -n "$name" ] || continue
     target="$CLONE_DIR/skills/$name"
     link="$SKILL_ROOT/$name"
+
+    # The target first: moving a squatter aside before knowing the link can be
+    # created leaves the user with neither their file nor a link. In check mode
+    # this is the root cause of every other verdict below it.
+    if [ ! -e "$target" ]; then
+      bad "link target missing: $target"
+      continue
+    fi
 
     if [ -L "$link" ]; then
       # Dangling first, and by `[ -e ]` on the link rather than by an empty
@@ -179,8 +205,14 @@ ensure_links() {
       # a dangling link and let `ln -s` fail with "File exists".
       if [ ! -e "$link" ]; then
         if ! applying; then bad "dangling link: $link"; continue; fi
-        rm "$link" || { bad "could not remove the dangling link $link"; continue; }
-        did "removed the dangling link $link"
+        # Moved aside like every other squatter, never deleted: the target may
+        # be a volume that is merely unmounted. Plain readlink rather than -f,
+        # because what the link stores is the only record of where it pointed
+        # and -f canonicalises a missing target into something else.
+        actual="$(readlink "$link" 2>/dev/null)"
+        aside="$(aside_path "$link")"
+        mv "$link" "$aside" || { bad "could not move the dangling $link aside"; continue; }
+        did "moved $link aside to $aside (it pointed at $actual)"
       else
         actual="$(readlink -f "$link" 2>/dev/null)"
         if [ "$actual" = "$target" ]; then
@@ -200,10 +232,6 @@ ensure_links() {
       did "moved $link aside to $aside (not a symlink)"
     fi
 
-    if [ ! -e "$target" ]; then
-      bad "link target missing: $target"
-      continue
-    fi
     if ! applying; then
       bad "missing link: $link"
       continue
@@ -232,6 +260,7 @@ ensure_claude() {
     skip "claude is not on PATH: the Claude half is unchecked"
     return
   fi
+  needs jq "the declared plugin versions cannot be read, so the Claude half is unchecked" || return
   want="$(plugin_version)"
   [ -n "$want" ] || { bad "could not read the declared plugin version"; return; }
 
@@ -321,6 +350,7 @@ ensure_codex() {
     skip "codex is not on PATH: the Codex half is unchecked and unapplied"
     return
   fi
+  needs jq "the declared plugin versions cannot be read, so the Codex half is unchecked" || return
   CODEX_LIST="$(codex plugin list --json 2>/dev/null)" || { bad "codex plugin list failed"; return; }
 
   for p in software-development sensemaking; do
@@ -345,14 +375,19 @@ ensure_codex() {
       fi
       # Codex has no dependency concept, so both plugins are named explicitly,
       # and no update verb, so add is also the upgrade.
-      if codex plugin add "$p@eranroseman" >/dev/null 2>&1; then
-        did "installed codex plugin $p $want"
-      else
+      if ! codex plugin add "$p@eranroseman" >/dev/null 2>&1; then
         bad "codex plugin add $p@eranroseman failed"
         continue
       fi
+      # The DID line reports a re-read of the installed version, never the
+      # command's exit status: add exits 0 having left the old version in
+      # place, and announcing $want there printed a version that the FAIL line
+      # immediately below then contradicted.
       CODEX_LIST="$(codex plugin list --json 2>/dev/null)"
       got="$(codex_plugin_version "$p")"
+      if [ "$got" = "$want" ]; then
+        did "installed codex plugin $p $got"
+      fi
     fi
     if [ "$got" = "$want" ]; then
       ok "codex plugin $p $want installed"
@@ -368,6 +403,7 @@ locked_ref() {
 
 ensure_skills_sh() {
   local repo ref name have
+  needs jq "the declared skill set cannot be read, so no skills.sh install is checked" || return
   while IFS="$(printf '\t')" read -r repo ref name; do
     [ -n "$name" ] || continue
     have="$(locked_ref "$name")"
@@ -385,8 +421,11 @@ ensure_skills_sh() {
     fi
     # The fragment form is what writes ref into the lockfile. -g keeps the
     # install in the shared root; without it a project tree and a second
-    # lockfile appear beside it.
-    if npx --yes skills add "$repo#$ref" --skill "$name" -g -y >/dev/null 2>&1; then
+    # lockfile appear beside it. </dev/null is load-bearing: npx inherits this
+    # loop's stdin, which is the process substitution below, and drains it, so
+    # without the redirect the loop ends after its first iteration and exactly
+    # one of the declared skills is ever installed.
+    if npx --yes skills add "$repo#$ref" --skill "$name" -g -y </dev/null >/dev/null 2>&1; then
       did "installed $name from $repo#$ref"
     else
       bad "npx skills add $repo#$ref --skill $name failed"
@@ -403,6 +442,7 @@ ensure_skills_sh() {
 
 ensure_fresh_clone() {
   local loc source_kind head tip
+  needs jq "the marketplace registration cannot be read, so the staleness check is unanswered" || return
 
   # Is this script's own clone behind upstream main? A stale script applies
   # stale pins. Resolved with ls-remote, never HEAD against origin/main: on
@@ -430,6 +470,7 @@ ensure_fresh_clone() {
 
 report_only() {
   local v set_names="" link actual name
+  needs jq "the settings this script only reports cannot be read" || return
 
   # 1. The telemetry variable. Setup writes it nowhere: the exposure is one
   # browser request per Visual Companion page load, and the write would be the

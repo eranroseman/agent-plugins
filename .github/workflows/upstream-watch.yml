@@ -7,6 +7,14 @@ on:
     - cron: "17 6 * * *"
   workflow_dispatch:
 
+# One issue, updated in place, is unconditional, so two runs of this workflow
+# must never overlap: a manual dispatch alongside the 06:17 cron would let both
+# read no open issue and both call `gh issue create`. Serialised rather than
+# cancelled -- a cancelled dispatch would discard the report it was asked for.
+concurrency:
+  group: upstream-watch
+  cancel-in-progress: false
+
 permissions:
   contents: read
   issues: write
