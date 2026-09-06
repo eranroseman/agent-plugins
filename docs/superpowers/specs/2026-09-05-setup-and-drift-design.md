@@ -32,7 +32,7 @@ Three problems, each with evidence.
 | Harness requirement | `bin/setup` requires Claude Code and treats Codex as optional; `bin/doctor` requires neither. Claude is structural: the script lives in the clone `claude plugin marketplace add` creates and reads its declarations from it (§7.2). |
 | Upstream watch | Scheduled GitHub Actions in this repository. Detects and files one issue; never bumps, never opens a pull request. |
 | Claude plugin updates | Marketplace auto-update, which respects the `version` field and never drags upstream past our pinned sha. **The user enables it, not setup** (§9). |
-| Repo scaffolding | **Vendor and adapt** `setup-matt-pocock-skills`. Composition was tried on paper and fails: its file-pick rule cannot be overridden from outside (§8). |
+| Repo scaffolding | **Vendor and adapt** `setup-matt-pocock-skills`. Composition was tried on paper and fails: its file-pick rule cannot be overridden from outside (§8). Vendored as `setup-repository` from 0.5.0. |
 | The telemetry variable | **Setup does not set it.** `bin/doctor` reports whether it is set and the README documents what it prevents; the user decides. Reasoning in §7.6. |
 | Config files | **Setup never hand-edits one.** Every `settings.json` and `config.toml` write is the CLI's own, made by a command setup runs (§7.6). |
 | The two global instruction files | Emptied to one paragraph each, which sub-project 6 then removes (§4). |
@@ -227,6 +227,14 @@ So the skill is vendored into `software-development` at a pinned upstream ref, w
 The drift test therefore asserts two different things. The five templates must be byte-identical to upstream at the pin, which is a strict equality like `test-vendored-brainstorming.sh` uses. `SKILL.md` must differ only in those three regions, which is the looser assertion the same test already makes for `brainstorming`'s description and header. Keeping the templates strict is what makes a re-vendor cheap: an upstream change to a template is a clean overwrite, and only a change to `SKILL.md` needs judgement.
 
 Shipping it bumps `software-development` to **0.4.0** in both manifests. §9's `version` field is the sole update gate, so without a bump the skill never reaches an installed copy, and `bin/doctor`'s version check would compare 0.3.0 against 0.3.0 and report clean. `tests/test-hook.sh` pins the version in two assertions and moves with it.
+
+**Update, 2026-09-06 (0.5.0).** The two paragraphs above describe 0.4.0 as shipped; five further changes followed as bounded work, and the counts in them have moved.
+
+The skill is vendored as **`setup-repository`**. Upstream's name reads as an attribution rather than a description of what the skill does, and it is the one string a user types. Upstream's own name is unchanged, so `tests/test-skills-pin.sh`, `bin/setup`'s lockfile check, and the provenance path still name `setup-matt-pocock-skills` — the rename is ours, not a claim about upstream.
+
+The other four close gaps this section left open. The **git convention is now asked**, as Section D in step 2, offering merge-locally (the default), open-a-PR, and rebase-then-fast-forward; 0.4.0 wrote a fixed default and invited the user to amend it in step 3, which is a worse place to ask than the step that asks everything else. The block carries **`### Design discipline`**, the ladder from §4.0, verbatim beside the task-reports rule. The tracker explainer **no longer names `to-spec` and `to-tickets`**, which this marketplace does not install; per §4.0 the fix is a mechanism rather than a note, so the drift test now resolves every upstream skill name the file mentions in backticks against the declaration and the vendored set, and a re-vendor that reintroduces one fails. And `agents/openai.yaml` gains **one line** of local change, the Codex display name, which would otherwise have kept reading "Setup Matt Pocock Skills" on the harness that shows it — so the claim that only `SKILL.md` is edited holds as of 0.4.0 only, and four of the six non-`SKILL.md` files remain byte-identical.
+
+The local changes are five, enumerated in the provenance header. The drift test strips four regions per side rather than two, and each strip is now guarded by an occurrence check: a sentinel that stops matching exactly once fails the test, where before both sides could strip to end-of-file and the comparison would pass on two empty strings ([#15](https://github.com/eranroseman/agent-plugins/issues/15)). Shipping all of it bumps both manifests to **0.5.0**.
 
 ## 9. Updating an installation
 

@@ -1,5 +1,5 @@
 {
-  "$comment": "Skills installed through the skills.sh CLI. bin/setup applies these; bin/doctor verifies them. setup-matt-pocock-skills is deliberately absent: this plugin vendors an adapted copy of it.",
+  "$comment": "Skills installed through the skills.sh CLI. bin/setup applies these; bin/doctor verifies them. setup-matt-pocock-skills is deliberately absent: this plugin vendors an adapted copy of it as setup-repository.",
   "sources": [
     {
       "repo": "mattpocock/skills",

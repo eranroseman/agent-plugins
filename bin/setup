@@ -527,7 +527,7 @@ report_only() {
   # 4. A skills.sh copy of a skill this plugin vendors.
   if [ -f "$LOCKFILE" ] \
      && jq -e '.skills["setup-matt-pocock-skills"]' "$LOCKFILE" >/dev/null 2>&1; then
-    note "setup-matt-pocock-skills is installed through skills.sh, but this plugin vendors an adapted copy; remove the unadapted one with 'npx skills remove setup-matt-pocock-skills -g'"
+    note "setup-matt-pocock-skills is installed through skills.sh, but this plugin vendors an adapted copy as setup-repository; remove the unadapted one with 'npx skills remove setup-matt-pocock-skills -g'"
   fi
 }
 

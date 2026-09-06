@@ -10,12 +10,14 @@ What it ships:
   fires on build requests and no longer competes with `grilling`. The
   provenance header at the top of `SKILL.md` names the commit. Do not
   hand-edit the skill; re-vendor from upstream to update it.
-- `skills/setup-matt-pocock-skills/`: mattpocock/skills' repository scaffolder,
-  vendored at tag `v1.2.3` with two changes. It writes the `## Agent skills`
-  block to `AGENTS.md` and leaves `CLAUDE.md` as a one-line `@AGENTS.md` import,
-  so Codex reads the same rules Claude does; and the block it writes carries a
-  Git convention and the task-reports rule. User-invoked only. The provenance
-  header at the top of `SKILL.md` names the commit.
+- `skills/setup-repository/`: mattpocock/skills' repository scaffolder
+  (`setup-matt-pocock-skills` upstream), vendored at tag `v1.2.3` and renamed.
+  It writes the `## Agent skills` block to `AGENTS.md` and leaves `CLAUDE.md` as
+  a one-line `@AGENTS.md` import, so Codex reads the same rules Claude does; it
+  asks which git convention the repo uses; and the block it writes carries that
+  convention, the design ladder, and the task-reports rule. User-invoked only.
+  The provenance header at the top of `SKILL.md` names the commit and every
+  local change.
 - `hooks/session-start`, Claude Code only: a SessionStart hook that injects
   `hooks/payload.md`, upstream's `using-superpowers` text with its one
   `superpowers:brainstorming` reference repointed at

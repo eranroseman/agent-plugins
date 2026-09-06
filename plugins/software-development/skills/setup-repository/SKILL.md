@@ -1,15 +1,17 @@
 ---
-name: setup-matt-pocock-skills
-description: Configure this repo for the engineering skills — set up its issue tracker, triage label vocabulary, and domain doc layout. Run once before first use of the other engineering skills.
+name: setup-repository
+description: Configure this repo for the engineering skills — set up its issue tracker, triage label vocabulary, domain doc layout, and git convention. Run once before first use of the other engineering skills.
 disable-model-invocation: true
 ---
 <!-- Vendored from https://github.com/mattpocock/skills at tag v1.2.3, commit 6acc160e4e0cd062dbbbd7a1b26ae92855edf07e
      path: skills/engineering/setup-matt-pocock-skills/
-     MIT, (c) 2026 Matt Pocock. Two local changes, both in this file: the file-pick
-     rule under '4. Write', and the Agent skills block it writes.
+     MIT, (c) 2026 Matt Pocock. Local changes: in this file, the frontmatter
+     name and description, the title, the tracker explainer's skill list, the
+     file-pick rule under '4. Write', Section D in step 2, and the Agent skills
+     block it writes; in agents/openai.yaml, the Codex display name.
 -->
 
-# Setup Matt Pocock's Skills
+# Setup Repository
 
 Scaffold the per-repo configuration that the engineering skills assume:
 
@@ -42,7 +44,7 @@ Lead each section with the recommended answer so the user can accept it in a wor
 
 **Section A — Issue tracker.**
 
-> Explainer: The "issue tracker" is where issues live for this repo. Skills like `to-tickets`, `triage`, and `to-spec` read from and write to it — they need to know whether to call `gh issue create`, write a markdown file under `.scratch/`, or follow some other workflow you describe. Pick the place you actually track work for this repo.
+> Explainer: The "issue tracker" is where issues live for this repo. `triage` reads from and writes to it — it needs to know whether to call `gh issue create`, write a markdown file under `.scratch/`, or follow some other workflow you describe. Pick the place you actually track work for this repo.
 
 Default posture: these skills were designed for GitHub. If a `git remote` points at GitHub, propose that. If a `git remote` points at GitLab (`gitlab.com` or a self-hosted host), propose GitLab. Otherwise (or if the user prefers), offer:
 
@@ -64,6 +66,14 @@ The defaults are the five canonical roles, each label string equal to its name: 
 **Section C — Domain docs.** Default to **single-context** — one `CONTEXT.md` + `docs/adr/` at the repo root. This fits almost every repo; write it without asking.
 
 Offer **multi-context** — a root `CONTEXT-MAP.md` pointing to per-context `CONTEXT.md` files — only when exploration found monorepo signals. Then confirm which layout they want.
+
+**Section D — Git convention.** Default to **merge locally**. Ask which of the three this repo uses:
+
+- **Merge locally** — merge the branch back into the base branch locally and push the base branch in the same motion
+- **Open a pull request** — push the branch and open a PR; the base branch moves only through review
+- **Rebase, then fast-forward** — rebase the branch onto the base branch, then fast-forward it, so history stays linear
+
+Whichever they pick, the recorded line ends with the same clause: fetch before claiming something is absent from the remote. A stale local view is the failure all three share.
 
 ### 3. Confirm and edit
 
@@ -111,6 +121,16 @@ The block:
 
 [one-line summary of layout — "single-context" or "multi-context"]. See `docs/agents/domain.md`.
 
+### Design discipline
+
+Eliminate the problem > add a mechanism > add a rule; prose is the last resort.
+
+Climb from the top and stop at the first rung that holds. A rule nobody can
+enforce is the weakest thing you can ship, and it goes stale silently. When
+prose really is the last resort, **say which higher rungs you tried and why
+they were unavailable** — an unexplained rule is indistinguishable from a lazy
+one, and the next reader cannot tell whether to re-attempt the climb.
+
 ### Task reports
 
 The SDD skill never commits its `.superpowers/sdd/` reports, and its Finish step
@@ -120,12 +140,11 @@ every Concern's disposition has landed in that home — an issue, a spec entry, 
 a recorded decline.
 ```
 
-Write `### Git` always. Propose this default and let the user amend it in step 3:
-"Merge back to the base branch locally and push it in the same motion. Fetch
-before claiming something is absent from the remote."
+Write `### Git` always, as a one-line summary of Section D's answer ending with
+the fetch clause.
 
-Write `### Task reports` verbatim as it appears above — it is not a summary of
-anything and takes no input.
+Write `### Design discipline` and `### Task reports` verbatim as they appear
+above — neither is a summary of anything and neither takes input.
 
 Include the `### Triage labels` sub-block, and write
 `docs/agents/triage-labels.md`, only when `triage` is installed and Section B

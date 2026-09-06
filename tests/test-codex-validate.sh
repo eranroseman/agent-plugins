@@ -16,10 +16,10 @@ for p in "$REPO_ROOT"/plugins/*/; do
   # disable-model-invocation to be false or absent, on every directory under
   # <plugin>/skills. The vendored scaffolder keeps upstream's `true` because
   # that is the field Claude reads; Codex reads policy.allow_implicit_invocation
-  # in agents/openai.yaml, which is set to false and vendored byte-for-byte, and
+  # in agents/openai.yaml, which is set to false and taken from upstream, and
   # the Codex runtime never reads the frontmatter field at all. Any other bullet
   # from the validator still fails the test.
-  known='- skill `setup-matt-pocock-skills` frontmatter field `disable-model-invocation` must be false'
+  known='- skill `setup-repository` frontmatter field `disable-model-invocation` must be false'
   if ! out="$(python3 "$VALIDATOR" "$p" 2>&1)"; then
     # A non-zero exit with no `- ` bullet at all — a traceback, a missing
     # dependency, a message-format change — is not the one recorded
