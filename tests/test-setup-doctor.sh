@@ -13,6 +13,7 @@ DOCTOR="$REPO_ROOT/bin/doctor"
 
 if command -v shellcheck >/dev/null 2>&1; then
   shellcheck "$SETUP" "$DOCTOR" "$REPO_ROOT/bin/bump-superpowers" \
+    "$REPO_ROOT/bin/upstream-watch" \
     || fail "shellcheck reported problems in bin/"
 else
   printf 'SKIP: shellcheck is not installed; bin/ was not linted\n'

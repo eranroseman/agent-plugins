@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+# Compare this repository's declared pins against their upstreams and print a
+# markdown report. Never bumps a pin and never opens a pull request: a bump is
+# a human decision made on a branch with bin/bump-superpowers.
+#
+#   exit 0   everything matches
+#   exit 1   something upstream moved; the report says what
+#   exit 2   the run itself failed, which must be loud: a dead detector looks
+#            exactly like a healthy repository
+set -uo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+MARKETPLACE="$REPO_ROOT/.claude-plugin/marketplace.json"
+SKILLS_JSON="$REPO_ROOT/upstream/skills.json"
+
+die() { printf 'ERROR: %s\n' "$*" >&2; exit 2; }
+DRIFT=0
+report() { printf '%s\n' "$*"; }
+
+[ -f "$MARKETPLACE" ] || die "missing $MARKETPLACE"
+[ -f "$SKILLS_JSON" ] || die "missing $SKILLS_JSON"
+
+report "## Upstream watch"
+report ""
+report "Generated $(date -u '+%Y-%m-%d %H:%M UTC'). This issue is updated in place."
+report ""
+
+# 1. obra/superpowers: the pinned sha against HEAD, and the tag list.
+sha="$(jq -r '.plugins[] | select(.name == "superpowers") | .source.sha' "$MARKETPLACE")"
+[ "${#sha}" -eq 40 ] || die "no 40-character sha in $MARKETPLACE"
+head_sha="$(git ls-remote https://github.com/obra/superpowers.git refs/heads/main | cut -f1)"
+[ -n "$head_sha" ] || die "could not resolve obra/superpowers main"
+report "### obra/superpowers"
+report ""
+if [ "$head_sha" = "$sha" ]; then
+  report "- Pinned at \`$sha\`, which is main. Nothing to do."
+else
+  report "- Pinned at \`$sha\`; main is \`$head_sha\`."
+  report "- Bump with \`bin/bump-superpowers $head_sha\`, then read the diff to"
+  report "  \`hooks/payload.md\` and \`skills/brainstorming/\` before merging."
+  DRIFT=1
+fi
+latest_tag="$(git ls-remote --tags --refs https://github.com/obra/superpowers.git \
+  | awk -F/ '{print $NF}' | sort -V | tail -1)"
+[ -n "$latest_tag" ] && report "- Latest upstream tag: \`$latest_tag\`."
+report ""
+
+# 2. Each skills.sh source: the declared ref against the newest tag.
+report "### skills.sh sources"
+report ""
+while IFS="$(printf '\t')" read -r repo ref; do
+  [ -n "$repo" ] || continue
+  newest="$(git ls-remote --tags --refs "https://github.com/$repo.git" \
+    | awk -F/ '{print $NF}' | grep -v -- '-alpha' | grep -v -- '-beta' | sort -V | tail -1)"
+  [ -n "$newest" ] || die "could not list tags for $repo"
+  if [ "$newest" = "$ref" ]; then
+    report "- \`$repo\` pinned at \`$ref\`, the newest tag."
+  else
+    report "- \`$repo\` pinned at \`$ref\`; newest tag is \`$newest\`. Bump by editing \`upstream/skills.json\`."
+    DRIFT=1
+  fi
+done < <(jq -r '.sources[] | [.repo, .ref] | @tsv' "$SKILLS_JSON")
+report ""
+
+# 3. openai/codex: the two constants the Codex hook posture rests on. A change
+# to either would start offering Codex a hook through the Claude manifest's
+# declared path, silently reversing a shipped decision.
+report "### openai/codex constants"
+report ""
+codex_tag="$(git ls-remote --tags --refs https://github.com/openai/codex.git 'refs/tags/rust-v0.*' \
+  | awk -F/ '{print $NF}' | grep -v -- '-alpha' | grep -v -- '-beta' | sort -V | tail -1)"
+[ -n "$codex_tag" ] || die "could not resolve the latest openai/codex release tag"
+loader="$(curl -sfL "https://raw.githubusercontent.com/openai/codex/$codex_tag/codex-rs/core-plugins/src/loader.rs")" \
+  || die "could not fetch loader.rs at $codex_tag"
+protocol="$(curl -sfL "https://raw.githubusercontent.com/openai/codex/$codex_tag/codex-rs/exec-server-protocol/src/protocol.rs")" \
+  || die "could not fetch protocol.rs at $codex_tag"
+report "Checked at \`$codex_tag\`."
+report ""
+# Matched with `case`, not `printf | grep -q`. The pipe form is one small
+# upstream commit away from breaking: the match is on line 69, so grep -q exits
+# almost immediately, and everything after it has to fit in the pipe. loader.rs
+# is 68,754 bytes at rust-v0.153.4 against a 64 KiB pipe buffer plus whatever
+# grep already read, so today the write just completes and the check passes
+# (measured 2026-09-05). A few hundred bytes more and printf takes SIGPIPE,
+# `pipefail` makes the pipeline 141, and the watch reports a constant that has
+# not changed as changed, every day, in the one check nobody would think to
+# doubt. `case` needs no pipe and cannot fail that way.
+if case "$loader" in
+     *'const DEFAULT_HOOKS_CONFIG_FILE: &str = "hooks/hooks.json";'*) true ;;
+     *) false ;;
+   esac
+then
+  report "- \`DEFAULT_HOOKS_CONFIG_FILE\` is still \`hooks/hooks.json\`."
+else
+  report "- **\`DEFAULT_HOOKS_CONFIG_FILE\` changed.** Nothing sits at the old fallback path any more, so Codex may now be offered a hook. Re-read the hook spec section 6.2."
+  DRIFT=1
+fi
+first_manifest="$(printf '%s' "$protocol" \
+  | awk '/DISCOVERABLE_PLUGIN_MANIFEST_PATHS/ { found = 1; next } found && /"/ { gsub(/[ ",]/, ""); print; exit }')"
+if [ "$first_manifest" = ".codex-plugin/plugin.json" ]; then
+  report "- \`.codex-plugin/plugin.json\` is still first in \`DISCOVERABLE_PLUGIN_MANIFEST_PATHS\`."
+else
+  report "- **Manifest order changed:** first entry is now \`${first_manifest:-unreadable}\`. Codex may read the Claude manifest, which declares a hook. Re-read the hook spec section 6.2."
+  DRIFT=1
+fi
+report ""
+
+if [ "$DRIFT" -eq 0 ]; then
+  report "Everything matches. No action."
+  exit 0
+fi
+report "One or more pins moved. Bumping is a human decision, made on a branch."
+exit 1

@@ -1,0 +1,67 @@
+name: upstream-watch
+
+on:
+  schedule:
+    # Daily. The exact minute is arbitrary and off the hour, where GitHub's
+    # scheduler is least loaded.
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # exit 0 clean, 1 drift, 2 the watch itself failed. continue-on-error
+      # makes `outcome` failure for both 1 and 2, so the code is recorded
+      # explicitly and the final step reads that rather than the outcome.
+      - name: Compare the declared pins against upstream
+        id: watch
+        run: |
+          set +e
+          bash bin/upstream-watch > "$RUNNER_TEMP/report.md" 2>&1
+          code=$?
+          cat "$RUNNER_TEMP/report.md"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      # One issue, updated in place. A new issue per run buries the signal.
+      # Skipped when the watch itself errored: a partial report must not close
+      # or overwrite a real drift issue.
+      - name: File or update the drift issue
+        if: steps.watch.outputs.code != '2'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          body="$(cat "$RUNNER_TEMP/report.md")"
+          number="$(gh issue list --label upstream-drift --state open \
+            --json number --jq '.[0].number // empty')"
+          if grep -q 'Everything matches' "$RUNNER_TEMP/report.md"; then
+            if [ -n "$number" ]; then
+              gh issue comment "$number" --body "Upstream caught up; closing."
+              gh issue close "$number"
+            fi
+            exit 0
+          fi
+          if [ -n "$number" ]; then
+            gh issue edit "$number" --body "$body"
+          else
+            gh issue create --title "Upstream moved past a declared pin" \
+              --label upstream-drift --label needs-triage --body "$body"
+          fi
+
+      # A dead detector must not look like a healthy repository. Only exit 2,
+      # the watch failing, fails the run; exit 1 is drift, which is reported in
+      # the issue and is not a broken workflow.
+      - name: Fail the run if the watch itself errored
+        run: |
+          [ "${{ steps.watch.outputs.code }}" != "2" ] || {
+            echo "bin/upstream-watch could not complete; see the step log"
+            exit 1
+          }
