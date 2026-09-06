@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # The vendored scaffolder must equal mattpocock/skills at the ref this
 # repository declares, except for a provenance header and the local changes the
-# header names: four regions of SKILL.md plus its frontmatter name, and the
-# Codex display name in agents/openai.yaml. The five seed templates must be
-# byte-identical, which is what keeps a re-vendor cheap.
+# header names: SKILL.md's frontmatter name and description, five stripped
+# regions of its body (the title, the tracker explainer, the file-pick rule,
+# Section D, and the Agent skills block), and the Codex display name in
+# agents/openai.yaml. The five seed templates must be byte-identical, which is
+# what keeps a re-vendor cheap.
 # Needs network access.
 . "$(dirname "$0")/lib.sh"
 
