@@ -14,7 +14,7 @@ Default five canonical labels (needs-triage, needs-info, ready-for-agent, ready-
 
 ### Domain docs
 
-Single-context (root `CONTEXT.md` + `docs/adr/`). See `docs/agents/domain.md`.
+Single-context, root `CONTEXT.md`. See `docs/agents/domain.md`.
 
 ### Design discipline
 
