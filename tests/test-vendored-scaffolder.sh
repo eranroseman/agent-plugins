@@ -173,8 +173,29 @@ grep -qx '### Git' <<<"$block" || fail "the block carries no Git section"
 grep -qx '### Design discipline' <<<"$block" || fail "the block carries no Design discipline section"
 grep -qF 'Eliminate the problem > add a mechanism > add a rule' <<<"$block" \
   || fail "the Design discipline section does not carry the ladder"
+grep -qF 'name the rungs you ruled out and why' <<<"$block" \
+  || fail "the ladder lost its enforceable half, the obligation to justify landing on prose"
 grep -qx '### Task reports' <<<"$block" || fail "the block carries no Task reports section"
-grep -q '.superpowers/sdd/' <<<"$block" || fail "the task-reports rule lost its subject"
+# The rule no longer names `.superpowers/sdd/`: an agent running SDD learns the
+# workspace's path and fate from SDD itself, so the anchor was assumable weight
+# in a file every agent loads. What it cannot learn elsewhere is the closed set
+# of durable homes, and that a decline is one of them.
+grep -qF 'Concern' <<<"$block" || fail "the task-reports rule lost its subject"
+grep -qF 'a recorded decline' <<<"$block" \
+  || fail "the task-reports rule lost the closed set of durable homes"
+
+# The two sections the block writes verbatim must equal this repository's own
+# AGENTS.md byte for byte. "Verbatim" otherwise names two different strings
+# depending on which file you read it from, and running the skill here would
+# silently rewrite the section it was copied from. Hand-syncing them failed
+# twice; this is the mechanism that replaces remembering.
+for h in '### Design discipline' '### Task reports'; do
+  ours="$(awk -v h="$h" '$0==h{f=1;print;next} f && /^#/{exit} f' "$REPO_ROOT/AGENTS.md")"
+  [ -n "$ours" ] || fail "AGENTS.md has no $h section to compare the block against"
+  theirs="$(awk -v h="$h" '$0==h{f=1;print;next} f && (/^#/ || $0=="```"){exit} f' <<<"$block")"
+  diff <(printf '%s\n' "$ours") <(printf '%s\n' "$theirs") \
+    || fail "$h differs between AGENTS.md and the block the skill writes verbatim"
+done
 
 # Every upstream engineering skill this file names in backticks must be one an
 # install actually gets: declared in upstream/skills.json, or vendored by this

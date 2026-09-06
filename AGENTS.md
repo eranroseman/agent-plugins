@@ -18,22 +18,17 @@ Single-context (root `CONTEXT.md` + `docs/adr/`). See `docs/agents/domain.md`.
 
 ### Design discipline
 
-Eliminate the problem > add a mechanism > add a rule; prose is the last resort.
-
-Climb from the top and stop at the first rung that holds. A rule nobody can enforce is the weakest thing you can ship, and it goes stale silently. When prose really is the last resort, **say which higher rungs you tried and why they were unavailable** — an unexplained rule is indistinguishable from a lazy one, and the next reader cannot tell whether to re-attempt the climb.
+Eliminate the problem > add a mechanism > add a rule; prose is the last resort — and when you use it, name the rungs you ruled out and why.
 
 ### Task reports
 
-The SDD skill never commits its `.superpowers/sdd/` reports, and its Finish step
-deletes the workspace — a report is not a durable home. Reports name a
-destination per Concern at write time; a plan's workspace closes only after
-every Concern's disposition has landed in that home — an issue, a spec entry, or
-a recorded decline.
+Every Concern names a durable home when written — an issue, a spec entry, or a recorded decline — and the plan closes only when all of them have landed.
 
-### Security scanning on Codex
+## Codex only
 
-Nothing scans passively on Codex: `codex-security`'s scan family
-(`security-scan`, `security-diff-scan`, `deep-security-scan`,
-`finding-discovery`) is explicit-invocation only. This repository ships an
-installer and a hook payload, so run a scan yourself on a diff that touches
-`bin/`, `hooks/`, or a workflow.
+### Security scanning
+
+Nothing scans automatically: `codex-security`'s scan family — `security-scan`,
+`security-diff-scan`, `deep-security-scan`, `finding-discovery` — is
+explicit-invocation only. Run `security-diff-scan` on any diff touching `bin/`,
+`hooks/`, or a workflow.
