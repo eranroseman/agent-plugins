@@ -70,7 +70,7 @@ if command -v claude >/dev/null 2>&1; then
   mkdir -p "$W/home"
   env HOME="$W/home" claude plugin marketplace add "$W/repo" >/dev/null 2>&1 \
     || fail "could not add the copied marketplace"
-  env HOME="$W/home" claude plugin install software-development@eranroseman -y --scope user \
+  env HOME="$W/home" claude plugin install software-development@eranroseman --scope user \
     >/dev/null 2>&1 || fail "could not seed the 0.0.1 install"
   # Back to the declared version, and refresh the catalogue, mirroring the
   # documented real-machine step. Measured 2026-09-05: a directory-source

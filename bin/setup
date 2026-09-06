@@ -243,7 +243,11 @@ ensure_claude() {
       fi
       # --scope user, never --scope project: project scope writes a checked-in
       # .claude/settings.json carrying enabledPlugins and extraKnownMarketplaces.
-      if claude plugin install software-development@eranroseman -y --scope user >/dev/null 2>&1; then
+      # No -y: claude 2.1.220, the version CI pins, rejects it outright with
+      # "error: unknown option". Where the flag does exist it only waives the
+      # confirmation for a plugin installed by running a marketplace-declared
+      # command, or one fetched through a headersHelper, and this is neither.
+      if claude plugin install software-development@eranroseman --scope user >/dev/null 2>&1; then
         did "installed software-development@eranroseman (with sensemaking and superpowers)"
       else
         bad "claude plugin install software-development@eranroseman failed"
@@ -279,7 +283,10 @@ ensure_claude() {
   fi
   have="$(installed_version superpowers)"
   want="$(jq -r '.plugins[] | select(.name == "superpowers") | .version' "$MARKETPLACE")"
-  if [ "$have" != "$want" ] && applying; then
+  # `[ -n "$have" ]` first: update fails against a plugin that is not installed,
+  # and reporting that on top of the verdict below would count one root cause
+  # twice. A missing dependency is the parent install's business, not a repair.
+  if [ -n "$have" ] && [ "$have" != "$want" ] && applying; then
     claude plugin update superpowers@eranroseman >/dev/null 2>&1 \
       || bad "claude plugin update superpowers@eranroseman failed"
     have="$(installed_version superpowers)"
