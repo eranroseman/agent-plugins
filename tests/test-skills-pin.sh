@@ -57,4 +57,4 @@ while IFS="$(printf '\t')" read -r repo ref; do
   done < <(jq -r --arg r "$repo" '.sources[] | select(.repo == $r) | .skills[]' "$S")
 done < <(jq -r '.sources[] | [.repo, .ref] | @tsv' "$S")
 
-printf 'skills-pin: 19 declared skills, every ref a real tag, every name resolving once\n'
+printf 'skills-pin: %s declared skills, every ref a real tag, every name resolving once\n' "$total"
