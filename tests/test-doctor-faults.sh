@@ -68,7 +68,7 @@ cat > "$H/.agents/.skill-lock.json" <<'JSON'
 JSON
 
 if out="$(env HOME="$H" CODEX_HOME="$H/.codex" bash "$DOCTOR" 2>&1)"; then status=0; else status=$?; fi
-[ "$status" -eq 1 ] || fail "doctor exited $status on a machine with five seeded faults"
+[ "$status" -eq 1 ] || fail "doctor exited $status on a machine with six seeded faults"
 
 for pat in \
   'pinned clone superpowers is at' \
@@ -211,4 +211,4 @@ aside="$(printf '%s\n' "$SKILLS"/writing-plans.aside.* | head -n 1)"
 printf '%s\n' "$out" | grep -q "it pointed at $H/nowhere" \
   || fail "the DID line does not name the dangling link's former target"
 
-printf 'doctor-faults: five seeded faults reported and the local ones repaired\n'
+printf 'doctor-faults: six seeded faults reported and the local ones repaired\n'

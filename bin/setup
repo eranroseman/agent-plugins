@@ -140,10 +140,11 @@ clone_dir() { printf '%s/%s' "$UPSTREAM_ROOT" "$1"; }
 aside_path() { printf '%s.aside.%s' "$1" "$(date +%Y%m%d%H%M%S)"; }
 
 ensure_clones() {
-  local name url sha dir have
+  local name url sha dir have n=0
   needs jq "the curated entries cannot be read, so no pinned clone is checked" || return
   while IFS="$(printf '\t')" read -r name url _ sha _ _; do
     [ -n "$name" ] || continue
+    n=$((n + 1))
     dir="$(clone_dir "$name")"
     if [ "${#sha}" -ne 40 ]; then
       bad "the $name entry carries no 40-character sha"
@@ -188,6 +189,7 @@ ensure_clones() {
       bad "pinned clone $name is at ${have:-an unknown revision}, declared $sha"
     fi
   done < <(curated_entries)
+  [ "$n" -gt 0 ] || bad "no curated (git-subdir) entry could be read from $MARKETPLACE"
 }
 
 ensure_links() {
@@ -206,7 +208,11 @@ ensure_links() {
   # inside that entry's pinned clone, under the entry's source.path, and the
   # link is named after the directory's basename.
   while IFS="$(printf '\t')" read -r entry epath skill; do
-    [ -n "$skill" ] || continue
+    [ -n "$entry" ] || continue
+    if [ -z "$epath" ] || [ -z "$skill" ]; then
+      bad "the $entry entry has a malformed skill line: path='$epath' skill='$skill'"
+      continue
+    fi
     name="$(basename "$skill")"
     target="$(clone_dir "$entry")/$epath/$skill"
     link="$SKILL_ROOT/$name"
@@ -279,7 +285,7 @@ installed_version() {
 }
 
 ensure_claude() {
-  local want have installed_sd
+  local want have installed_sd name
   if ! have claude; then
     skip "claude is not on PATH: the Claude half is unchecked"
     return
