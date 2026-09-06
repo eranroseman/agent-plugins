@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # The engine's shape: two entry points, one of them a wrapper; shellcheck
 # clean; a usage text; the documented prerequisite split; and a doctor that
-# describes an empty machine rather than dying on it. Needs no network.
+# describes an empty machine rather than dying on it. Every assertion but the
+# last needs no network and no CLI; the upgrade-path block at the end is gated
+# on claude and fetches the pinned upstream tree.
 . "$(dirname "$0")/lib.sh"
 
 SETUP="$REPO_ROOT/bin/setup"
@@ -40,5 +42,59 @@ printf '%s\n' "$out" | grep -q 'claude' || fail "the refusal must name the missi
 if out="$(env HOME="$H" CODEX_HOME="$H/.codex" bash "$DOCTOR" 2>&1)"; then status=0; else status=$?; fi
 [ "$status" -eq 1 ] || fail "bin/doctor on an empty HOME must exit 1, got $status"
 printf '%s\n' "$out" | grep -q 'FAIL:' || fail "the doctor reported no failure on an empty HOME"
+
+# The Claude half reports its own absence rather than assuming it.
+out="$(env HOME="$H" CODEX_HOME="$H/.codex" PATH="/usr/bin:/bin" bash "$DOCTOR" 2>&1 || true)"
+if command -v claude >/dev/null 2>&1 && [ -x /usr/bin/claude ]; then
+  printf 'NOTE: claude is on the minimal PATH; the gating assertion is not exercised\n'
+else
+  printf '%s\n' "$out" | grep -q 'SKIP: claude' \
+    || fail "with claude off PATH the doctor must report the Claude half as skipped"
+fi
+
+# The upgrade path. `claude plugin install` is a no-op on an already-installed
+# plugin -- it prints "already installed", exits 0 and leaves the old version on
+# disk -- so a machine holding an older version only moves under `claude plugin
+# update`. The CI end-to-end job starts from an empty HOME and structurally
+# cannot reach this path. The older install below is a real one rather than a
+# hand-edited `version` field, because the CLI reads the version from the
+# install path and answers "already at the latest version" to a seeded field.
+if command -v claude >/dev/null 2>&1; then
+  W="$(mktemp -d)"
+  trap 'rm -rf "$H" "$W"' EXIT
+  PJ="plugins/software-development/.claude-plugin/plugin.json"
+  cp -a "$REPO_ROOT" "$W/repo" || fail "could not copy the checkout into $W"
+  jq '.version = "0.0.1"' "$REPO_ROOT/$PJ" > "$W/lowered" || fail "could not lower the version"
+  cp "$W/lowered" "$W/repo/$PJ"
+
+  mkdir -p "$W/home"
+  env HOME="$W/home" claude plugin marketplace add "$W/repo" >/dev/null 2>&1 \
+    || fail "could not add the copied marketplace"
+  env HOME="$W/home" claude plugin install software-development@eranroseman -y --scope user \
+    >/dev/null 2>&1 || fail "could not seed the 0.0.1 install"
+  # Back to the declared version, and refresh the catalogue the CLI reads:
+  # bin/setup does not refresh it, so the fixture must.
+  cp "$REPO_ROOT/$PJ" "$W/repo/$PJ"
+  env HOME="$W/home" claude plugin marketplace update eranroseman >/dev/null 2>&1 \
+    || fail "could not refresh the copied marketplace"
+
+  # The pinned clone, seeded from the shared checkout, so the only thing left
+  # for bin/setup to converge is the Claude half.
+  CLONE="$W/home/.local/share/software-development/upstream/superpowers"
+  mkdir -p "$(dirname "$CLONE")"
+  cp -a "$(fetch_upstream)" "$CLONE" || fail "could not seed the pinned clone"
+
+  want="$(jq -r .version "$REPO_ROOT/$PJ")"
+  if out="$(env HOME="$W/home" CODEX_HOME="$W/home/.codex" SD_MARKETPLACE_SOURCE="$W/repo" \
+      bash "$SETUP" 2>&1)"; then status=0; else status=$?; fi
+  got="$(jq -r '.plugins["software-development@eranroseman"][0].version' \
+    "$W/home/.claude/plugins/installed_plugins.json")"
+  [ "$got" = "$want" ] \
+    || fail "bin/setup left software-development at $got, declared $want:"$'\n'"$out"
+  [ "$status" -eq 0 ] \
+    || fail "bin/setup did not converge on an upgradeable machine (exit $status):"$'\n'"$out"
+else
+  printf 'SKIP: claude is not installed, so the upgrade path was not exercised\n'
+fi
 
 printf 'setup-doctor: two entry points, lint clean, prerequisites split as documented\n'

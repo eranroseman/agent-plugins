@@ -45,3 +45,32 @@ jobs:
 
       - name: Run static checks
         run: tests/run.sh
+
+  setup-e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code@2.1.220
+
+      # The runner has claude and no codex, which is exactly the Claude-only
+      # machine section 7.2 supports. SD_MARKETPLACE_SOURCE points the install
+      # at this checkout: without it, `marketplace add eranroseman/agent-plugins`
+      # would clone origin main and the run would test the wrong declarations.
+      - name: bin/setup against a scratch HOME
+        env:
+          SD_MARKETPLACE_SOURCE: ${{ github.workspace }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/home"
+          HOME="$RUNNER_TEMP/home" CODEX_HOME="$RUNNER_TEMP/home/.codex" \
+            bash bin/setup
+
+      - name: bin/doctor reports clean over the same HOME
+        run: |
+          HOME="$RUNNER_TEMP/home" CODEX_HOME="$RUNNER_TEMP/home/.codex" \
+            bash bin/doctor

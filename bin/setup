@@ -27,6 +27,13 @@ SKILLS_JSON="$REPO_ROOT/upstream/skills.json"
 # SC2034 warning, and shellcheck must exit 0 from Task 4 onward.
 CLONE_DIR="$HOME/.local/share/software-development/upstream/superpowers"
 SKILL_ROOT="$HOME/.agents/skills"
+KNOWN_MARKETPLACES="$HOME/.claude/plugins/known_marketplaces.json"
+INSTALLED_PLUGINS="$HOME/.claude/plugins/installed_plugins.json"
+
+# The only override. CI points this at the checkout under test, because
+# `claude plugin marketplace add eranroseman/agent-plugins` would clone origin
+# main and test the wrong declarations.
+MARKETPLACE_SOURCE="${SD_MARKETPLACE_SOURCE:-eranroseman/agent-plugins}"
 
 MODE=apply
 FAILURES=0
@@ -39,6 +46,7 @@ ok()   { printf 'OK:   %s\n' "$*"; }
 bad()  { printf 'FAIL: %s\n' "$*"; FAILURES=$((FAILURES + 1)); }
 die()  { printf 'ERROR: %s\n' "$*" >&2; exit 2; }
 did()  { printf 'DID:  %s\n' "$*"; }
+skip() { printf 'SKIP: %s\n' "$*"; }
 
 applying() { [ "$MODE" = apply ]; }
 have() { command -v "$1" >/dev/null 2>&1; }
@@ -202,9 +210,90 @@ ensure_links() {
   done < <(curated_skills)
 }
 
+plugin_version() {
+  jq -r '.version' "$REPO_ROOT/plugins/software-development/.claude-plugin/plugin.json"
+}
+
+installed_version() {
+  jq -r --arg k "$1@eranroseman" \
+    '.plugins[$k][0].version // empty' "$INSTALLED_PLUGINS" 2>/dev/null
+}
+
+ensure_claude() {
+  local want have installed_sd
+  if ! have claude; then
+    skip "claude is not on PATH: the Claude half is unchecked"
+    return
+  fi
+  want="$(plugin_version)"
+  [ -n "$want" ] || { bad "could not read the declared plugin version"; return; }
+
+  installed_sd="$(installed_version software-development)"
+  if [ "$installed_sd" != "$want" ] && applying; then
+    if [ -z "$installed_sd" ]; then
+      # Adding is a clean no-op on re-run, but only add when the marketplace is
+      # unknown: an existing entry may point at a different source than ours.
+      if ! jq -e '.eranroseman' "$KNOWN_MARKETPLACES" >/dev/null 2>&1; then
+        if claude plugin marketplace add "$MARKETPLACE_SOURCE" >/dev/null 2>&1; then
+          did "added the eranroseman marketplace from $MARKETPLACE_SOURCE"
+        else
+          bad "claude plugin marketplace add $MARKETPLACE_SOURCE failed"
+          return
+        fi
+      fi
+      # --scope user, never --scope project: project scope writes a checked-in
+      # .claude/settings.json carrying enabledPlugins and extraKnownMarketplaces.
+      if claude plugin install software-development@eranroseman -y --scope user >/dev/null 2>&1; then
+        did "installed software-development@eranroseman (with sensemaking and superpowers)"
+      else
+        bad "claude plugin install software-development@eranroseman failed"
+      fi
+    else
+      # install is a no-op on an already-installed plugin: it prints "already
+      # installed", exits 0, and leaves the old version on disk (measured
+      # 2026-09-05 on claude 2.1.261, both directory- and github-source
+      # marketplaces). update is the only verb that moves it, and it exits 0
+      # when it decides nothing needs moving, so the re-read below is what
+      # reports success.
+      claude plugin update software-development@eranroseman >/dev/null 2>&1 \
+        || bad "claude plugin update software-development@eranroseman failed"
+      if [ "$(installed_version software-development)" = "$want" ]; then
+        did "updated software-development@eranroseman from $installed_sd to $want"
+      fi
+    fi
+  fi
+
+  installed_sd="$(installed_version software-development)"
+  if [ "$installed_sd" = "$want" ]; then
+    ok "software-development@eranroseman $want installed"
+  else
+    bad "software-development@eranroseman is ${installed_sd:-not installed}, declared $want"
+  fi
+
+  # The two dependencies install and enable themselves; verify rather than act.
+  have="$(installed_version sensemaking)"
+  if [ -n "$have" ]; then
+    ok "sensemaking@eranroseman $have installed"
+  else
+    bad "sensemaking@eranroseman is not installed"
+  fi
+  have="$(installed_version superpowers)"
+  want="$(jq -r '.plugins[] | select(.name == "superpowers") | .version' "$MARKETPLACE")"
+  if [ "$have" != "$want" ] && applying; then
+    claude plugin update superpowers@eranroseman >/dev/null 2>&1 \
+      || bad "claude plugin update superpowers@eranroseman failed"
+    have="$(installed_version superpowers)"
+    [ "$have" = "$want" ] && did "updated superpowers@eranroseman to $want"
+  fi
+  if [ "$have" = "$want" ]; then
+    ok "superpowers@eranroseman $want installed"
+  else
+    bad "superpowers@eranroseman is ${have:-not installed}, declared $want"
+  fi
+}
+
 # Filled in by later tasks; defined here so the script runs from this one.
 ensure_fresh_clone() { :; }
-ensure_claude()    { :; }
 ensure_codex()     { :; }
 ensure_skills_sh() { :; }
 report_only()      { :; }
