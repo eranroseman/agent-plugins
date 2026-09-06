@@ -23,7 +23,7 @@ done
 
 # The six files the fork ships, and the two executables.
 diff <(printf '%s\n' ./PROVENANCE.md ./SKILL.md ./scripts/categorize-prompt.md ./scripts/cluster.py \
-                     ./scripts/extract-functions.py ./scripts/find-duplicates-prompt.md) \
+                     ./scripts/extract-functions.py ./scripts/find-duplicates-prompt.md | sort) \
      <(cd "$V" && find . -type f | sort) \
   || fail "file set is not the six the fork ships"
 [ -x "$V/scripts/cluster.py" ] || fail "scripts/cluster.py lost its executable bit"
