@@ -81,6 +81,21 @@ the variable for you — the write would touch a file the CLI owns, for a reques
 that has never fired on a machine that has never accepted the offer. If you
 never accept it, the request never happens.
 
+`archify`, installed through skills.sh at a pinned tag, runs a version check
+once per authoring session: after the first candidate diagram it runs its
+packaged `scripts/check-update.mjs`, which fetches a small manifest from
+`https://tt-a1i.github.io/archify/skill-updates/archify/stable.json`, and if
+a newer release exists it shows one notice and continues. The skill's own
+text rules the rest: if the command cannot run it continues without a word,
+it never downloads, installs or executes an update, and silence is never
+consent. To turn the check off, set `ARCHIFY_UPDATE_CHECK_DISABLED=1` in the
+same place as the telemetry variable above; `check-update.mjs` tests exactly
+that value. No setup step sets it for you, for the same reason as the
+telemetry variable: a network-behaviour decision belongs to you. This is a
+README instruction rather than a mechanism, chosen knowingly; if it proves
+insufficient, the next rung is a `bin/doctor` line reporting the variable's
+state.
+
 ## Updates
 
 Claude Code can update this plugin for you. Third-party marketplaces default to

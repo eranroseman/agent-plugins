@@ -25,6 +25,12 @@ if command -v shellcheck >/dev/null 2>&1; then
     "$REPO_ROOT/tests/run.sh" "$REPO_ROOT/tests/lib.sh" \
     "$REPO_ROOT"/tests/test-*.sh \
     || fail "shellcheck reported problems"
+
+  # upstream-watch's tag filter, with no network: the newest stable release
+  # wins over a prerelease, a -dev build, and a parallel tag series.
+  got="$(printf '%s\n' archify-dsh-v0.1.0 v2.16.0 v2.17.0-dev.1 v2.16.1-rc.1 v2.16.0-beta v2.15.0 \
+    | bash "$REPO_ROOT/bin/upstream-watch" --newest-stable-tag)"
+  [ "$got" = "v2.16.0" ] || fail "upstream-watch --newest-stable-tag picked '$got', expected v2.16.0"
 else
   printf 'SKIP: shellcheck is not installed; the shell files were not linted\n'
 fi

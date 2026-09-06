@@ -35,7 +35,7 @@ for n in to-spec to-tickets implement tdd code-review; do
 done
 
 total="$(jq '[.sources[].skills[]] | length' "$S")"
-[ "$total" -eq 18 ] || fail "expected 18 declared skills, got $total"
+[ "$total" -eq 19 ] || fail "expected 19 declared skills, got $total"
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT

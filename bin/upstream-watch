@@ -17,6 +17,19 @@ die() { printf 'ERROR: %s\n' "$*" >&2; exit 2; }
 DRIFT=0
 report() { printf '%s\n' "$*"; }
 
+# Stable release tags only, from tag names on stdin: v1.2.3 or 1.2.3 with
+# nothing after the digits. Excludes -alpha, -beta, -rc, -dev.N, and any
+# parallel series with its own prefix (archify publishes archify-dsh-v0.1.0
+# beside its releases), all of which `sort -V` would otherwise rank above the
+# newest release and report as drift indefinitely.
+newest_stable_tag() { grep -E '^v?[0-9]+(\.[0-9]+)+$' | sort -V | tail -1; }
+
+# Exposed so the filter can be tested without the network.
+if [ "${1:-}" = "--newest-stable-tag" ]; then
+  newest_stable_tag
+  exit 0
+fi
+
 [ -f "$MARKETPLACE" ] || die "missing $MARKETPLACE"
 [ -f "$SKILLS_JSON" ] || die "missing $SKILLS_JSON"
 
@@ -25,25 +38,36 @@ report ""
 report "Generated $(date -u '+%Y-%m-%d %H:%M UTC'). This issue is updated in place."
 report ""
 
-# 1. obra/superpowers: the pinned sha against HEAD, and the tag list.
-sha="$(jq -r '.plugins[] | select(.name == "superpowers") | .source.sha' "$MARKETPLACE")"
-[ "${#sha}" -eq 40 ] || die "no 40-character sha in $MARKETPLACE"
-head_sha="$(git ls-remote https://github.com/obra/superpowers.git refs/heads/main | cut -f1)"
-[ -n "$head_sha" ] || die "could not resolve obra/superpowers main"
-report "### obra/superpowers"
-report ""
-if [ "$head_sha" = "$sha" ]; then
-  report "- Pinned at \`$sha\`, which is main. Nothing to do."
-else
-  report "- Pinned at \`$sha\`; main is \`$head_sha\`."
-  report "- Bump with \`bin/bump-superpowers $head_sha\`, then read the diff to"
-  report "  \`hooks/payload.md\` and \`skills/brainstorming/\` before merging."
-  DRIFT=1
-fi
-latest_tag="$(git ls-remote --tags --refs https://github.com/obra/superpowers.git \
-  | awk -F/ '{print $NF}' | sort -V | tail -1)"
-[ -n "$latest_tag" ] && report "- Latest upstream tag: \`$latest_tag\`."
-report ""
+# 1. Each curated entry: the pinned sha against the tip of its declared ref.
+# superpowers also lists its newest tag and names its bump script; the other
+# entries have no version to mirror, so a bump edits sha and version together
+# by hand (spec section 6.4).
+while IFS="$(printf '\t')" read -r name url ref sha; do
+  [ -n "$name" ] || continue
+  [ "${#sha}" -eq 40 ] || die "no 40-character sha for $name in $MARKETPLACE"
+  head_sha="$(git ls-remote "$url" "refs/heads/$ref" | cut -f1)"
+  [ -n "$head_sha" ] || die "could not resolve $url $ref"
+  report "### $name ($url)"
+  report ""
+  if [ "$head_sha" = "$sha" ]; then
+    report "- Pinned at \`$sha\`, which is $ref. Nothing to do."
+  else
+    report "- Pinned at \`$sha\`; $ref is \`$head_sha\`."
+    if [ "$name" = superpowers ]; then
+      report "- Bump with \`bin/bump-superpowers $head_sha\`, then read the diff to"
+      report "  \`hooks/payload.md\` and \`skills/brainstorming/\` before merging."
+    else
+      report "- Bump by editing \`.claude-plugin/marketplace.json\`: move \`sha\` and \`version\` together, then update the pinned pair in \`tests/test-curated-$name.sh\`."
+    fi
+    DRIFT=1
+  fi
+  if [ "$name" = superpowers ]; then
+    latest_tag="$(git ls-remote --tags --refs "$url" | awk -F/ '{print $NF}' | newest_stable_tag)"
+    [ -n "$latest_tag" ] && report "- Latest upstream tag: \`$latest_tag\`."
+  fi
+  report ""
+done < <(jq -r '.plugins[] | select(.source.source? == "git-subdir")
+                | [.name, .source.url, .source.ref, .source.sha] | @tsv' "$MARKETPLACE")
 
 # 2. Each skills.sh source: the declared ref against the newest tag.
 report "### skills.sh sources"
@@ -51,7 +75,7 @@ report ""
 while IFS="$(printf '\t')" read -r repo ref; do
   [ -n "$repo" ] || continue
   newest="$(git ls-remote --tags --refs "https://github.com/$repo.git" \
-    | awk -F/ '{print $NF}' | grep -v -- '-alpha' | grep -v -- '-beta' | sort -V | tail -1)"
+    | awk -F/ '{print $NF}' | newest_stable_tag)"
   [ -n "$newest" ] || die "could not list tags for $repo"
   if [ "$newest" = "$ref" ]; then
     report "- \`$repo\` pinned at \`$ref\`, the newest tag."

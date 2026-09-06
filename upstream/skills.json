@@ -30,6 +30,13 @@
         "developing-claude-code-plugins",
         "working-with-claude-code"
       ]
+    },
+    {
+      "repo": "tt-a1i/archify",
+      "ref": "v2.16.0",
+      "skills": [
+        "archify"
+      ]
     }
   ]
 }
