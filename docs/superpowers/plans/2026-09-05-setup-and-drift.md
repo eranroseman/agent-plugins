@@ -2902,3 +2902,18 @@ Three spec sentences are deliberately not implemented as written, each recorded 
 **Placeholder scan.** Every code step carries the code. The four bracketed spans that remain are all in Task 13's gate-results table, where the value is the result of a run that has not happened yet, and in the vendored skill's block template, where upstream's own bracketed instructions are quoted verbatim.
 
 **Type consistency.** `ensure_clone`, `ensure_links`, `ensure_claude`, `ensure_codex`, `ensure_skills_sh` and `report_only` are stubbed in Task 4 and filled in Tasks 5 to 9 under exactly those names. `declared_sha` and `curated_skills` (Task 5) are reused in Tasks 9 and 11 and by `tests/test-doctor-faults.sh`. `emit_payload` is reached only through `bin/bump-superpowers --emit-payload`, which is the form `tests/test-hook.sh` calls; `revendor_brainstorming` and the `DESCRIPTION` literal beside it are internal to that script, and that literal must stay identical to the `want=` string in `tests/test-vendored-brainstorming.sh`. `locked_ref` reads `.skills.<name>.ref`, the key measured on 2026-09-05. `MARKETPLACE_SOURCE` (Claude, owner/repo form) and `CODEX_MARKETPLACE_SOURCE` (Codex, git URL form) are distinct on purpose: the two CLIs take different arguments.
+
+
+---
+
+## Plan executed, 2026-09-06
+
+Merged to `main` at `aedbac7`, twenty commits, CI green. Twelve tests pass and `shellcheck` is clean on all four scripts. Shipped: `bin/setup` and `bin/doctor`, `bin/bump-superpowers`, `bin/upstream-watch` and its scheduled workflow, `upstream/skills.json`, the vendored scaffolder at 0.4.0, both READMEs rewritten and held to `--help` by a drift test, and five new test files.
+
+**One place this document diverges from what shipped, deliberately.** The Global Constraints line above records `mattpocock/skills` v1.2.3 as `835450ef…` and `obra/superpowers-developing-for-claude-code` v0.3.1 as `aa900d59…`. Both are annotated-tag objects, not commits. The shipped artifacts use the peeled commits, `6acc160e…` and `74afe935…`, keeping the tag objects separately for the `ls-remote` assertion. The narrative was left uncorrected on purpose: every fix in the review record is anchored to a line number here, and editing the body would have invalidated all of them while execution was still running. It is recorded rather than silently wrong.
+
+**Deviation D8** was decided during implementation and is recorded in [the spec](../specs/2026-09-05-setup-and-drift-design.md) §7.3, not in this document's Deviations section, for the same line-number reason.
+
+**Left for the cutover sitting**, which is deliberately separate: toggle auto-update, then `bin/doctor` alone to read what would change, then `bin/setup` on the real machine, gates S1, S2, S4 and S5, read S3, empty both global instruction files, refresh `~/harness-backup`, and record the gate results in the spec. The `upstream-drift` label was created on 2026-09-06, ahead of that sitting, because the watch runs daily and `gh issue create` fails outright on a missing label.
+
+The deferred minors from the whole-branch review are filed as [issues #13 to #18](https://github.com/eranroseman/agent-plugins/issues/13).
