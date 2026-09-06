@@ -161,7 +161,18 @@ Three edits follow:
 
 - `tests/test-skills-pin.sh` asserts `[ "$total" -eq 18 ]`; it becomes 19.
 - `bin/upstream-watch`'s prerelease filter matches `-alpha|-beta`. `archify` uses `-dev.N` and publishes a parallel `archify-dsh-*` tag series, so an unwidened filter will pick a dev tag as "newest" and report false drift indefinitely.
-- **`archify` calls `tt-a1i.github.io` on every run** unless `ARCHIFY_UPDATE_CHECK_DISABLED=1` is set. A skill that phones home per invocation is a roster fact, and `bin/setup` sets that variable.
+- **`archify` performs a version check per invocation.** Read at the source rather than taken from the ticket, it is milder than "phones home" suggests: the skill says to run the packaged checker once and *"if the command cannot run, continue without mentioning the check"*, and *"this workflow never downloads, installs, or executes an update, and silence is never consent."* A notification that degrades silently and cannot act on what it finds.
+
+**The disposition is a README instruction, and the ladder requires saying why.** Higher rungs, in order, and why each was not taken:
+
+  - *Do not adopt it* — eliminates the behaviour by losing the capability.
+  - *Vendor and strip the update-awareness section* — an adaptation, so route 3. It forks a maintained project and takes ownership of a 137-line skill plus `bin/`, `scripts/`, `assets/` and `test/`, to remove a notification.
+  - *`bin/setup` sets `ARCHIFY_UPDATE_CHECK_DISABLED=1`* — contradicts §7.6 of sub-project 2, which deliberately does not set the telemetry variable because a network-behaviour decision belongs to the operator. The same reasoning applies here and was not re-litigated.
+  - *`bin/doctor` reports the variable's state* — available, cheap, and the shape of the existing telemetry note. Deferred as not yet worth a check.
+
+  So: the README documents the behaviour and the variable that disables it. **This is prose, chosen knowingly and provisionally**, and it upgrades to the doctor check the first time it is not enough.
+
+- **The pin must be re-resolved, not copied.** The survey read tag `v2.16.0`; the repository was pushed 2026-09-06 and its skill metadata reads `version: "2.17"`. The plan resolves the tag against the source rather than inheriting a ticket's number.
 
 The #110 comment generalising the pinning finding across the whole installed set is retracted: as of 2026-09-06 the lockfile holds eighteen entries and none without a ref.
 
@@ -181,7 +192,13 @@ The `dist` and source trees are byte-identical at this sha, and a test asserts t
 
 Three things ship with it or the decision is half-executed. **This is a migration, not a new adoption** — `writing-clearly-and-concisely@agent-toolkit` is installed on this machine right now at the identical sha, and leaving it produces two catalog entries emitting the same string. Upstream ships no plugin manifest and no version, so Claude fell back to the sha prefix; the version field is decided here rather than inherited. And **curation reaches Claude only** — Codex gains the skill through `bin/setup`'s symlinks or not at all.
 
-### 6.5 The duplicated pair
+### 6.5 A pattern across all three candidates
+
+Every skill this roster adopts exceeds Codex's measured 122-character description truncation: `diagnosing-bugs` at 156, `adhd` over 500, `archify` around 700. Two are adapted for other reasons and are fixed incidentally. `archify` is not, so on Codex it ships a description cut mid-sentence.
+
+That is three of three, which makes it a property of the upstream population rather than three coincidences — descriptions are written for Claude, where length is nearly free. The roster should expect it of the next candidate and check it as a matter of course, rather than rediscovering it each time. Where a skill is adapted anyway, the fix costs nothing; where it is not, the truncation is accepted and recorded.
+
+### 6.6 The duplicated pair
 
 `working-with-claude-code` and `developing-claude-code-plugins` arrive **twice**: through skills.sh, and through the installed `superpowers-developing-for-claude-code` plugin. Measured 2026-09-06, both routes live. This is the hazard that sent a bare invocation to the unadapted scaffolder during sub-project 2's cutover.
 
@@ -189,9 +206,23 @@ Drop the **plugin**, keep skills.sh. Keeping the plugin would leave Claude with 
 
 **Nothing can enforce absence.** A plugin manifest carries `dependencies` and no inverse, on either harness — Claude's keys are `author dependencies description homepage hooks keywords license name repository version`, Codex's the same shape plus `interface` and `skills`. There is no `conflicts`, no `replaces`, no `provides`. So a plugin cannot declare that installing it should remove something else, and the only available mechanism is detection.
 
-This design creates three such cases: this pair, `writing-clearly-and-concisely@agent-toolkit` against the curated entry (§6.4), and `adhd` if it is ever installed from its own marketplace alongside the vendored copy. `bin/setup` already does this once, for `setup-matt-pocock-skills`, as a one-off `note`. That becomes a **declared conflict list** the doctor checks — a table of "if this is installed, ours is duplicated", reported rather than repaired, since removing another marketplace's plugin is not this script's business.
+This design creates three such cases: this pair, `writing-clearly-and-concisely@agent-toolkit` against the curated entry (§6.4), and `adhd` if it is ever installed from its own marketplace alongside the vendored copy. `bin/setup` already handles one, `setup-matt-pocock-skills`, as a one-off `note`.
 
-### 6.6 Roster items closed without work
+**The check is derived, not declared.** A hand-maintained table of "if this is installed, ours is duplicated" can only know what someone remembered to add, and goes stale silently — a rule where a mechanism is available. `bin/doctor` already reads every route: `upstream/skills.json`, the vendored skill directories, `claude plugin list`, `codex plugin list --json`, and the three skill roots. A duplicate is computable from what it already has.
+
+**By resolved target, not by name.** `~/.agents/skills` holds 31 entries, thirteen of them symlinks into the pinned `superpowers` clone — same name, same target, harmless. The hazard is one name resolving to two *different* trees, which is precisely the D1 incident: an adapted and an unadapted `setup-matt-pocock-skills` installed together, where a bare invocation reached the wrong one and wrote its block to the wrong file.
+
+**Three rules, each earned from a measured false positive.** The naive form — name to resolved target, report any name with more than one — was implemented and run against this machine on 2026-09-06, while `bin/doctor` reported clean. It fired **25 times**.
+
+1. **Compare content, not path.** `brainstorming` resolved to seven targets: three versioned plugin caches, the pinned clone, and symlinks. Hashing `SKILL.md` instead of comparing paths took 25 to 9.
+2. **Current plugin version only.** `~/.claude/plugins/cache/<marketplace>/<plugin>/<version>/` retains superseded versions, so every plugin bump manufactures a duplicate of its own skills. Taking only the newest version per plugin took 9 to 5.
+3. **A cache whose marketplace is no longer registered is itself the finding.** Of the five survivors, one is by design — the vendored `brainstorming` against upstream's, which is the whole point of vendoring it — and four traced to `~/.claude/plugins/cache/superpowers-dev/superpowers/6.2.0/`, left behind when that marketplace was removed on 2026-09-04. That is not noise to filter; it is disk residue from a removal, and the doctor reports it separately rather than suppressing it.
+
+So the check is: hash each route's `SKILL.md`, take only current plugin versions, and report any name resolving to more than one distinct content — plus, separately, any plugin cache whose marketplace is not registered. **Report, never repair** — §7.4 of sub-project 2 already rules that a squatting file is moved aside and reported, and removing another marketplace's plugin is not this script's business.
+
+**This section is designed rather than specified**, and the difference was worth measuring: a plan written against the naive form would have shipped a check that fires 25 times on a correct machine, which is the same as shipping no check at all.
+
+### 6.7 Roster items closed without work
 
 **`grilling` versus `brainstorming`** needs nothing. The descriptions are disjoint, `skillOverrides` was removed on 2026-09-05, and the stale prose in both global files was deleted on 2026-09-06.
 
