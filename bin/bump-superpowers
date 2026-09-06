@@ -1,0 +1,143 @@
+#!/usr/bin/env bash
+# Move the obra/superpowers pin to a new sha and leave the diff for review.
+#
+#   bin/bump-superpowers <sha>              apply the bump in this checkout
+#   bin/bump-superpowers --emit-payload DIR print the payload for a clone at DIR
+#
+# A bump moves four coupled artifacts by three mechanisms:
+#   substituted   .claude-plugin/marketplace.json source.sha, LICENSE "at commit"
+#   regenerated   hooks/payload.md, skills/brainstorming/ (re-vendored)
+#   read          the version field, copied from upstream's own plugin.json
+#
+# Two parts of the diff deserve reading rather than skimming: the vendored
+# brainstorming body, where upstream can change behaviour, and payload.md,
+# which is injected into every Claude Code session.
+set -uo pipefail
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+MARKETPLACE="$REPO_ROOT/.claude-plugin/marketplace.json"
+PLUGIN="$REPO_ROOT/plugins/software-development"
+UPSTREAM_URL="https://github.com/obra/superpowers.git"
+
+die() { printf 'ERROR: %s\n' "$*" >&2; exit 2; }
+
+# The one copy of the payload recipe. $1 is a checkout of obra/superpowers.
+# The frame comes from upstream's own hook: it builds one line,
+#   session_context="<frame-head>${using_superpowers_escaped}<frame-tail>"
+# so splitting on the placeholder yields the two halves. Upstream reads the
+# skill with $(cat ...), which strips the trailing newline; "$(sed ...)" does
+# the same, and the tail's leading \n puts it back.
+emit_payload() {
+  local up="$1" src line tmpl pre post
+  src="$up/skills/using-superpowers/SKILL.md"
+  [ -f "$src" ] || die "no using-superpowers/SKILL.md in $up"
+  line="$(grep -m1 '^session_context=' "$up/hooks/session-start")" \
+    || die "upstream hooks/session-start has no session_context= line"
+  tmpl="${line#session_context=\"}"
+  tmpl="${tmpl%\"}"
+  # The literal ${...} is the point: it is upstream's placeholder, matched as
+  # text, not expanded here.
+  # shellcheck disable=SC2016
+  case "$tmpl" in
+    *'${using_superpowers_escaped}'*) ;;
+    *) die "upstream's frame no longer interpolates using_superpowers_escaped" ;;
+  esac
+  pre="${tmpl%%\$\{using_superpowers_escaped\}*}"
+  post="${tmpl#*\$\{using_superpowers_escaped\}}"
+  printf '%b' "$pre"
+  printf '%s' "$(sed '30s/superpowers:brainstorming/software-development:brainstorming/' "$src")"
+  printf '%b\n' "$post"
+}
+
+fetch_at() {
+  local dir="$1" sha="$2"
+  git -C "$dir" init -q || die "git init failed in $dir"
+  git -C "$dir" remote add origin "$UPSTREAM_URL" || die "git remote add failed"
+  git -C "$dir" fetch -q --depth 1 origin "$sha" || die "could not fetch $sha"
+  git -C "$dir" checkout -q FETCH_HEAD || die "could not check out $sha"
+}
+
+case "${1:-}" in
+  --emit-payload)
+    [ -n "${2:-}" ] || die "--emit-payload needs a checkout directory"
+    emit_payload "$2"
+    exit 0
+    ;;
+  -h|--help|"")
+    printf 'usage: bin/bump-superpowers <sha>\n       bin/bump-superpowers --emit-payload <clone-dir>\n'
+    [ -n "${1:-}" ] && exit 0 || exit 2
+    ;;
+esac
+
+new_sha="$1"
+[ "${#new_sha}" -eq 40 ] || die "expected a 40-character sha, got '$new_sha'"
+old_sha="$(jq -r '.plugins[] | select(.name == "superpowers") | .source.sha' "$MARKETPLACE")"
+[ "${#old_sha}" -eq 40 ] || die "could not read the current sha from $MARKETPLACE"
+[ "$new_sha" != "$old_sha" ] || die "already pinned at $new_sha"
+
+work="$(mktemp -d)"
+trap 'rm -rf "$work"' EXIT
+fetch_at "$work" "$new_sha"
+
+new_version="$(jq -r '.version' "$work/.claude-plugin/plugin.json")"
+if [ -z "$new_version" ] || [ "$new_version" = "null" ]; then
+  die "upstream declares no version at $new_sha"
+fi
+
+# 1. substituted. Written through a temporary and moved into place, never
+# `cmd > file`, which truncates the source before the rewrite is known good.
+tmp="$(mktemp)"
+if jq --arg s "$new_sha" --arg v "$new_version" \
+     '(.plugins[] | select(.name == "superpowers") | .source.sha) = $s
+      | (.plugins[] | select(.name == "superpowers") | .version) = $v' \
+     "$MARKETPLACE" > "$tmp"; then
+  mv "$tmp" "$MARKETPLACE" || die "could not replace $MARKETPLACE"
+else
+  die "could not rewrite $MARKETPLACE"
+fi
+tmp="$(mktemp)"
+if sed "s/at commit $old_sha/at commit $new_sha/" "$PLUGIN/LICENSE" > "$tmp"; then
+  mv "$tmp" "$PLUGIN/LICENSE" || die "could not replace the LICENSE"
+else
+  die "could not rewrite the LICENSE"
+fi
+
+# 2. regenerated: the payload, then the vendored brainstorming tree
+emit_payload "$work" > "$PLUGIN/hooks/payload.md" || die "could not write payload.md"
+
+# The narrowed description, verbatim. tests/test-vendored-brainstorming.sh
+# carries the same string; the two must stay identical.
+DESCRIPTION='description: "Design front door of the superpowers spine. Classifies a build request as spike, bounded, or architectural, then takes it from intent to an approved design, and to a written spec for architectural work, before any implementation. Use for \"let'"'"'s build, add, or change X\". Not for open-ended ideation, and not for stress-testing an existing plan."'
+
+revendor_brainstorming() {
+  local up="$1" sha="$2" src dest tmp
+  src="$up/skills/brainstorming/SKILL.md"
+  dest="$PLUGIN/skills/brainstorming"
+  [ -f "$src" ] || die "no skills/brainstorming/SKILL.md at $sha"
+  rm -rf "$dest"
+  cp -R "$up/skills/brainstorming" "$dest" || die "could not copy skills/brainstorming"
+  [ "$(sed -n 4p "$src")" = "---" ] \
+    || die "upstream brainstorming frontmatter is no longer three lines; re-audit the vendoring"
+  tmp="$(mktemp)"
+  {
+    sed -n '1,2p' "$src"
+    printf '%s\n' "$DESCRIPTION"
+    sed -n '4p' "$src"
+    printf '%s\n' \
+      "<!-- Vendored from https://github.com/obra/superpowers at $sha" \
+      "     path: skills/brainstorming/" \
+      "     MIT, © 2025 Jesse Vincent. The only local change is the description in the frontmatter above." \
+      "     Do not hand-edit below this line; re-vendor from upstream to update." \
+      "-->"
+    sed -n '5,$p' "$src"
+  } > "$tmp" || die "could not build the vendored SKILL.md"
+  mv "$tmp" "$dest/SKILL.md" || die "could not write $dest/SKILL.md"
+}
+
+revendor_brainstorming "$work" "$new_sha"
+
+printf '\nBumped %s -> %s, version %s. Review the diff:\n' "$old_sha" "$new_sha" "$new_version"
+printf '  git diff -- %s %s\n' \
+  "plugins/software-development/hooks/payload.md" \
+  "plugins/software-development/skills/brainstorming"
+printf 'Then run: bash tests/run.sh\n'

@@ -23,20 +23,17 @@ H="$REPO_ROOT/plugins/software-development/hooks"
 [ -f "$H/claude-hooks.json" ] || fail "missing $H/claude-hooks.json"
 [ -x "$H/session-start" ] || fail "$H/session-start missing or not executable"
 
-# (1) payload exactness
+# (1) payload exactness. The frame is read from upstream's own hooks/session-start
+# rather than transcribed here, and the recipe lives in bin/bump-superpowers so a
+# bump and this test cannot diverge.
 UP="$(fetch_upstream)"
 src="$UP/skills/using-superpowers/SKILL.md"
 [ "$(sed -n 30p "$src")" = '- "Let'"'"'s build X" → superpowers:brainstorming first, then implementation skills.' ] \
   || fail "upstream line 30 is not the expected superpowers:brainstorming line; re-audit the edit"
 expected="$(mktemp)"
-{
-  printf '<EXTREMELY_IMPORTANT>\nYou have superpowers.\n\n'
-  printf '**Below is the full content of your %s skill - your introduction to using skills. For all other skills, use the %s tool:**\n\n' \
-    "'superpowers:using-superpowers'" "'Skill'"
-  sed '30s/superpowers:brainstorming/software-development:brainstorming/' "$src"
-  printf '</EXTREMELY_IMPORTANT>\n'
-} > "$expected"
-diff "$expected" "$H/payload.md" || fail "payload.md != upstream using-superpowers inside upstream's frame with one edit"
+bash "$REPO_ROOT/bin/bump-superpowers" --emit-payload "$UP" > "$expected" \
+  || fail "bin/bump-superpowers --emit-payload failed"
+diff "$expected" "$H/payload.md" || fail "payload.md != the recipe's output for the pinned clone"
 [ "$(grep -c 'software-development:brainstorming' "$H/payload.md")" -eq 1 ] || fail "expected exactly one software-development:brainstorming"
 if grep -q 'superpowers:brainstorming' "$H/payload.md"; then fail "a superpowers:brainstorming reference survived"; fi
 
