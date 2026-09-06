@@ -296,6 +296,28 @@ Checked on this machine after the first `bin/setup` run. Gate labels are `S`-pre
 
 Fresh-machine reproducibility is gate S1 and is in scope here, unlike in the layout spec where it was explicitly deferred to this sub-project. There is no gate for a Codex-only machine, because §7.2 does not support one.
 
+### Results, 2026-09-06
+
+Measured during the cutover. Every figure is from a run, not a prediction; a gate recorded without its numbers is worth nothing to the sub-projects that read this.
+
+| Gate | Result |
+| --- | --- |
+| S1 Fresh install | **Pass.** `bin/setup` into a scratch `HOME`/`CODEX_HOME`: exit 0, 38 `DID:` lines. `bin/doctor` over the same pair: exit 0, `clean`. Thirteen links under the scratch `~/.agents/skills`; both Codex plugins installed there. The real machine was verified unaffected afterwards. Run from the repository checkout rather than the marketplace clone, which carried no `bin/` until it refreshed. |
+| S2 Doctor detects | **Pass.** `tests/test-doctor-faults.sh` prints `doctor-faults: five seeded faults reported and the local ones repaired`, exit 0. On a minimal `PATH` the doctor emitted two `SKIP:` lines; the Codex one did not appear because `codex` lives at `/usr/bin/codex` and survives that `PATH`. |
+| S3 Auto-update | **Pass, with a qualification that changes §9.** Toggled 06:36:32 UTC: 0.3.0 installed, 0.4.0 declared, catalog at `f24bb5d`, marketplace `lastUpdated` 2026-09-05T22:58:12Z. A **headless** trigger (`claude -p`) moved nothing in 773 s — version, catalog and `lastUpdated` all unchanged. A fresh **interactive** session delivered at **t+301 s**: 0.3.0 → 0.4.0, catalog → `54dbf0a`, `lastUpdated` → 2026-09-06T06:58:30Z, with no command typed. Auto-update therefore refreshes the catalog *and* installs, but only an interactive session start triggers it. §9's "nothing to run on Claude" holds for interactive starts only; a headless-only workflow never receives a release. |
+| S4 Vendored scaffolder | **Pass, four of four states**, each confirmed to have run the vendored copy by the presence of its `### Task reports` section. `none`: five sections, `CLAUDE.md` exactly `@AGENTS.md` (11 bytes). `AGENTS.md` only: five sections, the pre-existing heading and body preserved at lines 1-3 with `## Agent skills` beginning at line 5. `CLAUDE.md` only — the migration case the two edited regions exist for: five sections, the pre-existing heading *and* body moved into `AGENTS.md`, `CLAUDE.md` reduced to `@AGENTS.md`. Both files: merge correct, both seeded texts preserved including the second heading, but four sections — `### Triage labels` and its seed template were not written. Not attributed to the edited regions: the skill is prompt-driven, and its `### Git` text also varied in that run, adapting to the absence of a remote. |
+| S5 Pin application | **Pass**, on the second reading. Eighteen `OK: skills.sh <name> at <ref>` lines before *and* after `npx skills update -g`, thirteen links before and after, and `update -g` reporting nothing to update because every declared entry is pinned. The lockfile went from zero entries carrying a `ref` to eighteen. |
+
+Three corrections the runs forced on the table above.
+
+**S5's denominator is eighteen, not twenty.** The declaration lost `setup-matt-pocock-skills` to Deviation D1 and `to-tickets` to the not-adopted set. An earlier reading of this gate measured nineteen against a nineteen-skill declaration and was superseded when the declaration moved during the cutover.
+
+**S5's failure rule as written is wrong.** "`skills update -g` then reports everything up to date" fired falsely on the first reading: `update -g` reported one update, and it was the lockfile's twentieth entry, unpinned *by design* under D1. The correct rule is that every **declared** entry reports `OK` before and after; an undeclared entry is expected to move. Both undeclared entries were then removed, taking the lockfile to eighteen against eighteen declared.
+
+**The pin is a move between unrecorded points, not a rollback from the tip.** Measured before the run: eight of the seventeen mattpocock skills then declared changed bytes, not the sixteen of eighteen the plan claimed. The installed `triage` matched neither `v1.2.3` nor `main`'s tip, so the machine held an unreproducible mid-branch snapshot — which is the drift the pin ends, and the strongest argument for it.
+
+One hazard surfaced that the gate text does not anticipate. While both an adapted and an unadapted `setup-matt-pocock-skills` were installed, a bare invocation reached the **unadapted** one, which wrote its block into `CLAUDE.md` and created no `AGENTS.md` — the exact failure S4 exists to detect, arriving from the wrong skill rather than from a defect. It was diagnosed by section count (three, and no `### Task reports`) and eliminated by removing the skills.sh copy, per the `eliminate > mechanism > rule` ladder in §4.0 rather than by relying on operators typing the namespaced form.
+
 ## 14. Positions from knowledge-harness not adopted
 
 | Proposal | Disposition | Reason |
@@ -339,10 +361,12 @@ Marked **[test]** where settled empirically rather than by reading.
 
 ## 16. Open items carried forward
 
-- ~~Whether `autoUpdate: true` in a **user-scope** `extraKnownMarketplaces` entry is honoured, or only in managed settings.~~ Moot for setup, which never writes the key. What remains is whether the `/plugin` toggle delivers a release without an explicit command, which gate S3 measures on the 0.3.0 to 0.4.0 bump.
+- ~~Whether `autoUpdate: true` in a **user-scope** `extraKnownMarketplaces` entry is honoured, or only in managed settings.~~ Moot for setup, which never writes the key. ~~What remains is whether the `/plugin` toggle delivers a release without an explicit command, which gate S3 measures on the 0.3.0 to 0.4.0 bump.~~ Answered 2026-09-06 by S3: it does, in 301 seconds, but only from an **interactive** session start — a headless `claude -p` moved nothing in 773 seconds. See §13's results.
 - ~~Whether a model-invoked skill can reach `setup-matt-pocock-skills` through the Skill tool given its `disable-model-invocation: true`.~~ Closed 2026-09-05 as moot: reaching it would not help, because its file-pick rule cannot be overridden from outside (§8). The skill is vendored instead.
-- Whether re-running `skills add` with a ref across all twenty skills is clean on a real machine; verified for one skill in a scratch home.
-- Which upstream tag corresponds to the currently installed content. It is almost certainly between tags, so no tag reproduces today's exact bytes; the first pin is a deliberate content move.
+- ~~Whether re-running `skills add` with a ref across all twenty skills is clean on a real machine; verified for one skill in a scratch home.~~ Answered 2026-09-06: clean across all eighteen declared skills on the reference machine, in 49 seconds, taking the lockfile from zero entries carrying a `ref` to eighteen. The count is eighteen rather than twenty because D1 excludes `setup-matt-pocock-skills` and `to-tickets` is not adopted.
+- ~~Which upstream tag corresponds to the currently installed content. It is almost certainly between tags, so no tag reproduces today's exact bytes; the first pin is a deliberate content move.~~ Answered 2026-09-06 by measurement: none. The installed `triage` matched neither `v1.2.3` nor `main`'s tip, confirming a mid-branch snapshot. Eight of the seventeen mattpocock skills then declared changed bytes on pinning — not the sixteen of eighteen the plan claimed.
+- Whether the task-reports rule can leave the two global instruction files. Held there at the cutover: seven repositories on this machine carry an `AGENTS.md` without it and two carry none at all, so its per-repo home does not yet exist. Delete once the §8 scaffolder has been through them.
+- Whether `### Triage labels` is reliably written when both `AGENTS.md` and `CLAUDE.md` already exist. One S4 state omitted it and its seed template; the skill is prompt-driven, so this may be run variation rather than a block defect.
 - The two `obra/superpowers-developing-for-claude-code` skills are duplicated on Claude today (plugin and skills.sh). Sub-project 5 decides ([issue #10](https://github.com/eranroseman/agent-plugins/issues/10)).
 - ~~The `Skill(codex:rescue)` hang loses its prose home under §4.1 and should be filed upstream against `codex@openai-codex`.~~ Closed 2026-09-05: upstream already documents it in `commands/rescue.md`, so the prose deletes with nothing to file.
 - ~~Whether the `env` key or the plugin's own SessionStart hook writing to `$CLAUDE_ENV_FILE` is the better Claude channel for the telemetry variable.~~ Closed 2026-09-05: setup sets neither (§7.6).
