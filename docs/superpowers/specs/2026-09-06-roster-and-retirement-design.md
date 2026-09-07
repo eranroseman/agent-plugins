@@ -350,6 +350,18 @@ Migrate, prove, then delete. The gate is the only step that requires evidence ra
 
 Step 11 is why the order runs this way: **the retirement makes its own precondition true.**
 
+### Results
+
+Executed 2026-09-06 and 2026-09-07. The gate in this section was reached and passed.
+
+- **The release.** `software-dev` 0.7.0 and `sensemaking` 0.2.0 merged to `main` at `dd1ed5e`, with `validate` and `setup-e2e` green. `setup-e2e` built a machine from nothing and its `bin/doctor` printed `clean`.
+- **Convergence.** `bin/setup` produced exactly the seven `DID:` lines this section predicts, then `clean`, exit 0.
+- **The gate.** `bin/doctor` printed the five `NOTE:` lines enumerated above and `clean`, exit 0. The redundant-Codex-link count held at 18, confirming that the four links removed at the cutover pointed into `~/harness-backup` and were never counted. The `brainstorming` note carried `software-dev/0.7.0` and both hashes as measured in the prototype, `74edf03ea6d2` and `4a2033c06acf`.
+- **Ordering changed.** §10 sequences the two retirements as `harness-backup` then the global files. That is reversed in execution: the only copies of `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md` were `harness-backup/claude/CLAUDE.md` and `harness-backup/codex/AGENTS.md`, so deleting the backup first would have removed the parachute before the jump. The files were emptied, both harnesses confirmed working, and only then was the backup removed.
+- **Deletions.** Both repositories were deleted through GitHub's web UI by the owner. The automation's token carries no `delete_repo` scope, and granting one would have left a standing capability to delete any repository the owner holds — declined as disproportionate to a fifteen-second manual action.
+- **Duplicate detection in production.** The check added for §6.6 reported, on a real machine, the four hand-copied skills this plan set out to remove, and after their removal reported only the `brainstorming` pair §6.6 names as a survivor by design. Note ordering is not deterministic: CI and the local machine emitted the two paths in opposite orders, which the gate's wording already tolerates.
+- **Carried forward.** [#25](https://github.com/eranroseman/agent-plugins/issues/25) was reframed rather than closed: `claude plugin marketplace remove` leaves the cache behind every time, so clearing the instances does not close the class. The durable forms are `bin/setup` clearing an orphaned cache, or `bin/doctor` reporting one as a fault rather than a note.
+
 ## 11. Positions from the tickets not adopted
 
 | Position | Disposition | Why |
