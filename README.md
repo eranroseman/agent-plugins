@@ -81,8 +81,8 @@ bash ~/.claude/plugins/marketplaces/eranroseman/bin/setup
 ```
 
 Everything after that is the script's own work: re-adding the Codex plugins,
-since Codex has no update verb; re-fetching the pinned clone; re-verifying the
-symlinks; and re-running `skills add` per declared skill. With auto-update
+since Codex has no update verb; re-fetching the pinned clones; re-verifying
+the symlinks; and re-running `skills add` per declared skill. With auto-update
 enabled, Claude Code refreshes itself and the first command is unnecessary.
 
 Claude Code loads the new versions at the next launch or after

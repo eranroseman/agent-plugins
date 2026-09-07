@@ -1,7 +1,9 @@
 # software-dev
 
-Eran Roseman's glue plugin for software development. It is a thin
-layer over two upstream skill packs, not a home for copies of them.
+Eran Roseman's glue plugin for software development. It vendors skills from
+three upstream packs — obra/superpowers, mattpocock/skills, and
+obra/superpowers-lab — rewrites one of those skills into a fork, and carries
+a skill and an agent authored here, each with its own provenance below.
 
 What it ships:
 
@@ -55,7 +57,7 @@ an older version):
 
 Installed by the same script as the rest of the marketplace, not by adding
 this plugin on its own — Codex has no dependency concept, so a manual `codex
-plugin add` here would skip the thirteen `superpowers` symlinks entirely. See
+plugin add` here would skip the fourteen curated symlinks entirely. See
 the repository README's `## Install` section for the full picture; its
 two-command bootstrap
 
@@ -130,8 +132,9 @@ auto-update off, so it is a choice you make once:
 With it on, Claude Code refreshes the marketplace and updates installed plugins
 after a session starts, with a random delay of up to ten minutes, then either
 prompts for `/reload-plugins` or loads the new version at the next launch. The
-marketplace names `superpowers` at a fixed sha, so auto-update delivers this
-repository's releases and never drags in upstream's HEAD.
+marketplace pins both curated entries — `superpowers` and
+`writing-clearly-and-concisely` — at a fixed sha, so auto-update delivers this
+repository's releases and never drags in either upstream's HEAD.
 
 Without it, and on Codex either way, the repository README's Update section has
 the commands to run.
