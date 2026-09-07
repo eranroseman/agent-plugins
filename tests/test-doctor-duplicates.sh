@@ -71,5 +71,7 @@ printf '%s\n' "$out" | grep -q "unregistered marketplace: $H/.claude/plugins/cac
   && fail "the doctor reported a registered marketplace's cache as unregistered"
 printf '%s\n' "$out" | grep -q 'NOTE: Codex:' \
   && fail "the Codex pool was reported with no codex on PATH"
+printf '%s\n' "$out" | grep -q 'FAIL:.*resolves' \
+  && fail "a duplicate finding was reported as FAIL:, not NOTE: -- report, never repair:"$'\n'"$out"
 
 printf 'doctor-duplicates: one Claude duplicate and one residue reported; three false positives quiet\n'

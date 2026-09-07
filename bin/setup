@@ -640,6 +640,7 @@ report_duplicates() {
   # removal, and not this script's to delete.
   if [ -d "$HOME/.claude/plugins/cache" ]; then
     for dir in "$HOME/.claude/plugins/cache"/*/; do
+      [ -d "$dir" ] || continue
       name="$(basename "$dir")"
       jq -e --arg m "$name" '.[$m]' "$KNOWN_MARKETPLACES" >/dev/null 2>&1 \
         || note "plugin cache for an unregistered marketplace: ${dir%/} (left alone; remove it by hand)"
