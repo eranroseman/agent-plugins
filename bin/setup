@@ -193,7 +193,7 @@ ensure_clones() {
 }
 
 ensure_links() {
-  local entry epath skill name target link actual aside
+  local entry epath skill name target link actual aside lines line rest
   if applying; then
     mkdir -p "$SKILL_ROOT" || { bad "could not create $SKILL_ROOT"; return; }
   elif [ ! -d "$SKILL_ROOT" ]; then
@@ -204,13 +204,39 @@ ensure_links() {
   # below iterates nothing and reports nothing at all.
   needs jq "the curated skill list cannot be read, so no link is checked" || return
 
+  # A non-zero jq exit means the program aborted partway through -- most often
+  # a curated entry with no `skills` array, or a non-string element in one --
+  # and whatever it printed before aborting is a partial list, not the full
+  # one. Row count cannot stand in for this: if the *first* entry is the bad
+  # one the loop below simply never runs, but a later entry being bad still
+  # leaves every prior entry's rows behind, so a `> 0` guard on the count
+  # would pass while that entry's links go entirely unchecked. The exit status
+  # is the only thing that tells the two cases apart.
+  lines="$(jq -r '.plugins[] | select(.source.source? == "git-subdir") as $p
+                  | $p.skills[] | [$p.name, $p.source.path, (. | sub("^\\./"; ""))] | @tsv' "$MARKETPLACE")" \
+    || { bad "the curated skill list could not be read from $MARKETPLACE"; return; }
+  [ -n "$lines" ] || { bad "no curated skill is declared in $MARKETPLACE"; return; }
+
   # Every skill of every curated entry: the link target is the skill directory
   # inside that entry's pinned clone, under the entry's source.path, and the
   # link is named after the directory's basename.
-  while IFS="$(printf '\t')" read -r entry epath skill; do
-    [ -n "$entry" ] || continue
-    if [ -z "$epath" ] || [ -z "$skill" ]; then
-      bad "the $entry entry has a malformed skill line: path='$epath' skill='$skill'"
+  #
+  # Split by parameter expansion, not by feeding `read` a tab IFS: a tab is
+  # IFS whitespace, so `read` collapses a run of them and drops one at either
+  # end of the line, and a malformed row with an empty leading or middle field
+  # shifts every value after it left by one -- which used to both misname the
+  # field in the report below and, when the shifted-in name looked non-empty,
+  # hide a genuinely empty name from the skip check that follows. Expansion
+  # keeps each field where it was, so the emptiness check and the report
+  # below both see the field that is actually empty.
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    entry="${line%%$'\t'*}"
+    rest="${line#*$'\t'}"
+    epath="${rest%%$'\t'*}"
+    skill="${rest#*$'\t'}"
+    if [ -z "$entry" ] || [ -z "$epath" ] || [ -z "$skill" ]; then
+      bad "a curated skill line is malformed: entry='$entry' path='$epath' skill='$skill'"
       continue
     fi
     name="$(basename "$skill")"
@@ -271,8 +297,7 @@ ensure_links() {
     else
       bad "could not create $link"
     fi
-  done < <(jq -r '.plugins[] | select(.source.source? == "git-subdir") as $p
-                  | $p.skills[] | [$p.name, $p.source.path, (. | sub("^\\./"; ""))] | @tsv' "$MARKETPLACE")
+  done <<<"$lines"
 }
 
 plugin_version() {
@@ -456,8 +481,16 @@ locked_ref() {
 }
 
 ensure_skills_sh() {
-  local repo ref name have
+  local repo ref name have lines
   needs jq "the declared skill set cannot be read, so no skills.sh install is checked" || return
+
+  # Same reasoning as ensure_links: a non-zero jq exit means a source with no
+  # `skills` array, or a non-string element, aborted the program partway, and
+  # a row count cannot distinguish that from a short but complete list.
+  lines="$(jq -r '.sources[] as $s | $s.skills[] | [$s.repo, $s.ref, .] | @tsv' "$SKILLS_JSON")" \
+    || { bad "the declared skill set could not be read from $SKILLS_JSON"; return; }
+  [ -n "$lines" ] || { bad "no skill is declared in $SKILLS_JSON"; return; }
+
   while IFS="$(printf '\t')" read -r repo ref name; do
     [ -n "$name" ] || continue
     have="$(locked_ref "$name")"
@@ -476,9 +509,9 @@ ensure_skills_sh() {
     # The fragment form is what writes ref into the lockfile. -g keeps the
     # install in the shared root; without it a project tree and a second
     # lockfile appear beside it. </dev/null is load-bearing: npx inherits this
-    # loop's stdin, which is the process substitution below, and drains it, so
-    # without the redirect the loop ends after its first iteration and exactly
-    # one of the declared skills is ever installed.
+    # loop's stdin, which is the here-string below, and drains it, so without
+    # the redirect the loop ends after its first iteration and exactly one of
+    # the declared skills is ever installed.
     if npx --yes skills add "$repo#$ref" --skill "$name" -g -y </dev/null >/dev/null 2>&1; then
       did "installed $name from $repo#$ref"
     else
@@ -491,7 +524,7 @@ ensure_skills_sh() {
     else
       bad "after installing $name the lockfile records '${have:-no ref}', declared $ref"
     fi
-  done < <(jq -r '.sources[] as $s | $s.skills[] | [$s.repo, $s.ref, .] | @tsv' "$SKILLS_JSON")
+  done <<<"$lines"
 }
 
 ensure_fresh_clone() {

@@ -18,10 +18,14 @@ DRIFT=0
 report() { printf '%s\n' "$*"; }
 
 # Stable release tags only, from tag names on stdin: v1.2.3 or 1.2.3 with
-# nothing after the digits. Excludes -alpha, -beta, -rc, -dev.N, and any
-# parallel series with its own prefix (archify publishes archify-dsh-v0.1.0
-# beside its releases), all of which `sort -V` would otherwise rank above the
-# newest release and report as drift indefinitely.
+# nothing after the digits. Two different reasons, not one: -alpha, -beta,
+# -rc and -dev.N suffixes are excluded because `sort -V` would otherwise rank
+# an upcoming version's prerelease above the newest stable release and report
+# it as drift indefinitely; a parallel tag series with its own prefix (archify
+# publishes archify-dsh-v0.1.0 beside its releases) sorts below a real release
+# regardless -- `printf 'archify-dsh-v9.9.9\nv2.16.0\n' | sort -V` puts
+# v2.16.0 last -- and is excluded because the anchor admits nothing before the
+# version, not because of how it would sort.
 newest_stable_tag() { grep -E '^v?[0-9]+(\.[0-9]+)+$' | sort -V | tail -1; }
 
 # Exposed so the filter can be tested without the network.

@@ -81,6 +81,43 @@ do
 done
 printf '%s\n' "$out" | grep -q 'FAIL' || fail "doctor reported no FAIL line"
 
+# A curated entry whose `skills` array cannot be iterated must produce a
+# FAIL, not silence. Stripped entirely here, on the first git-subdir entry
+# (superpowers), so the jq program that feeds ensure_links aborts before
+# printing a single row -- the shape a row-count guard cannot see, because
+# there is no row to count. A scratch checkout, not the real repository:
+# MARKETPLACE is derived from the running script's own path, so the corrupted
+# declaration has to live beside a copy of bin/setup, never beside the real
+# marketplace.json this suite must leave alone.
+W="$(mktemp -d)"
+WH="$(mktemp -d)"
+trap 'rm -rf "$H" "$W" "$WH"' EXIT
+mkdir -p "$W/repo/bin" "$W/repo/.claude-plugin" "$W/repo/upstream" "$WH/.agents/skills" \
+  || fail "could not seed $W or $WH"
+ln -s "$REPO_ROOT/bin/setup" "$W/repo/bin/setup" || fail "could not link a scratch bin/setup"
+jq 'del(.plugins[] | select(.name == "superpowers") | .skills)' "$MARKETPLACE" \
+  > "$W/repo/.claude-plugin/marketplace.json" \
+  || fail "could not seed a marketplace entry with no .skills array"
+cp "$REPO_ROOT/upstream/skills.json" "$W/repo/upstream/skills.json" \
+  || fail "could not seed $W/repo/upstream/skills.json"
+# No claude, codex or npx on this PATH: bin/setup --check never runs any of
+# the three (ensure_skills_sh's npx call is guarded by `applying`, which
+# --check never is), and leaving them off keeps that hermetic rather than
+# incidental.
+BINW="$W/bin"
+mkdir -p "$BINW"
+for t in bash git jq sed awk grep find date readlink basename dirname \
+         mv ln mkdir cp cat sha256sum; do
+  p="$(command -v "$t" 2>/dev/null)" || fail "the fixture needs $t on PATH"
+  ln -sf "$p" "$BINW/$t"
+done
+if out="$(env HOME="$WH" CODEX_HOME="$WH/.codex" PATH="$BINW" \
+    /bin/bash "$W/repo/bin/setup" --check 2>&1)"; then status=0; else status=$?; fi
+[ "$status" -ne 0 ] \
+  || fail "bin/setup --check exited 0 against a marketplace entry with no .skills array:"$'\n'"$out"
+printf '%s\n' "$out" | grep -q 'the curated skill list could not be read from' \
+  || fail "bin/setup did not report the unreadable curated skill list:"$'\n'"$out"
+
 # The declared versions, read once: both fixtures below seed an
 # installed_plugins.json carrying them, so the Claude half reports OK without
 # running a command.
@@ -97,7 +134,7 @@ wcc="$(jq -r '.plugins[] | select(.name == "writing-clearly-and-concisely") | .v
 # the one way that matters: it reads stdin. It records each invocation instead
 # of installing anything, so this needs no network.
 H2="$(mktemp -d)"
-trap 'rm -rf "$H" "$H2"' EXIT
+trap 'rm -rf "$H" "$W" "$WH" "$H2"' EXIT
 CLONE2="$H2/.local/share/software-dev/upstream/superpowers"
 mkdir -p "$CLONE2" "$H2/.agents/skills" "$H2/.claude/plugins" || fail "could not seed $H2"
 git -C "$CLONE2" init -q || fail "git init failed in $CLONE2"

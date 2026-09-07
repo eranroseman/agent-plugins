@@ -9,6 +9,7 @@ disable-model-invocation: true
      MIT, (c) 2026 ADHD contributors. Local changes: the description above, shortened to 121 characters so
      Codex shows it whole, and the invocation gate, disable-model-invocation: true, paired with
      policy.allow_implicit_invocation: false in agents/openai.yaml. Nothing else is edited.
+     SOURCE-SPEC.md, named below, sits at the upstream repository's root and is not vendored here.
 -->
 
 # ADHD

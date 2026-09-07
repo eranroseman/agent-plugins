@@ -38,18 +38,19 @@ desc="${want#description: }"
 grep -qx '  allow_implicit_invocation: false' "$V/agents/openai.yaml" \
   || fail "agents/openai.yaml must carry Codex's gate, allow_implicit_invocation: false"
 
-# Lines 7-12: the whole provenance header, verbatim.
+# Lines 7-13: the whole provenance header, verbatim.
 expected_header="$(printf '%s\n' \
   "<!-- Vendored from https://github.com/UditAkhourii/adhd at commit $SHA" \
   "     path: skills/adhd/ (the repository's only skill; its tag v0.1.4 predates this text and the plugin manifest)" \
   "     MIT, (c) 2026 ADHD contributors. Local changes: the description above, shortened to 121 characters so" \
   "     Codex shows it whole, and the invocation gate, disable-model-invocation: true, paired with" \
   "     policy.allow_implicit_invocation: false in agents/openai.yaml. Nothing else is edited." \
+  "     SOURCE-SPEC.md, named below, sits at the upstream repository's root and is not vendored here." \
   "-->")"
-[ "$(sed -n 7,12p "$V/SKILL.md")" = "$expected_header" ] || fail "lines 7-12 are not the provenance header"
+[ "$(sed -n 7,13p "$V/SKILL.md")" = "$expected_header" ] || fail "lines 7-13 are not the provenance header"
 
-# Body: upstream minus its line 3 equals ours minus lines 3, 5 and 7-12.
-diff <(sed '3d' "$U/SKILL.md") <(sed -e '3d' -e '5d' -e '7,12d' "$V/SKILL.md") \
+# Body: upstream minus its line 3 equals ours minus lines 3, 5 and 7-13.
+diff <(sed '3d' "$U/SKILL.md") <(sed -e '3d' -e '5d' -e '7,13d' "$V/SKILL.md") \
   || fail "SKILL.md changed beyond the header, the description and the gate"
 
 # The LICENSE's provenance notice names the same commit.

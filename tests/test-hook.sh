@@ -80,6 +80,12 @@ HJ="$H/claude-hooks.json"
 [ "$(jq -r '.version' "$PLUGIN/.codex-plugin/plugin.json")" = '0.7.0' ] || fail "Codex manifest version must be 0.7.0"
 [ "$(jq 'has("hooks")' "$PLUGIN/.codex-plugin/plugin.json")" = 'false' ] || fail "Codex manifest must not declare hooks"
 [ "$(jq '.interface.capabilities | index("Lifecycle hooks")' "$PLUGIN/.codex-plugin/plugin.json")" = 'null' ] || fail "Codex manifest must not claim Lifecycle hooks"
+# Scoped to the Codex manifest alone, never folded into the loop below: the
+# Claude manifest's own description legitimately says "and its inspector" --
+# consistency-audit's subagent ships there -- so a check spanning both files
+# would fail on the true claim while catching the false one.
+grep -qi 'inspector' "$PLUGIN/.codex-plugin/plugin.json" \
+  && fail "Codex manifest advertises an inspector; a Codex plugin cannot ship a subagent"
 
 for f in "$PLUGIN/.claude-plugin/plugin.json" "$PLUGIN/.codex-plugin/plugin.json" "$MARKETPLACE"; do
   if grep -q 'bridge rules' "$f"; then fail "$f still advertises bridge rules"; fi
