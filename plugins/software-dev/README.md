@@ -46,7 +46,7 @@ What it depends on (Claude Code installs all three automatically on a first
 install; `bin/setup` adds a newly declared one to a machine that already has
 an older version):
 
-- `sensemaking@eranroseman`: shared skills, starting with `rethink-audit`.
+- `sensemaking@eranroseman`: shared skills: `rethink-audit` and `adhd`.
 - `superpowers@eranroseman`: obra/superpowers taken straight from upstream,
   13 of its 14 skills. `brainstorming` is the one left out.
 - `writing-clearly-and-concisely@eranroseman`: softaworks/agent-toolkit's

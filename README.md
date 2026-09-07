@@ -64,10 +64,12 @@ pinned clone per curated entry — obra/superpowers and softaworks/agent-toolkit
 user skill root, created whether or not Codex is present), and the declared
 skills.sh set installed at its declared refs.
 
-Two things it deliberately does not do. It never enables plugin auto-update —
-that is a consent decision you make once in `/plugin` under Marketplaces. And it
-never sets the telemetry variable documented in the plugin README. `bin/doctor`
-reports the state of both.
+Three things it deliberately does not do. It never enables plugin auto-update
+— that is a consent decision you make once in `/plugin` under Marketplaces.
+And it never sets the telemetry variable documented in the plugin README, or
+`archify`'s own update-check variable, for the same reason. `bin/doctor`
+reports the state of the first two; the plugin README covers the third by
+instruction alone, for now.
 
 ## Update
 
