@@ -362,6 +362,21 @@ Executed 2026-09-06 and 2026-09-07. The gate in this section was reached and pas
 - **Duplicate detection in production.** The check added for §6.6 reported, on a real machine, the four hand-copied skills this plan set out to remove, and after their removal reported only the `brainstorming` pair §6.6 names as a survivor by design. Note ordering is not deterministic: CI and the local machine emitted the two paths in opposite orders, which the gate's wording already tolerates.
 - **Carried forward.** [#25](https://github.com/eranroseman/agent-plugins/issues/25) was reframed rather than closed: `claude plugin marketplace remove` leaves the cache behind every time, so clearing the instances does not close the class. The durable forms are `bin/setup` clearing an orphaned cache, or `bin/doctor` reporting one as a fault rather than a note.
 
+#### The live half, measured
+
+`claude plugin list`: `sensemaking@eranroseman 0.2.0`, `software-dev@eranroseman 0.7.0`, `superpowers@eranroseman 6.3.0`, `writing-clearly-and-concisely@eranroseman 0.1.0`. `codex plugin list --json`: `software-dev@eranroseman 0.7.0`, `sensemaking@eranroseman 0.2.0`, and nothing from `agent-toolkit`.
+
+Component inventories, both as §10 predicts:
+
+- `software-dev`: `Skills (5)  brainstorming, consistency-audit, diagnosing-bugs, finding-duplicate-functions, setup-repository`; `Agents (1)  consistency-audit-inspector`; `Hooks (1)  SessionStart`.
+- `sensemaking`: `Skills (2)  adhd, rethink-audit`; `Agents (0)`.
+
+The two Codex cache directories hold the same five and two. `~/.agents/skills/writing-clearly-and-concisely` resolves into the agent-toolkit clone; `archify` is a directory.
+
+`Agent(subagent_type: "software-dev:consistency-audit-inspector")` resolved and replied — Deviation D3 confirmed in production, where the bare name does not resolve and the qualified one does.
+
+**One expectation in §10 step 6 was wrong, and the gate is right.** It expects `codex exec` to list `consistency-audit` and `adhd` among the skills available to it. Neither appears. The two absent are exactly the two gated ones, and `policy.allow_implicit_invocation: false` is what keeps them out of the implicit-invocation list — both are installed and present in the Codex cache. The step should expect a gated skill not to be offered; its appearance would mean the Codex half of the gate was not working. What did list: `archify`, `sensemaking:rethink-audit`, `software-dev:diagnosing-bugs`, `software-dev:finding-duplicate-functions`, `writing-clearly-and-concisely`.
+
 ## 11. Positions from the tickets not adopted
 
 | Position | Disposition | Why |
