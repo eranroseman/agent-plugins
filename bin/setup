@@ -591,6 +591,12 @@ report_only() {
 report_duplicates() {
   local -a claude_dirs=() codex_dirs=()
   local root dir path mkt name version
+  local can_hash=1
+  # Guarded once here, not inside report_pool: report_pool runs once per
+  # harness, and a guard placed there would print this SKIP twice. The
+  # residue check below needs jq, not sha256sum, and still runs either way.
+  needs sha256sum "the skill trees cannot be compared by content, so the duplicate check is unanswered" \
+    || can_hash=0
 
   # A plugin's skills sit under skills/, or at its root when a git-subdir
   # entry's path already is the skills directory, as the superpowers entry's
@@ -612,7 +618,7 @@ report_duplicates() {
       while IFS= read -r dir; do claude_dirs+=("$dir"); done < <(plugin_skill_dirs "$path")
     done < <(jq -r '.plugins[]?[]?.installPath // empty' "$INSTALLED_PLUGINS" 2>/dev/null)
   fi
-  report_pool Claude "${claude_dirs[@]}"
+  [ "$can_hash" -eq 1 ] && report_pool Claude "${claude_dirs[@]}"
 
   for root in "$CODEX_SKILLS" "$SKILL_ROOT"; do
     [ -d "$root" ] || continue
@@ -628,7 +634,7 @@ report_duplicates() {
     done < <(printf '%s' "$CODEX_LIST" \
       | jq -r '.installed[]? | select(.enabled) | [.marketplaceName, .name, .version] | @tsv')
   fi
-  if have codex; then report_pool Codex "${codex_dirs[@]}"; fi
+  if [ "$can_hash" -eq 1 ] && have codex; then report_pool Codex "${codex_dirs[@]}"; fi
 
   # A Claude plugin cache whose marketplace is not registered: residue of a
   # removal, and not this script's to delete.
