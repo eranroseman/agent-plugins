@@ -20,19 +20,24 @@ a pin, and never moves one itself.
 
 ## What it ships
 
-Three marketplace entries:
+Four marketplace entries:
 
 - `software-dev`: the glue plugin. obra/superpowers' `brainstorming`
-  skill vendored with a narrowed description, plus a SessionStart hook on
-  Claude Code (Codex is offered none, by design).
-  Depends on the two entries below.
-- `sensemaking`: skills shared with `research-vault`, starting with
-  `rethink-audit`.
+  skill vendored with a narrowed description, the repository scaffolder,
+  the authored `consistency-audit` with its inspector agent, a vendored
+  `diagnosing-bugs`, a forked `finding-duplicate-functions`, plus a
+  SessionStart hook on Claude Code (Codex is offered none, by design).
+  Depends on the three entries below.
+- `sensemaking`: skills shared with `research-vault`: `rethink-audit` and
+  `adhd`. Its README states which plugin holds a skill, and why.
 - `superpowers`: obra/superpowers taken straight from upstream at a pinned
-  commit — every skill except `brainstorming`, which ships adapted in
-  `software-dev`. This entry
+  commit, 13 of its 14 skills. `brainstorming` is the one left out. This entry
   is Claude Code only; Codex gets the same skills by symlink, created by
   `bin/setup` as described in Install below.
+- `writing-clearly-and-concisely`: softaworks/agent-toolkit's one skill of
+  that name, curated at a pinned commit from upstream's published plugin
+  directory. Claude Code only, by the same mechanism and with the same Codex
+  symlink.
 
 ## Install
 
@@ -54,10 +59,10 @@ marketplace and installs both local plugins there. When it is not, that half
 is reported as skipped and nothing else changes.
 
 What the run leaves behind: both plugins installed on each harness present, a
-clone of obra/superpowers at the pinned sha, a symlink per curated skill under
-`~/.agents/skills` — Codex's documented user skill root, created whether or
-not Codex is present — and the declared skills.sh set installed at its
-declared refs.
+pinned clone per curated entry — obra/superpowers and softaworks/agent-toolkit
+— fourteen symlinks into them under `~/.agents/skills` (Codex's documented
+user skill root, created whether or not Codex is present), and the declared
+skills.sh set installed at its declared refs.
 
 Two things it deliberately does not do. It never enables plugin auto-update —
 that is a consent decision you make once in `/plugin` under Marketplaces. And it
@@ -86,9 +91,11 @@ Claude Code loads the new versions at the next launch or after
 ## Checks
 
 `tests/run.sh` runs every static check: manifest schema on both harnesses, the
-upstream pin, the skills.sh pins, vendored-skill drift on both vendored skills,
-hook output, the engine's shape, and the doctor's fault detection. Six of them
-touch the network: the two pin checks, the two vendored-skill drift checks, the
-hook payload check, and the engine's own test, whose upgrade-path assertion
-fetches the pinned upstream tree when `claude` is on `PATH`. CI runs the same
-script, plus an end-to-end `bin/setup` run against a scratch `HOME`.
+upstream pin, the skills.sh pins, the curated writing entry, drift on the five
+vendored or forked skills, the invariants every plugin skill must hold, hook
+output, the engine's shape, the doctor's fault detection, and the doctor's
+duplicate detection. Ten of them touch the network: the three pin checks, the
+five drift checks, the hook payload check, and the engine's own test, whose
+upgrade-path assertion fetches the pinned upstream trees when `claude` is on
+`PATH`. CI runs the same script, plus an end-to-end `bin/setup` run against a
+scratch `HOME`.

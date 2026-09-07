@@ -18,6 +18,21 @@ What it ships:
   convention, the design ladder, and the task-reports rule. User-invoked only.
   The provenance header at the top of `SKILL.md` names the commit and every
   local change.
+- `skills/consistency-audit/` and `agents/consistency-audit-inspector.md`:
+  an authored, user-invoked audit that reads a repository whole for
+  contradictions, duplication, drifted terms and stale claims, refutes every
+  candidate before reporting it, and dispatches the read-only inspector as
+  two independent readers per slice. On Codex, where a plugin cannot ship a
+  subagent, it runs as one reader and says so.
+- `skills/diagnosing-bugs/`: mattpocock/skills' reproduction-first debugging
+  loop, vendored at tag `v1.2.3` with one change, a 69-character description
+  that Codex shows whole and that no longer shares a trigger word with
+  `superpowers:systematic-debugging`. Model-invoked: it should fire unprompted
+  when a bug resists reproduction.
+- `skills/finding-duplicate-functions/`: a rewritten fork of
+  obra/superpowers-lab's skill, for Python. Its `PROVENANCE.md` records what
+  changed; only its two prompt templates are upstream's, and the drift test
+  holds them there.
 - `hooks/session-start`, Claude Code only: a SessionStart hook that injects
   `hooks/payload.md`, upstream's `using-superpowers` text with its one
   `superpowers:brainstorming` reference repointed at
@@ -30,6 +45,9 @@ What it depends on (Claude Code installs both automatically):
 - `sensemaking@eranroseman`: shared skills, starting with `rethink-audit`.
 - `superpowers@eranroseman`: obra/superpowers taken straight from upstream,
   13 of its 14 skills. `brainstorming` is the one left out.
+- `writing-clearly-and-concisely@eranroseman`: softaworks/agent-toolkit's
+  skill of that name, curated at a pinned commit. `consistency-audit` uses it
+  for its report when present.
 
 ## Install
 
@@ -117,5 +135,7 @@ the commands to run.
 
 ## License
 
-MIT. The vendored `skills/brainstorming/` is MIT, © 2025 Jesse Vincent. See
-`LICENSE`.
+MIT. The vendored `skills/brainstorming/` is MIT, © 2025 Jesse Vincent;
+`skills/setup-repository/` and `skills/diagnosing-bugs/` are MIT, © 2026 Matt
+Pocock; the two templates under `skills/finding-duplicate-functions/scripts/`
+are MIT, © 2025 Jesse Vincent. See `LICENSE`.
