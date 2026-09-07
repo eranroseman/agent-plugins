@@ -40,7 +40,9 @@ What it ships:
   this plugin's own working rules. The Claude manifest declares the hook as
   `hooks/claude-hooks.json`.
 
-What it depends on (Claude Code installs both automatically):
+What it depends on (Claude Code installs all three automatically on a first
+install; `bin/setup` adds a newly declared one to a machine that already has
+an older version):
 
 - `sensemaking@eranroseman`: shared skills, starting with `rethink-audit`.
 - `superpowers@eranroseman`: obra/superpowers taken straight from upstream,
@@ -62,8 +64,9 @@ claude plugin marketplace add eranroseman/agent-plugins
 bash ~/.claude/plugins/marketplaces/eranroseman/bin/setup
 ```
 
-installs this plugin, with its `sensemaking` and `superpowers` dependencies,
-on Claude Code, and on Codex too when `codex` is on `PATH`.
+installs this plugin, with its `sensemaking`, `superpowers` and
+`writing-clearly-and-concisely` dependencies, on Claude Code, and on Codex too
+when `codex` is on `PATH`.
 
 Codex gets the skills and no hook, by design. Codex follows the skills
 without a session-start injection: obra/superpowers removed its own Codex hook
