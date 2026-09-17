@@ -52,6 +52,7 @@ Sources: **G1** and **G2** are the first and second question rounds of 2026-09-1
 | `shfmt` flags, prettier options, markdownlint rules | `-i 2 -ci -bn`; `proseWrap: preserve`, `embeddedLanguageFormatting: off`; MD013, MD033, MD041 off | D §3, §5.2 |
 | `cspell` over comments in shell and YAML | Yes, through an `overrides` entry, as D §3 ruled; veto drops that entry | D §3 |
 | `bin/format` as the apply script | Yes | G1 Q8 default |
+| A skip in CI | `tests/run.sh --no-skip` makes every unmet need a `FAIL`; CI runs with it, with the pinned binaries ahead of the image's on `PATH` | this spec, from G1 Q6's "CI installs everything, so CI never skips" |
 
 ## 4. Ownership: one derivation
 
@@ -113,7 +114,7 @@ The probes live in `run.sh`, one per name: `claude`, `python3`, `shellcheck`, `a
 19 passed, 0 failed, 3 skipped for want of: claude, shfmt 3.14.1 (found 3.8.0)
 ```
 
-Skips never change the exit status. Running one test directly bypasses the gate and a missing tool then fails loudly, which is acceptable: `run.sh` is the entry point the README names.
+Skips never change the exit status, with one flag that inverts it: `tests/run.sh --no-skip` turns every unmet need into `FAIL tests/test-format-shell.sh (needs shfmt 3.14.1; found 0.9.0)` and exits 1. CI runs with it (§9.5). Without the flag a skip is an honest account of a contributor's machine; with it, a skip is a broken installation, which is what it is on a runner that was told to install everything, and a run that verified less than it claims cannot be green there. Running one test directly bypasses the gate and a missing tool then fails loudly, which is acceptable: `run.sh` is the entry point the README names.
 
 Who declares what:
 
@@ -348,7 +349,9 @@ Proved by mutation: an unquoted expansion in a `run:` block fails naming the wor
 
 ### 9.5 Installing the tools
 
-One step reads `tests/tools.txt`: `npm install -g` for the three npm packages at their exact versions, and for `shellcheck`, `actionlint` and `shfmt` a download of the linux-amd64 release asset checked against the recorded sha256 before it is placed on `PATH`. The `command -v shellcheck || apt-get install` line goes with its comment: a pinned download replaces a workaround for the SKIP it was defeating. `setup-node` and `setup-python` stay for `claude` and the validator.
+One step reads `tests/tools.txt`: `npm install -g` for the three npm packages at their exact versions, and for `shellcheck`, `actionlint` and `shfmt` a download of the linux-amd64 release asset checked against the recorded sha256 before it is placed on `PATH`. The downloads go on `$GITHUB_PATH` ahead of the image's own tools: `ubuntu-latest` ships a shellcheck, and one that shadowed the pinned copy would fail the version probe and, without the flag below, skip the lint under a green run. The `command -v shellcheck || apt-get install` line goes with its comment: a pinned download replaces a workaround for the SKIP it was defeating. `setup-node` and `setup-python` stay for `claude` and the validator.
+
+The static-checks step runs `tests/run.sh --no-skip` (§5.2). An unmet need in CI is then a failed install, reported by name with the version found, never a skip that leaves the run green.
 
 ### 9.6 The result artifact
 
@@ -366,7 +369,7 @@ The section is rewritten to say what runs and what it needs, without counts that
 - The pin and drift checks fetch from GitHub; offline, they fail rather than skip.
 - Every run writes `tests/results.tsv`; a report cites it.
 - `bin/format` rewrites what the format checks check.
-- CI runs the same script, uploads the result file, and runs `bin/setup` end to end against a scratch `HOME`.
+- CI runs the same script with `--no-skip`, so nothing is skipped there, uploads the result file, and runs `bin/setup` end to end against a scratch `HOME`.
 
 The user-facing prerequisites of `bin/setup` are already correct and do not change.
 
