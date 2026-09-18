@@ -10,7 +10,7 @@ claude plugin validate --strict "$MARKETPLACE" || fail "claude plugin validate -
 
 found=0
 for p in "$REPO_ROOT"/plugins/*/; do
-  [ -f "$p/.claude-plugin/plugin.json" ] || continue
+  [ -f "$p/.claude-plugin/plugin.json" ] || fail "$p has no .claude-plugin/plugin.json"
   claude plugin validate --strict "$p" || fail "claude plugin validate --strict $p"
   found=$((found + 1))
 done

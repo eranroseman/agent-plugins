@@ -21,6 +21,8 @@ for i in 0 1; do
   [ "$(jq -r '.name' "$manifest")" = "$name" ] || fail "$name: manifest name differs"
   [ "$(jq -c ".plugins[$i].policy" "$M")" = '{"installation":"AVAILABLE","authentication":"ON_INSTALL"}' ] || fail "$name: policy"
   jq -e ".plugins[$i].category | type==\"string\" and length>0" "$M" >/dev/null || fail "$name: category"
+  [ "$(jq -r ".plugins[$i].category" "$M")" = "$(jq -r '.interface.category' "$manifest")" ] \
+    || fail "$name: the marketplace category differs from the manifest's interface.category"
 done
 
 if jq -e '.plugins[] | select(.name == "superpowers")' "$M" >/dev/null; then
