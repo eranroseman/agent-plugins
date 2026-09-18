@@ -167,4 +167,22 @@ saw "a curated entry is malformed: name=''" \
 saw 'the https://github.com/obra/superpowers.git entry' \
   && fail "empty entry name: the URL was read as the name:"$'\n'"$OUT"
 
-printf 'doctor-silence: 9 unreadable machines, none reported clean\n'
+# 10. A check that reports nothing (spec §6.1). After the loop splits and the
+# counted all-clear no declaration shape is silent any more, which is the
+# point of them, so the silent check is manufactured: a copy of bin/setup
+# whose last line, `main "$@"`, is preceded by a redefinition of
+# ensure_fresh_clone that prints nothing. The bracket around it must name
+# it as a FAIL, counted in the verdict, and the run must not read as clean.
+[ "$(tail -n 1 "$REPO_ROOT/bin/setup")" = 'main "$@"' ] \
+  || fail "bin/setup no longer ends in 'main \"\$@\"'; this fixture needs to know where to override"
+R="$(scratch_repo silent-check)"
+rm "$R/bin/setup" || fail "could not drop the symlink for the silent-check copy"
+{ sed '$d' "$REPO_ROOT/bin/setup"; printf 'ensure_fresh_clone() { :; }\nmain "$@"\n'; } > "$R/bin/setup" \
+  || fail "could not write the silent-check copy"
+run_case "silent check" "$R" "$(seeded_home 10)" "$BIN"
+saw 'FAIL: check ensure_fresh_clone reported nothing; this machine is unchecked, not verified' \
+  || fail "silent check: the bracket around it did not name it:"$'\n'"$OUT"
+printf '%s\n' "$OUT" | grep -qE '^[0-9]+ check\(s\) failed$' \
+  || fail "silent check: it was not counted in the verdict:"$'\n'"$OUT"
+
+printf 'doctor-silence: 10 unreadable machines, none reported clean\n'

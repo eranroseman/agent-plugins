@@ -53,6 +53,11 @@ CODEX_LIST=""
 MODE=apply
 FAILURES=0
 
+# Every ok, bad, skip and note bumps this; did does not, because a DID: line
+# never stands alone on any path. Each check is bracketed by a snapshot of
+# it and a reported() call.
+REPORTED=0
+
 # Checks that could not run, and the tools they wanted. Only `needs` fills
 # these, never the claude and codex gates: those skip a half that is genuinely
 # inapplicable, and a machine with neither harness can still be clean. A
@@ -65,12 +70,12 @@ UNCHECKED=""
 # `did` in Task 5, `skip` in Task 6, `note` in Task 9 — for the same reason the
 # path variables are staged: shellcheck reports a function nothing calls
 # (SC2317) and the lint assertion requires a clean exit.
-ok()   { printf 'OK:   %s\n' "$*"; }
-bad()  { printf 'FAIL: %s\n' "$*"; FAILURES=$((FAILURES + 1)); }
+ok()   { printf 'OK:   %s\n' "$*"; REPORTED=$((REPORTED + 1)); }
+bad()  { printf 'FAIL: %s\n' "$*"; FAILURES=$((FAILURES + 1)); REPORTED=$((REPORTED + 1)); }
 die()  { printf 'ERROR: %s\n' "$*" >&2; exit 2; }
 did()  { printf 'DID:  %s\n' "$*"; }
-skip() { printf 'SKIP: %s\n' "$*"; }
-note() { printf 'NOTE: %s\n' "$*"; }
+skip() { printf 'SKIP: %s\n' "$*"; REPORTED=$((REPORTED + 1)); }
+note() { printf 'NOTE: %s\n' "$*"; REPORTED=$((REPORTED + 1)); }
 
 applying() { [ "$MODE" = apply ]; }
 have() { command -v "$1" >/dev/null 2>&1; }
@@ -90,6 +95,26 @@ needs() {
     *) UNCHECKED="$UNCHECKED $1" ;;
   esac
   return 1
+}
+
+# Every check reports, or the run fails (spec §6.1). A check that prints
+# nothing has verified nothing: a jq program that emitted rows with empty
+# names, a loop whose every iteration hit `continue`. Each call site
+# snapshots REPORTED, runs the check directly, and passes the snapshot and
+# the name here: no capture and no subshell, because the checks run in
+# main's own shell and a $(...) around them would lose every increment bad
+# and needs make to FAILURES, UNANSWERED and UNCHECKED; and no wrapper that
+# invokes the check through "$@", because shellcheck then reports every
+# check and every helper they call as unreachable (SC2317). A silent check
+# is a defect in the engine, so it is bad, counted in "N check(s) failed",
+# and not the `for want of:` verdict, which is for a tool the machine lacks.
+# Nested callers bracket their callees at their own sites: report_only
+# prints two NOTE lines before report_duplicates, and report_duplicates
+# before report_pool, so a bracket around the outer call alone would see a
+# count and never notice the inner one saying nothing.
+reported() {
+  [ "$REPORTED" -gt "$1" ] \
+    || bad "check $2 reported nothing; this machine is unchecked, not verified"
 }
 
 usage() {
@@ -598,7 +623,7 @@ ensure_fresh_clone() {
 }
 
 report_only() {
-  local v set_names="" link actual name
+  local v set_names="" link actual name before
   needs jq "the settings this script only reports cannot be read" || return
 
   # 1. The telemetry variable. Setup writes it nowhere: the exposure is one
@@ -647,7 +672,9 @@ report_only() {
     note "setup-matt-pocock-skills is installed through skills.sh, but this plugin vendors an adapted copy as setup-repository; remove the unadapted one with 'npx skills remove setup-matt-pocock-skills -g'"
   fi
 
+  before=$REPORTED
   report_duplicates
+  reported "$before" report_duplicates
 }
 
 # 5. One skill name reaching two different trees on one harness. Derived
@@ -665,7 +692,7 @@ report_only() {
 # thing and is not reported here. Reported, never repaired.
 report_duplicates() {
   local -a claude_dirs=() codex_dirs=()
-  local root dir path mkt name version line F
+  local root dir path mkt name version line F before
   local can_hash=1
   # Guarded once here, not inside report_pool: report_pool runs once per
   # harness, and a guard placed there would print this SKIP twice. The
@@ -693,7 +720,11 @@ report_duplicates() {
       while IFS= read -r dir; do claude_dirs+=("$dir"); done < <(plugin_skill_dirs "$path")
     done < <(jq -r '.plugins[]?[]?.installPath // empty' "$INSTALLED_PLUGINS" 2>/dev/null)
   fi
-  [ "$can_hash" -eq 1 ] && report_pool Claude "${claude_dirs[@]}"
+  if [ "$can_hash" -eq 1 ]; then
+    before=$REPORTED
+    report_pool Claude "${claude_dirs[@]}"
+    reported "$before" report_pool
+  fi
 
   for root in "$CODEX_SKILLS" "$SKILL_ROOT"; do
     [ -d "$root" ] || continue
@@ -719,7 +750,11 @@ report_duplicates() {
   # and `codex plugin list --json` failed, CODEX_LIST is empty, the FAIL line
   # already stands above, and an all-clear here would speak for a pool
   # missing its plugin half (#40).
-  if [ "$can_hash" -eq 1 ] && [ -n "$CODEX_LIST" ]; then report_pool Codex "${codex_dirs[@]}"; fi
+  if [ "$can_hash" -eq 1 ] && [ -n "$CODEX_LIST" ]; then
+    before=$REPORTED
+    report_pool Codex "${codex_dirs[@]}"
+    reported "$before" report_pool
+  fi
 
   # A Claude plugin cache whose marketplace is not registered: residue of a
   # removal, and not this script's to delete.
@@ -762,6 +797,7 @@ report_pool() {
 }
 
 main() {
+  local before
   while [ $# -gt 0 ]; do
     case "$1" in
       --check) MODE=check ;;
@@ -775,13 +811,27 @@ main() {
   [ -f "$MARKETPLACE" ] || die "no declarations beside this script: $MARKETPLACE is missing"
   [ -f "$SKILLS_JSON" ] || die "no declarations beside this script: $SKILLS_JSON is missing"
 
+  before=$REPORTED
   ensure_fresh_clone
+  reported "$before" ensure_fresh_clone
+  before=$REPORTED
   ensure_clones
+  reported "$before" ensure_clones
+  before=$REPORTED
   ensure_links
+  reported "$before" ensure_links
+  before=$REPORTED
   ensure_claude
+  reported "$before" ensure_claude
+  before=$REPORTED
   ensure_codex
+  reported "$before" ensure_codex
+  before=$REPORTED
   ensure_skills_sh
+  reported "$before" ensure_skills_sh
+  before=$REPORTED
   report_only
+  reported "$before" report_only
 
   if applying; then
     printf '\n--- re-checking ---\n'
