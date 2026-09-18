@@ -113,20 +113,21 @@ help_text="$("$SETUP" --help 2>&1)" || fail "bin/setup --help failed"
 # blocks; no README carries it.
 extract_scoped_blocks() {
   awk '
-    /^##? / { insection = ($0 ~ /^## (Install|Update)/); next }
+    !infence && /^##? / { insection = ($0 ~ /^## (Install|Update)/); next }
     /^```/ { infence = !infence; if (!infence && insection) print "\036"; next }
     infence && insection { print }
   ' "$1"
 }
 # The scope rule, proved on a synthetic README carrying all three headings:
 # a block under `### Sub` inside Install is in, blocks after a `# Top` or
-# under `## Other` are out.
+# under `## Other` are out, and a `# comment` line inside a fence does not
+# close the scope.
 S="$H/scope.md"
-printf '%s\n' '# Title' '```' 'h1-before' '```' '## Install' '```' 'in-install' '```' \
+printf '%s\n' '# Title' '```' 'h1-before' '```' '## Install' '```' 'in-install' '# note' '```' \
   '### Sub' '```' 'in-sub' '```' '# Top' '```' 'after-h1' '```' '## Update' '```' 'in-update' '```' \
   '## Other' '```' 'in-other' '```' > "$S" || fail "could not write $S"
 got="$(extract_scoped_blocks "$S" | tr -d '\036' | grep . | tr '\n' ' ')" || true
-[ "$got" = "in-install in-sub in-update " ] \
+[ "$got" = "in-install # note in-sub in-update " ] \
   || fail "extract_scoped_blocks must keep an h3 inside its section and close on an h1 or h2; got '$got'"
 # $1 the README path, $2 the minimum number of Install/Update blocks it must
 # contribute -- the "found 0" guard from before, now per file, so a renamed
