@@ -1,20 +1,22 @@
 #!/usr/bin/env bash
-# Every relative markdown link in a maintained document must resolve. This is a
-# regression guard, not a coverage check: it is satisfied by a document with no
-# links at all, and it fires the first time someone adds one that is wrong.
+# Every relative markdown link in a document this repository owns must
+# resolve. A regression guard, not a coverage check: it is satisfied by a
+# document with no links, and it fires the first time someone adds one that
+# is wrong. The form this repository's references mostly take, a path in
+# backticks, is #59 and not this test.
 #
-# Scope is the documents this repository maintains. Specs and plans under
-# docs/superpowers/ are excluded deliberately: they are frozen records of what
-# was decided, never amended after the fact, so a link that breaks when a file
-# moves is not something anyone would go back and fix. The vendored SKILL.md is
-# excluded too — tests/test-vendored-scaffolder.sh pins its whole file set
-# against upstream, which covers its five links.
+# Scope is every owned markdown file (spec §4), the specs and plans included.
+# A spec is a maintained record: it moves when the tree moves, as a3c797f
+# moved the hook design's §4.2 with the plugin rename. A plan freezes once
+# executed, but a link path is not its prose, so a broken one is fixed. The
+# vendored SKILL.md files are excluded by the derivation; their drift tests
+# pin whole file sets against upstream, which covers their links.
 . "$(dirname "$0")/lib.sh"
 
 cd "$REPO_ROOT" || fail "could not cd to the repository root"
 
-docs="README.md AGENTS.md CLAUDE.md"
-for r in plugins/*/README.md; do [ -f "$r" ] && docs="$docs $r"; done
+docs="$(checked '*.md')"
+[ -n "$docs" ] || fail "checked '*.md' listed nothing; the ownership derivation went vacuous"
 
 checked=0
 scanned=0
@@ -37,5 +39,5 @@ for f in $docs; do
   done < <(grep -oE '\]\([^)]+\)' "$f" | sed 's/^](//; s/)$//')
 done
 
-printf 'links-resolve: %s relative link(s) across %s maintained document(s) resolve\n' \
+printf 'links-resolve: %s relative link(s) across %s owned document(s) resolve\n' \
   "$checked" "$scanned"

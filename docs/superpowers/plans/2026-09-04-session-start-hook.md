@@ -429,7 +429,7 @@ MSG
 Line 176 ends with `Hooks load from the default path `hooks/hooks.json`.` Append one sentence after it, same line:
 
 ```markdown
- *Amended 2026-09-04: the hook file is now `hooks/claude-hooks.json`, declared in this manifest; see the [hook spec](2026-09-04-session-start-hook-design.md) §5.*
+ *Amended 2026-09-04: the hook file is now `hooks/claude-hooks.json`, declared in this manifest; see the [hook spec](../specs/2026-09-04-session-start-hook-design.md) §5.*
 ```
 
 - [ ] **Step 2: Insert the §8 note**
@@ -437,7 +437,7 @@ Line 176 ends with `Hooks load from the default path `hooks/hooks.json`.` Append
 Line 235 is exactly `` `hooks/hooks.json`: ``. Insert one line before it:
 
 ```markdown
-*Amended 2026-09-04: this file is now `hooks/claude-hooks.json`, content unchanged, declared in the Claude manifest; see the [hook spec](2026-09-04-session-start-hook-design.md) §5.*
+*Amended 2026-09-04: this file is now `hooks/claude-hooks.json`, content unchanged, declared in the Claude manifest; see the [hook spec](../specs/2026-09-04-session-start-hook-design.md) §5.*
 ```
 
 - [ ] **Step 3: Close the §13 item**
@@ -445,7 +445,7 @@ Line 235 is exactly `` `hooks/hooks.json`: ``. Insert one line before it:
 Line 421 is `- Why the `loader.rs` fallback did not fire, given that the source reads as §12 records (opened by G4, sub-project 3).` Replace it with:
 
 ```markdown
-- ~~Why the `loader.rs` fallback did not fire, given that the source reads as §12 records (opened by G4, sub-project 3).~~ Closed 2026-09-04 as moot: the plugin no longer offers Codex a hook, so nothing exists for the fallback to load; see the [hook spec](2026-09-04-session-start-hook-design.md) §6.
+- ~~Why the `loader.rs` fallback did not fire, given that the source reads as §12 records (opened by G4, sub-project 3).~~ Closed 2026-09-04 as moot: the plugin no longer offers Codex a hook, so nothing exists for the fallback to load; see the [hook spec](../specs/2026-09-04-session-start-hook-design.md) §6.
 ```
 
 - [ ] **Step 4: Verify the three lines and commit**
