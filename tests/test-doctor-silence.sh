@@ -1,0 +1,144 @@
+#!/usr/bin/env bash
+# The machines the doctor cannot read (spec §6.2). For each, bin/setup --check
+# must exit non-zero and never print the line `clean`; most cases also assert
+# the line that names what could not be read. Each fixture is a scratch
+# checkout -- a symlinked bin/setup beside a corrupted declaration -- so the
+# real marketplace.json is never touched. Needs no network and no CLI: every
+# fixture PATH omits claude, codex, node and npx, so both harness halves report
+# skipped and nothing can reach the network.
+. "$(dirname "$0")/lib.sh"
+
+T="$(mktemp -d)" || fail "mktemp failed"
+trap 'rm -rf "$T"' EXIT
+
+# A restricted PATH: everything the engine runs in check mode, minus the
+# names given. Prints the directory.
+bin_without() {
+  local dir="$T/bin-without${1:+-$1}" t x skip p
+  mkdir -p "$dir" || fail "could not create $dir"
+  for t in bash git jq sed awk grep find date readlink basename dirname \
+           mv ln mkdir cp cat sha256sum; do
+    skip=0
+    for x in "$@"; do [ "$t" != "$x" ] || skip=1; done
+    [ "$skip" -eq 0 ] || continue
+    p="$(command -v "$t" 2>/dev/null)" || fail "the fixture needs $t on PATH"
+    ln -sf "$p" "$dir/$t" || fail "could not link $t into $dir"
+  done
+  printf '%s\n' "$dir"
+}
+
+# A scratch checkout named $1 under $T: a symlinked bin/setup, so REPO_ROOT
+# resolves to the scratch directory, and intact copies of both declarations
+# for the case to corrupt. Prints its path.
+scratch_repo() {
+  local r="$T/$1"
+  mkdir -p "$r/bin" "$r/.claude-plugin" "$r/upstream" || fail "could not seed $r"
+  ln -s "$REPO_ROOT/bin/setup" "$r/bin/setup" || fail "could not link bin/setup into $r"
+  cp "$MARKETPLACE" "$r/.claude-plugin/marketplace.json" || fail "could not copy the marketplace into $r"
+  cp "$REPO_ROOT/upstream/skills.json" "$r/upstream/skills.json" || fail "could not copy skills.json into $r"
+  printf '%s\n' "$r"
+}
+
+# $1 a label, $2 the scratch checkout, $3 the HOME, $4 the PATH directory.
+# Runs bin/setup --check, asserts the two properties every unreadable machine
+# must have, and leaves the output in OUT for the case's own assertions.
+run_case() {
+  local label="$1" repo="$2" home="$3" path="$4" status
+  mkdir -p "$home" || fail "$label: could not create $home"
+  if OUT="$(env HOME="$home" CODEX_HOME="$home/.codex" PATH="$path" \
+      /bin/bash "$repo/bin/setup" --check 2>&1)"; then status=0; else status=$?; fi
+  [ "$status" -ne 0 ] || fail "$label: bin/setup --check exited 0:"$'\n'"$OUT"
+  printf '%s\n' "$OUT" | grep -qx 'clean' \
+    && fail "$label: the doctor called an unread machine clean:"$'\n'"$OUT"
+  return 0
+}
+saw() { printf '%s\n' "$OUT" | grep -q -- "$1"; }
+
+# A HOME whose skill root exists, so every check gets past ensure_links'
+# root guard and reaches the declaration it reads. Prints the path.
+seeded_home() {
+  mkdir -p "$T/home-$1/.agents/skills" || fail "could not seed home-$1"
+  printf '%s\n' "$T/home-$1"
+}
+
+BIN="$(bin_without)"
+
+# 1. A malformed marketplace.json: jq fails on every read, and each reader
+# says so rather than iterating nothing.
+R="$(scratch_repo malformed)"
+printf '{\n' > "$R/.claude-plugin/marketplace.json" || fail "could not corrupt the marketplace"
+run_case "malformed marketplace" "$R" "$(seeded_home 1)" "$BIN"
+saw 'no curated (git-subdir) entry could be read' \
+  || fail "malformed marketplace: ensure_clones did not report the unreadable declarations:"$'\n'"$OUT"
+saw 'the curated skill list could not be read from' \
+  || fail "malformed marketplace: ensure_links did not report the unreadable declarations:"$'\n'"$OUT"
+
+# 2. Well-formed, with every git-subdir entry removed: zero curated entries
+# is a declaration defect, not a clean machine.
+R="$(scratch_repo no-curated)"
+jq 'del(.plugins[] | select(.source.source? == "git-subdir"))' "$MARKETPLACE" \
+  > "$R/.claude-plugin/marketplace.json" || fail "could not remove the git-subdir entries"
+run_case "no curated entries" "$R" "$(seeded_home 2)" "$BIN"
+saw 'no curated (git-subdir) entry could be read' \
+  || fail "no curated entries: the zero-entry guard did not fire:"$'\n'"$OUT"
+saw 'no curated skill is declared' \
+  || fail "no curated entries: the zero-skill guard did not fire:"$'\n'"$OUT"
+
+# 3. The first git-subdir entry without `.skills`: the jq program that feeds
+# ensure_links aborts before printing a single row (exit 5, zero rows). The
+# non-zero exit catches it, and a row count would too; fixture 4 is the shape
+# only the exit status can see. This block moved here from
+# tests/test-doctor-faults.sh, where its comment described fixture 4's shape
+# while seeding this one (#38).
+first="$(jq -r '[.plugins[] | select(.source.source? == "git-subdir")][0].name' "$MARKETPLACE")" \
+  || fail "could not read the first git-subdir entry"
+R="$(scratch_repo first-no-skills)"
+jq --arg n "$first" 'del(.plugins[] | select(.name == $n) | .skills)' "$MARKETPLACE" \
+  > "$R/.claude-plugin/marketplace.json" || fail "could not strip .skills from $first"
+run_case "first entry without .skills" "$R" "$(seeded_home 3)" "$BIN"
+saw 'the curated skill list could not be read from' \
+  || fail "first entry without .skills: the unreadable list was not reported:"$'\n'"$OUT"
+
+# 4. The second git-subdir entry without `.skills`: jq aborts after the first
+# entry's thirteen rows (exit 5, thirteen rows). A row count passes; only
+# the exit status catches it. Both issue bodies attributed this shape to the
+# wrong entry, which is why the two fixtures sit side by side.
+second="$(jq -r '[.plugins[] | select(.source.source? == "git-subdir")][1].name' "$MARKETPLACE")" \
+  || fail "could not read the second git-subdir entry"
+if [ -z "$second" ] || [ "$second" = null ]; then fail "the marketplace declares fewer than two git-subdir entries"; fi
+R="$(scratch_repo second-no-skills)"
+jq --arg n "$second" 'del(.plugins[] | select(.name == $n) | .skills)' "$MARKETPLACE" \
+  > "$R/.claude-plugin/marketplace.json" || fail "could not strip .skills from $second"
+run_case "second entry without .skills" "$R" "$(seeded_home 4)" "$BIN"
+saw 'the curated skill list could not be read from' \
+  || fail "second entry without .skills: the partial list was not reported:"$'\n'"$OUT"
+
+# 5. jq off PATH. jq is not an optional harness like claude or codex, whose
+# absence makes one half genuinely inapplicable: it is the reader of this
+# repository's own declarations, so without it every check is unanswered.
+# The home passes the one guard that needs no jq -- a skill root that merely
+# exists, the converged-then-drifted machine the doctor is for -- so nothing
+# stands between "could not read" and a false all-clear. Moved here from
+# tests/test-setup-doctor.sh.
+R="$(scratch_repo jqless)"
+mkdir -p "$T/home-5/.local/share/software-dev/upstream/superpowers/.git" "$T/home-5/.agents/skills" \
+  || fail "could not seed the jqless home"
+run_case "jq off PATH" "$R" "$T/home-5" "$(bin_without jq)"
+saw 'jq is not on PATH' || fail "jq off PATH: the doctor did not name the tool it was missing:"$'\n'"$OUT"
+saw 'for want of: jq' || fail "jq off PATH: the verdict does not say which tool left the machine unchecked:"$'\n'"$OUT"
+
+# 6. sha256sum off PATH: the duplicate check cannot compare content, says so,
+# and the verdict names it.
+R="$(scratch_repo hashless)"
+run_case "sha256sum off PATH" "$R" "$(seeded_home 6)" "$(bin_without sha256sum)"
+saw 'sha256sum is not on PATH' || fail "sha256sum off PATH: the skip was not reported:"$'\n'"$OUT"
+saw 'for want of: sha256sum' || fail "sha256sum off PATH: the verdict does not name it:"$'\n'"$OUT"
+
+# 7. An empty HOME: nothing is installed, and the doctor describes that
+# rather than dying on it.
+R="$(scratch_repo empty-home)"
+run_case "empty HOME" "$R" "$T/home-7" "$BIN"
+saw 'FAIL:' || fail "empty HOME: no FAIL line at all:"$'\n'"$OUT"
+saw 'the skill root is missing' || fail "empty HOME: the skill root was not reported:"$'\n'"$OUT"
+
+printf 'doctor-silence: 7 unreadable machines, none reported clean\n'
