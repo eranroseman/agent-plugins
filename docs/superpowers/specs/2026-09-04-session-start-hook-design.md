@@ -1,6 +1,6 @@
 # software-dev: SessionStart hook payload and Codex posture
 
-**Status:** approved design, 2026-09-04. Sub-project 3 of 7 in the [layout and tracer spec](2026-09-04-software-development-layout-and-tracer-design.md) §11.
+**Status:** approved design, 2026-09-04. Sub-project 3 of 7 in the [layout and tracer spec](2026-09-04-software-development-layout-and-tracer-design.md) §11. §4.2 is read by `tests/test-hook.sh`, which diffs its fenced block against `hooks/payload-rules.md` byte for byte, so the two move together.
 **Scope:** what `software-dev`'s SessionStart hook injects on Claude Code, how the payload is assembled and tested, and whether Codex gets a hook at all.
 **Not in scope:** setup automation and the user-file templates (sub-project 2), drift monitoring (sub-project 4), the skill roster (sub-project 5), any change to `~/.codex/AGENTS.md`.
 
@@ -58,7 +58,7 @@ That is the whole file, ending in exactly one newline, which §7 asserts. It car
 
 ### 4.3 Size
 
-`payload.md` is 3,343 bytes and the appendix 387, so the emitted string is 3,730 bytes, 3,718 code points. That is near upstream's own size, which G3 proved injects once at startup, `/clear`, and `/compact`. The test in §7 caps the total at 8,000 code points, measured with `jq '.hookSpecificOutput.additionalContext | length'`, as a tripwire against growth, not as a documented limit.
+`payload.md` is 3,335 bytes and the appendix 379, so the emitted string is 3,714 bytes, 3,702 code points. That is near upstream's own size, which G3 proved injects once at startup, `/clear`, and `/compact`. The test in §7 caps the total at 8,000 code points, measured with `jq '.hookSpecificOutput.additionalContext | length'`, as a tripwire against growth, not as a documented limit.
 
 ### 4.4 Matcher
 
@@ -178,7 +178,7 @@ Each was proposed by AI triage on the knowledge-harness tracker and never accept
 | Upstream removed its Codex hook in v6.1.0 | obra/superpowers commit `640ce6c`, 2026-06-24, "Remove Codex hooks"; first tag containing it v6.1.0 (2026-06-30); the hook first shipped in v6.0.0 (commit `1e7cd98`, 2026-05-14); `7d8d3d4` (2026-06-30, first in v6.1.1) then set the Codex manifest to `"hooks": {}` because the removal alone left `hooks/hooks.json` loadable by the fallback |
 | No superpowers hook ever ran on Codex on this machine | `~/.codex/sessions`: 215 of 2,729 rollouts carry ponytail's SessionStart developer message, all between 2026-06-21 and 07-08 on codex-cli 0.142.x, and none carries a superpowers one; from 0.144.0-alpha.4 (2026-07-10) on, rollouts record no plugin hook injection of any kind although ponytail stays enabled and trusted, so the log leg bounds only that window; all 11 `codex/config.toml` snapshots in harness-backup since 2026-08-07 list only ponytail under `[hooks.state]` |
 | Codex superpowers versions here were 5.1.3 (`openai-curated`, 2026-07-05 to 07-08; openai/plugins' own patch bump of upstream v5.1.0, snapshots `d6169bef` and `2f1a8948`, neither carrying a `hooks/` directory), 6.1.1 (2026-07-08 on), 6.2.0 (2026-08-06 to 09-03) | Plugin cache paths in `~/.codex/sessions` rollouts; `gh api repos/openai/plugins/contents/plugins/superpowers?ref=<sha>` for both snapshots; harness-backup `codex/config.toml` history |
-| Current `hooks/payload.md` is 3,343 bytes and equals upstream's text in upstream's frame with one edit | `wc -c`; `tests/test-hook.sh` section 1 |
+| Current `hooks/payload.md` is 3,335 bytes and equals upstream's text in upstream's frame with one edit | `wc -c`; `tests/test-hook.sh` section 1 |
 | Refresh commands on both CLIs | `claude plugin update --help`, `claude plugin marketplace update --help`, `codex plugin marketplace --help`, `codex plugin add --help` |
 
 ## 13. Cutover results, 2026-09-05

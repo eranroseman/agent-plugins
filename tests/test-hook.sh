@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # The SessionStart hook must (1) carry upstream's using-superpowers text inside
-# upstream's frame with exactly one edit, (2) emit it as the documented JSON
-# envelope so that a JSON parser recovers the payload byte-for-byte,
-# (3) be wired by claude-hooks.json, (4) escape every C0 control character, not
-# just the common five, and (5) fail rather than emit a rules-only envelope when
+# upstream's frame with exactly one edit, (1b) carry the rules block the hook
+# design's §4.2 shows, (2) emit both as the documented JSON envelope so that a
+# JSON parser recovers the payload byte-for-byte, (3) be wired by
+# claude-hooks.json, (4) escape every C0 control character, not just the
+# common five, and (5) fail rather than emit a rules-only envelope when
 # payload.md is missing. Needs network access for (1).
 . "$(dirname "$0")/lib.sh"
 
@@ -37,13 +38,30 @@ diff "$expected" "$H/payload.md" || fail "payload.md != the recipe's output for 
 [ "$(grep -c 'software-dev:brainstorming' "$H/payload.md")" -eq 1 ] || fail "expected exactly one software-dev:brainstorming"
 if grep -q 'superpowers:brainstorming' "$H/payload.md"; then fail "a superpowers:brainstorming reference survived"; fi
 
-# (1b) the authored rules file: non-empty, exactly one trailing newline, and
-# every qualified superpowers reference names a skill the curated entry lists.
+# (1b) the authored rules file is the block the hook design's §4.2 shows,
+# byte for byte (#43). The heading must match exactly once and a closed fence
+# pair must follow it, so a vanished heading cannot pass on two empty
+# strings; the rule is `require_once`'s. That spec is maintained, not
+# frozen: a3c797f amended §4.2 with the plugin rename, and an edit to either
+# side lands with its twin or fails here. The three shape checks this
+# subsumes -- one trailing newline, the worktree rule, no
+# superpowers:brainstorming -- are gone; the curated-list loop below stays,
+# because it cross-checks the marketplace, which the spec cannot.
+SPEC="$REPO_ROOT/docs/superpowers/specs/2026-09-04-session-start-hook-design.md"
+[ "$(grep -c '^### 4\.2 ' "$SPEC")" -eq 1 ] || fail "the hook design must carry exactly one '### 4.2' heading"
+extract_42() {
+  awk '
+    /^### 4\.2 / { s = 1; next }
+    s && /^```/ { if (f) { closed = 1; exit } f = 1; next }
+    s && f { print; next }
+    s && /^#/ { exit }
+    END { if (!closed) exit 1 }
+  ' "$SPEC"
+}
+block="$(extract_42)" || fail "no closed fenced block follows the hook design's §4.2 heading"
 [ -s "$H/payload-rules.md" ] || fail "payload-rules.md is empty"
-[ "$(tail -c 1 "$H/payload-rules.md" | wc -l)" -eq 1 ] || fail "payload-rules.md must end with a newline"
-[ "$(tail -c 2 "$H/payload-rules.md" | wc -l)" -eq 1 ] || fail "payload-rules.md must end with exactly one newline"
-grep -q 'worktree' "$H/payload-rules.md" || fail "payload-rules.md does not carry the worktree rule"
-if grep -q 'superpowers:brainstorming' "$H/payload-rules.md"; then fail "payload-rules.md names superpowers:brainstorming"; fi
+diff <(printf '%s\n' "$block") "$H/payload-rules.md" \
+  || fail "payload-rules.md differs from the block in the hook design's §4.2; specs move when the tree moves, so amend §4.2 in the same change"
 curated="$(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$MARKETPLACE" | sed 's#^\./##')"
 while IFS= read -r name; do
   [ -z "$name" ] && continue
