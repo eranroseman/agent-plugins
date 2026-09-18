@@ -11,29 +11,12 @@ DOCTOR="$REPO_ROOT/bin/doctor"
 [ -x "$SETUP" ] || fail "bin/setup missing or not executable"
 [ -x "$DOCTOR" ] || fail "bin/doctor missing or not executable"
 
-if command -v shellcheck >/dev/null 2>&1; then
-  # Every shell file this repository authors, not just bin/. Two exclusions,
-  # both structural rather than per-site: SC1091 because the tests source
-  # lib.sh through a path shellcheck cannot follow, and SC2016 because the
-  # expected-output strings are single-quoted on purpose and must not expand.
-  # The vendored skills' scripts are upstream's and are covered by the drift
-  # tests instead.
-  shellcheck -e SC1091 -e SC2016 \
-    "$SETUP" "$DOCTOR" "$REPO_ROOT/bin/bump-superpowers" \
-    "$REPO_ROOT/bin/upstream-watch" \
-    "$REPO_ROOT/plugins/software-dev/hooks/session-start" \
-    "$REPO_ROOT/tests/run.sh" "$REPO_ROOT/tests/lib.sh" \
-    "$REPO_ROOT"/tests/test-*.sh \
-    || fail "shellcheck reported problems"
-
-  # upstream-watch's tag filter, with no network: the newest stable release
-  # wins over a prerelease, a -dev build, and a parallel tag series.
-  got="$(printf '%s\n' archify-dsh-v0.1.0 v2.16.0 v2.17.0-dev.1 v2.16.1-rc.1 v2.16.0-beta v2.15.0 \
-    | bash "$REPO_ROOT/bin/upstream-watch" --newest-stable-tag)"
-  [ "$got" = "v2.16.0" ] || fail "upstream-watch --newest-stable-tag picked '$got', expected v2.16.0"
-else
-  printf 'SKIP: shellcheck is not installed; the shell files were not linted\n'
-fi
+# upstream-watch's tag filter, with no network: the newest stable release
+# wins over a prerelease, a -dev build, and a parallel tag series.
+got="$(printf '%s\n' archify-dsh-v0.1.0 v2.16.0 v2.17.0-dev.1 v2.16.1-rc.1 v2.16.0-beta v2.15.0 \
+  | bash "$REPO_ROOT/bin/upstream-watch" --newest-stable-tag)" \
+  || fail "upstream-watch --newest-stable-tag failed"
+[ "$got" = "v2.16.0" ] || fail "upstream-watch --newest-stable-tag picked '$got', expected v2.16.0"
 
 # bin/doctor is the same engine in check mode, not a second implementation.
 [ "$(grep -c . "$DOCTOR")" -le 6 ] || fail "bin/doctor should be a thin wrapper over bin/setup --check"

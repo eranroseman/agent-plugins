@@ -4,6 +4,7 @@
 # byte-identical at the recorded commit, so a drift there is visible rather
 # than silent. The rest is authored here and is checked for shape, not
 # content. Needs network access.
+# needs: python3
 . "$(dirname "$0")/lib.sh"
 
 V="$REPO_ROOT/plugins/software-dev/skills/finding-duplicate-functions"

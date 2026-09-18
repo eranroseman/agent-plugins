@@ -4,6 +4,7 @@
 # any other failure, bullet-shaped or not, fails the test.
 # The validator ships with codex-cli under ~/.codex/skills/.system; CI fetches
 # the same two files from openai/codex and points CODEX_PLUGIN_VALIDATOR at them.
+# needs: python3 pyyaml codex-validator
 . "$(dirname "$0")/lib.sh"
 
 VALIDATOR="${CODEX_PLUGIN_VALIDATOR:-$HOME/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py}"
@@ -27,16 +28,17 @@ for p in "$REPO_ROOT"/plugins/*/; do
     '- skill `consistency-audit` frontmatter field `disable-model-invocation` must be false' \
     '- skill `adhd` frontmatter field `disable-model-invocation` must be false')"
   if ! out="$(python3 "$VALIDATOR" "$p" 2>&1)"; then
-    # A non-zero exit with no `- ` bullet at all — a traceback, a missing
-    # dependency, a message-format change — is not the one recorded
-    # exception and must fail loudly rather than fall through the filter
-    # below with an empty $others.
+    # A non-zero exit with no `- ` bullet at all -- a traceback, a missing
+    # dependency, a message-format change -- is not one of the three
+    # recorded exceptions and must fail loudly rather than fall through the
+    # filter below with an empty $others.
     printf '%s\n' "$out" | grep -q '^- ' || fail "Codex validator failed on $p with no bullets:
 $out"
     # -f with a process substitution, not -e: there is more than one pattern
     # and each begins with a dash, which would otherwise be read as options.
-    # `|| true` because both greps exit 1 when the only bullets are the known
-    # ones, which is the case that must pass.
+    # `|| true` because the inverting grep exits 1 when every bullet is a
+    # known one, which is the case that must pass; the no-bullets case was
+    # caught above.
     others="$(printf '%s\n' "$out" | grep '^- ' | grep -vxF -f <(printf '%s\n' "$known") || true)"
     [ -z "$others" ] || fail "Codex validator rejected $p:
 $others"

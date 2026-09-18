@@ -2,6 +2,7 @@
 # Schema-check the marketplace manifest and every plugin manifest with Claude
 # Code's own validator.
 # --strict turns warnings (unknown fields, missing metadata) into failures.
+# needs: claude
 . "$(dirname "$0")/lib.sh"
 
 [ -f "$MARKETPLACE" ] || fail "missing $MARKETPLACE"
