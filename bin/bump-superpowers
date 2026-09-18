@@ -10,7 +10,7 @@
 #   read          the version field, copied from upstream's own plugin.json
 #
 # Two parts of the diff deserve reading rather than skimming: the vendored
-# brainstorming body, where upstream can change behaviour, and payload.md,
+# brainstorming body, where upstream can change behavior, and payload.md,
 # which is injected into every Claude Code session.
 set -uo pipefail
 

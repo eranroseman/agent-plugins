@@ -61,7 +61,7 @@ plugin add` here would skip the fourteen curated symlinks entirely. See
 the repository README's `## Install` section for the full picture; its
 two-command bootstrap
 
-```
+```sh
 claude plugin marketplace add eranroseman/agent-plugins
 bash ~/.claude/plugins/marketplaces/eranroseman/bin/setup
 ```
@@ -114,7 +114,7 @@ it never downloads, installs or executes an update, and silence is never
 consent. To turn the check off, set `ARCHIFY_UPDATE_CHECK_DISABLED=1` in the
 same place as the telemetry variable above; `check-update.mjs` tests exactly
 that value. No setup step sets it for you, for the same reason as the
-telemetry variable: a network-behaviour decision belongs to you. This is a
+telemetry variable: a network-behavior decision belongs to you. This is a
 README instruction rather than a mechanism, chosen knowingly; if it proves
 insufficient, the next rung is a `bin/doctor` line reporting the variable's
 state.

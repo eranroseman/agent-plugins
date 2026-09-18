@@ -9,7 +9,7 @@ more than one product, or it is **not about software development**. It goes
 to `software-dev` only when both are false — its subject is software, and
 only that product needs it.
 
-Sensemaking is the organisational and information-science term: turning a
+Sensemaking is the organizational and information-science term: turning a
 confused situation into one people can act on together — noticing what does
 not fit, naming it, and closing the gap between what someone knows and what
 they need to know. **It is not a synonym for reading, analysis, or

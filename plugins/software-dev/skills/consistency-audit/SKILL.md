@@ -26,7 +26,7 @@ Do NOT apply a finding, edit a file to fix what you found, or invoke an implemen
 
 ## The Iron Law
 
-```
+```text
 NO FINDING REACHES THE REPORT UNTIL YOU HAVE TRIED TO REFUTE IT
 ```
 
@@ -92,7 +92,7 @@ How to read for them:
 
 **Verifying each candidate:**
 
-```
+```text
 FOR each candidate, before it reaches the report:
 
 1. IDENTIFY: What evidence settles this claim?
@@ -120,7 +120,7 @@ Tell every dispatch to skip prior audit reports and to say so if a grep returns 
 
 Batch skeptics by _file_, not by candidate: one dispatch judges every candidate sited in the same file, so the file is read once instead of once per candidate. Independence is from whoever raised it, not from the other candidates.
 
-Most of a skeptic's spend is retrieval, not judgment. Send a cheap gatherer ahead of it for the cited spans, the named files, the obvious greps and the resolved paths, and hand the judge what it collected raw — quoted spans and command output, never a summary, which imports the gatherer's inference. Bound every ask: a grep with hundreds of hits costs more than the judgment it feeds, and a gatherer given more than it can quote will summarise instead. The dossier is a head start, not a handoff — expect the judge to fetch more, and run yourself the commands the gatherer's tools cannot.
+Most of a skeptic's spend is retrieval, not judgment. Send a cheap gatherer ahead of it for the cited spans, the named files, the obvious greps and the resolved paths, and hand the judge what it collected raw — quoted spans and command output, never a summary, which imports the gatherer's inference. Bound every ask: a grep with hundreds of hits costs more than the judgment it feeds, and a gatherer given more than it can quote will summarize instead. The dossier is a head start, not a handoff — expect the judge to fetch more, and run yourself the commands the gatherer's tools cannot.
 
 Choose the model per dispatch rather than inheriting one: retrieval is the cheap half and the verdict is not. Never tier a verdict by how mechanical the candidate looks — an accurate quote is what makes a false inference look checkable.
 

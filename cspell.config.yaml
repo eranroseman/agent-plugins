@@ -3,13 +3,51 @@
 # docs/archive, plus the comments of the shell and YAML files. The scope is
 # an argument at the call site, not an ignorePaths here.
 version: "0.2"
-# The prose was mixed (behaviour beside behavior in the same skills) and
-# everything this repository embeds is American, so a decision: US English.
+# The prose was mixed (British spellings beside American ones in the same
+# skills) and everything this repository embeds is American, so a decision:
+# US English.
 language: en-US
 ignorePaths: []
 # Proper nouns, domain terms and coinages the owned prose uses. Never a
 # misspelling: a typo is fixed, not listed.
-words: []
+words:
+  - actioned
+  - Akhourii
+  - archify
+  - callees
+  - cavecrew
+  - custodied
+  - devendor
+  - diffable
+  - Eran
+  - eranroseman
+  - frontmatter
+  - heredocs
+  - HITL
+  - insection
+  - mattpocock
+  - nosuchtool
+  - obra
+  - pathspecs
+  - Pocock
+  - primeradiant
+  - pycache
+  - pyyaml
+  - relativization
+  - relitigated
+  - relpath
+  - repointed
+  - Roseman
+  - scaffolder
+  - sensemaking
+  - SIGPIPE
+  - softaworks
+  - subshell
+  - Udit
+  - unrouted
+  - wayfinder
+  - wayfinding
+  - worktrees
 # Shell and YAML files are read for their `#` comments only. The override
 # globs resolve relative to this file, which is why it lives at the root.
 patterns:

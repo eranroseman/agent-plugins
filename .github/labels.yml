@@ -1,5 +1,6 @@
 ---
 # Label color scheme:
+# cspell:ignore ffdd
 #   red  # ff0000 - HITL, definite: a human must act/decide
 #   yellow  # ffdd00 - pending/undetermined: could resolve to either HITL or AFK
 #   green  # 0e8a16 - AFK, definite: an agent can proceed autonomously

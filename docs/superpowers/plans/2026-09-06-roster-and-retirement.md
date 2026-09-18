@@ -204,7 +204,7 @@ MIT. See `LICENSE`.
 
 In `docs/superpowers/specs/2026-09-06-roster-and-retirement-design.md`, the line beginning `5.`diagnosing-bugs`vendored into`software-dev`contains the clause` `ARCHIFY_UPDATE_CHECK_DISABLED=1` set by `bin/setup` ``. Replace that clause with:
 
-```
+```text
 `ARCHIFY_UPDATE_CHECK_DISABLED` documented in the plugin README and not set by `bin/setup` (§6.3)
 ```
 
@@ -400,7 +400,7 @@ grep -q 'On Codex, where a plugin cannot ship a subagent' "$CA" \
 
 Also extend the header comment's bullet list with a fourth item, after the rethink bullet:
 
-```
+```bash
 #   - consistency-audit ships with its inspector, the inspector carries no
 #     permissionMode, and the skill names the inspector by the name a plugin
 #     agent actually resolves to.
@@ -435,13 +435,13 @@ EOF
 
 Then add the Codex degradation bullet. In `plugins/software-dev/skills/consistency-audit/SKILL.md`, directly after the line
 
-```
+```markdown
 - Never substitute a general-purpose agent — the read-only contract is what makes "the audit changed nothing" true rather than promised
 ```
 
 insert:
 
-```
+```markdown
 - On Codex, where a plugin cannot ship a subagent, the inspector does not exist: the audit degrades to one reader and one pass, and the scope line says so. Do not recover the second reader with a general-purpose agent
 ```
 
@@ -655,7 +655,7 @@ Expected: `cluster.py` and `extract-functions.py` are `-rwxr-xr-x`; the two `.md
 
 Insert the provenance header into `plugins/software-dev/skills/finding-duplicate-functions/SKILL.md` directly after line 4 (the closing `---`), so it occupies lines 5 to 10:
 
-```
+```markdown
 <!-- Forked from https://github.com/obra/superpowers-lab at commit 51111f74f24058117752d9aa917cb19859f8ec86
      path: skills/finding-duplicate-functions/
      MIT, (c) 2025 Jesse Vincent. A rewritten fork, not a copy: scripts/categorize-prompt.md and
@@ -683,7 +683,7 @@ and it was taken because the upstream extractor returns nothing for Python.
 
 Append to `plugins/software-dev/LICENSE`:
 
-```
+```text
 
 ----------------------------------------------------------------------
 
@@ -877,7 +877,7 @@ Expected: the twelve lines as described, then `body identical`. (`. tests/lib.sh
 
 Append to `plugins/sensemaking/LICENSE`:
 
-```
+```text
 
 ----------------------------------------------------------------------
 
@@ -1086,7 +1086,7 @@ Expected: `./SKILL.md`, `./agents/openai.yaml`, `./scripts/hitl-loop.template.sh
 
 Append to `plugins/software-dev/LICENSE`:
 
-```
+```text
 
 ----------------------------------------------------------------------
 
@@ -1605,14 +1605,14 @@ Six edits to `bin/setup`, top to bottom.
 
 (a) In the header comment, replace
 
-```
+```bash
 #   .claude-plugin/marketplace.json   the curated superpowers entry: sha,
 #                                     version, and the thirteen skill names
 ```
 
 with
 
-```
+```bash
 #   .claude-plugin/marketplace.json   every curated (git-subdir) entry: url,
 #                                     sha, version, and its skill names
 ```
@@ -2099,7 +2099,7 @@ Expected: `doctor-duplicates: one Claude duplicate and one residue reported; thr
 Run: `bin/doctor 2>&1 | grep '^NOTE:'`
 Expected, on this machine: the telemetry and auto-update notes, the redundant-links note, then
 
-```
+```text
 NOTE: Claude: skill brainstorming resolves to 2 different trees: /home/eranr/.claude/plugins/cache/eranroseman/superpowers/6.3.0/brainstorming (74edf03ea6d2), /home/eranr/.claude/plugins/cache/eranroseman/software-dev/0.6.0/skills/brainstorming (4a2033c06acf)
 NOTE: Codex: no skill name resolves to more than one tree
 NOTE: plugin cache for an unregistered marketplace: /home/eranr/.claude/plugins/cache/superpowers-dev (left alone; remove it by hand)
@@ -2380,7 +2380,7 @@ bash ~/.claude/plugins/marketplaces/eranroseman/bin/doctor 2>&1 | tee /tmp/roste
 
 Expected: exactly this set of non-OK lines, in any order (the registry's order shifts when a plugin is added, and the two paths in the `brainstorming` line may swap), and `clean`, exit 0:
 
-```
+```text
 NOTE: no telemetry-disabling variable is set; see the plugin README (this script never sets one)
 NOTE: marketplace auto-update is on for eranroseman
 NOTE: 18 link(s) under /home/eranr/.codex/skills resolve into /home/eranr/.agents/skills, which Codex already reads directly; they are redundant and are left alone

@@ -151,7 +151,7 @@ Two changes — the gate and the Codex yaml — so route 3.
 
 **[#110](https://github.com/eranroseman/research-vault/issues/110)'s title premise is false.** `archify` is pinnable by the mechanism this repository already uses:
 
-```
+```sh
 npx skills add tt-a1i/archify#v2.16.0 --skill archify -g -y
 ```
 

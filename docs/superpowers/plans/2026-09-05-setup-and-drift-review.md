@@ -8,7 +8,7 @@ Not every fix here has been applied to the plan. The two blockers and the twelve
 
 ---
 
-### BLOCKER :: Task 6, Step 3 (`ensure_claude`, plan lines 1525-1549); consumed by Task 13, Step 2 (lines 2655-2662)
+## BLOCKER :: Task 6, Step 3 (`ensure_claude`, plan lines 1525-1549); consumed by Task 13, Step 2 (lines 2655-2662)
 
 lenses: coverage, danger (2 finding(s))
 
@@ -81,10 +81,9 @@ Leave `sensemaking` alone: its check compares no version, so there is nothing to
 
 1. Task 6 Step 1 — add an upgrade-path assertion, because the empty-HOME CI job structurally cannot reach it. It must create a _genuine_ older install, not a hand-edited `version` field: seeding only that field leaves the CLI reading the real version from the install path, `update` answers "already at the latest version", and the test fails for the wrong reason (measured). The offline recipe, seconds not minutes: copy the repo into a temp dir, lower `plugins/software-development/.claude-plugin/plugin.json` to a fake older version, `claude plugin marketplace add "$TMP"` and `claude plugin install software-development@eranroseman -y --scope user` into `$H`, restore the declared version, `claude plugin marketplace update eranroseman`, then run `bin/setup` with `SD_MARKETPLACE_SOURCE="$TMP"` and assert `installed_plugins.json` now carries the declared version and setup exits 0. Gate it on `command -v claude` the way `tests/test-doctor-faults.sh` already gates its repair half.
 
-Also worth one clause in Task 13 Step 2 or the Global Constraints, so the reason survives the plan: install is the fresh-machine verb and update is the update verb, and the spec's "clean no-op on re-run" (§7.3) means install does no harm, not that it converges
----
+### Also worth one clause in Task 13 Step 2 or the Global Constraints, so the reason survives the plan: install is the fresh-machine verb and update is the update verb, and the spec's "clean no-op on re-run" (§7.3) means install does no harm, not that it converges
 
-### BLOCKER :: Task 7, Step 3 (`ensure_codex`)
+## BLOCKER :: Task 7, Step 3 (`ensure_codex`)
 
 lenses: coverage (1 finding(s))
 
@@ -92,63 +91,64 @@ ISSUE: Task 7 Step 3's `ensure_codex` compares presence only, so `codex plugin a
 
 FIX: In Task 7, replace `codex_plugin_installed` with a version read and make the loop version-gated. This is parity with `ensure_claude`, which also acts only on mismatch, so it is not a new deviation from §9's unconditional "re-adds"; the literal alternative is to hoist `codex plugin add` out of the branch and run it on every apply, which I verified is idempotent.
 
-    codex_plugin_version() {
-      # $1 plugin name; empty when not installed. `codex plugin list --json`
-      # reports the *installed* version, read from $CODEX_HOME/plugins/cache,
-      # never config.toml (§7.4). `codex plugin add` is Codex's only upgrade
-      # verb, so presence alone is not convergence (§9 step 3).
-      printf '%s' "$CODEX_LIST" \
-        | jq -r --arg k "$1@eranroseman" '.installed[] | select(.pluginId == $k) | .version'
-    }
+```bash
+codex_plugin_version() {
+  # $1 plugin name; empty when not installed. `codex plugin list --json`
+  # reports the *installed* version, read from $CODEX_HOME/plugins/cache,
+  # never config.toml (§7.4). `codex plugin add` is Codex's only upgrade
+  # verb, so presence alone is not convergence (§9 step 3).
+  printf '%s' "$CODEX_LIST" \
+    | jq -r --arg k "$1@eranroseman" '.installed[] | select(.pluginId == $k) | .version'
+}
 
-    ensure_codex() {
-      local p want got
-      if ! have codex; then
-        skip "codex is not on PATH: the Codex half is unchecked and unapplied"
-        return
+ensure_codex() {
+  local p want got
+  if ! have codex; then
+    skip "codex is not on PATH: the Codex half is unchecked and unapplied"
+    return
+  fi
+  CODEX_LIST="$(codex plugin list --json 2>/dev/null)" || { bad "codex plugin list failed"; return; }
+
+  for p in software-development sensemaking; do
+    want="$(jq -r '.version' "$REPO_ROOT/plugins/$p/.claude-plugin/plugin.json")"
+    [ -n "$want" ] && [ "$want" != null ] || { bad "could not read the declared version of $p"; continue; }
+    got="$(codex_plugin_version "$p")"
+    if [ "$got" != "$want" ] && applying; then
+      if codex plugin marketplace list 2>/dev/null | grep -q '^eranroseman'; then
+        # Never re-run `marketplace add`: it prints "already added". upgrade
+        # is a true no-op when nothing moved, and covers §9 step 1 when the
+        # human skipped it.
+        codex plugin marketplace upgrade >/dev/null 2>&1 \
+          || bad "codex plugin marketplace upgrade failed"
+      elif codex plugin marketplace add "$CODEX_MARKETPLACE_SOURCE" >/dev/null 2>&1; then
+        did "added the eranroseman marketplace to Codex"
+      else
+        bad "codex plugin marketplace add failed"
+        continue
       fi
-      CODEX_LIST="$(codex plugin list --json 2>/dev/null)" || { bad "codex plugin list failed"; return; }
+      # Codex has no dependency concept, so both plugins are named
+      # explicitly, and no update verb, so add is also the upgrade.
+      if codex plugin add "$p@eranroseman" >/dev/null 2>&1; then
+        did "installed codex plugin $p $want"
+      else
+        bad "codex plugin add $p@eranroseman failed"
+        continue
+      fi
+      CODEX_LIST="$(codex plugin list --json 2>/dev/null)"
+      got="$(codex_plugin_version "$p")"
+    fi
+    if [ "$got" = "$want" ]; then
+      ok "codex plugin $p $want installed"
+    else
+      bad "codex plugin $p is ${got:-not installed}, declared $want"
+    fi
+  done
+}
+```
 
-      for p in software-development sensemaking; do
-        want="$(jq -r '.version' "$REPO_ROOT/plugins/$p/.claude-plugin/plugin.json")"
-        [ -n "$want" ] && [ "$want" != null ] || { bad "could not read the declared version of $p"; continue; }
-        got="$(codex_plugin_version "$p")"
-        if [ "$got" != "$want" ] && applying; then
-          if codex plugin marketplace list 2>/dev/null | grep -q '^eranroseman'; then
-            # Never re-run `marketplace add`: it prints "already added". upgrade
-            # is a true no-op when nothing moved, and covers §9 step 1 when the
-            # human skipped it.
-            codex plugin marketplace upgrade >/dev/null 2>&1 \
-              || bad "codex plugin marketplace upgrade failed"
-          elif codex plugin marketplace add "$CODEX_MARKETPLACE_SOURCE" >/dev/null 2>&1; then
-            did "added the eranroseman marketplace to Codex"
-          else
-            bad "codex plugin marketplace add failed"
-            continue
-          fi
-          # Codex has no dependency concept, so both plugins are named
-          # explicitly, and no update verb, so add is also the upgrade.
-          if codex plugin add "$p@eranroseman" >/dev/null 2>&1; then
-            did "installed codex plugin $p $want"
-          else
-            bad "codex plugin add $p@eranroseman failed"
-            continue
-          fi
-          CODEX_LIST="$(codex plugin list --json 2>/dev/null)"
-          got="$(codex_plugin_version "$p")"
-        fi
-        if [ "$got" = "$want" ]; then
-          ok "codex plugin $p $want installed"
-        else
-          bad "codex plugin $p is ${got:-not installed}, declared $want"
-        fi
-      done
-    }
+### Three one-line companions: (1) update Task 7's opening measurement note — the engine now reads `codex plugin list --json`, whose shape is `{"installed":[{"pluginId","version","installed","enabled",...}],"available":[]}`, rather than the table (the table's version is the fourth whitespace field, since `installed, enabled` splits in two, and is empty when not installed); (2) Task 7 Step 5's expectation becomes `FAIL: codex plugin software-development is not installed, declared 0.4.0`; (3) Task 13 Step 2 adds `codex plugin marketplace upgrade` beside `claude plugin marketplace update eranroseman`, per §9 step 1, and Step 8's pre-flight verification should also read `codex plugin list --json` for 0.4.0 before the global files are emptied
 
-Three one-line companions: (1) update Task 7's opening measurement note — the engine now reads `codex plugin list --json`, whose shape is `{"installed":[{"pluginId","version","installed","enabled",...}],"available":[]}`, rather than the table (the table's version is the fourth whitespace field, since `installed, enabled` splits in two, and is empty when not installed); (2) Task 7 Step 5's expectation becomes `FAIL: codex plugin software-development is not installed, declared 0.4.0`; (3) Task 13 Step 2 adds `codex plugin marketplace upgrade` beside `claude plugin marketplace update eranroseman`, per §9 step 1, and Step 8's pre-flight verification should also read `codex plugin list --json` for 0.4.0 before the global files are emptied
----
-
-### BLOCKER :: Task 2, Steps 1/3/4/8 (and Global Constraints, "Declared pins")
+## BLOCKER :: Task 2, Steps 1/3/4/8 (and Global Constraints, "Declared pins")
 
 lenses: coverage, deviations, executability, ground-truth (5 finding(s))
 
@@ -168,7 +168,7 @@ FIX: Six edits, all in Task 2 plus one Global Constraints line.
 
 1. Line 269 — carry both objects:
 
-```
+```sh
 REF="v1.2.3"
 SHA="6acc160e4e0cd062dbbbd7a1b26ae92855edf07e"      # the commit v1.2.3 peels to
 TAG_OBJ="835450ef244ab7335f75d95b83e7d979eae22a6d"  # v1.2.3 is annotated; ls-remote prints this
@@ -178,7 +178,7 @@ Line 279 then passes unchanged. (Verified: fetching `6acc160e…` directly by sh
 
 1. Lines 280-281 — grep the tag object, not the commit:
 
-```
+```sh
 git ls-remote --exit-code --tags https://github.com/mattpocock/skills.git \
   "refs/tags/$REF" | grep -q "$TAG_OBJ" || fail "tag $REF no longer names $TAG_OBJ"
 ```
@@ -191,7 +191,7 @@ git ls-remote --exit-code --tags https://github.com/mattpocock/skills.git \
 
 3. Lines 507-508 (Step 8 LICENSE) — fix the sha AND un-wrap so line 355's grep can match on one line:
 
-```
+```text
 skills/setup-matt-pocock-skills/ is vendored from
 https://github.com/mattpocock/skills (directory
 skills/engineering/setup-matt-pocock-skills/,
@@ -203,10 +203,9 @@ under its original license:
 
 1. Line 18 (Global Constraints, "Declared pins") — `mattpocock/skills` at tag `v1.2.3` (tag object `835450ef…`, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`), `obra/superpowers-developing-for-claude-code` at tag `v0.3.1` (tag object `aa900d59…`, commit `74afe935da49efe782907e837a27ce618498099a`). Both are annotated tags; the shas previously given were tag objects.
 
-Also correct line 41's "it passes" claim for the drift test, since that assertion is what would stop an executor from suspecting the plan. No change is needed in Task 1 (fetches `refs/tags/$ref`) or Task 11 (compares tag names) — both are correct on annotated tags
----
+### Also correct line 41's "it passes" claim for the drift test, since that assertion is what would stop an executor from suspecting the plan. No change is needed in Task 1 (fetches `refs/tags/$ref`) or Task 11 (compares tag names) — both are correct on annotated tags
 
-### MINOR :: Task 10, Step 3 (README "Install" section) vs Task 4 Step 3 (`main`) and Task 5 Step 3 (`ensure_links`)
+## MINOR :: Task 10, Step 3 (README "Install" section) vs Task 4 Step 3 (`main`) and Task 5 Step 3 (`ensure_links`)
 
 lenses: coverage (1 finding(s))
 
@@ -224,10 +223,9 @@ FIX: Three edits, all in the plan; no code, no test, no gate changes.
 3. Add to "Deviations from the spec, decided while planning":
    "**D8. The thirteen symlinks are created on every machine, not only where `codex` is present.** §7.3 states the symlink step ungated and separate from the Codex step, and §11's fault bullet says all five faults are filesystem and git state detectable "with neither CLI present"; §11's CI bullet and §13 S1 nevertheless place the symlinks beyond a runner's reach. The engine follows §7.3: `ensure_links` has no binary gate, so the CI end-to-end job creates and verifies the links and `tests/test-doctor-faults.sh` repairs them on a codex-free `PATH`. Veto: gate `ensure_links` on `have codex` in both modes, and drop the link assertions from the fault fixture's repair pass and from CI's doctor-clean step — which removes link coverage from the automated halves of both S1 and S2."
 
-Explicitly do not gate `ensure_links` on `have codex`: it breaks the automated half of gate S1, guts the repair half of gate S2, and contradicts spec §7.3
----
+### Explicitly do not gate `ensure_links` on `have codex`: it breaks the automated half of gate S1, guts the repair half of gate S2, and contradicts spec §7.3
 
-### IMPORTANT :: Task 13, Steps 2 and 7 (gate S3)
+## IMPORTANT :: Task 13, Steps 2 and 7 (gate S3)
 
 lenses: coverage (1 finding(s))
 
@@ -264,7 +262,7 @@ FIX: Reorder Task 13 so the toggle precedes the bump, and delete the false sente
 
 ---
 
-### MINOR :: Task 9, Step 3 (`report_only`, item 3) and Task 4 Step 3 (`main`)
+## MINOR :: Task 9, Step 3 (`report_only`, item 3) and Task 4 Step 3 (`main`)
 
 lenses: coverage (1 finding(s))
 
@@ -281,10 +279,9 @@ Preferred (conform, matching the finding's shape): split the staleness block int
 - Self-Review Type consistency (plan line 2857): add `ensure_fresh_clone` to the list of names stubbed in Task 4 and filled in Task 9.
   No other edit is needed: `KNOWN_MARKETPLACES` and `skip()` are top-level and assigned before `main "$@"` runs, and Task 9's directory-source test and `tests/test-doctor-faults.sh` both grep for lines rather than order.
 
-Alternative (record the grouping): add one line to the Deviations section — "D8. The stale-clone check runs last, inside `report_only`, not first as §7.1 says. It belongs with the four things the engine describes and never repairs, and the script cannot refresh its own clone mid-run in any case; on a machine converged by the same stale script it is the only FAIL in the report. Veto: hoist it into `ensure_fresh_clone` and call it first in `main`."
----
+### Alternative (record the grouping): add one line to the Deviations section — "D8. The stale-clone check runs last, inside `report_only`, not first as §7.1 says. It belongs with the four things the engine describes and never repairs, and the script cannot refresh its own clone mid-run in any case; on a machine converged by the same stale script it is the only FAIL in the report. Veto: hoist it into `ensure_fresh_clone` and call it first in `main`."
 
-### MINOR :: Task 7, Step 3 (variables added near the top of `bin/setup`) vs Global Constraints and Deviation D5
+## MINOR :: Task 7, Step 3 (variables added near the top of `bin/setup`) vs Global Constraints and Deviation D5
 
 lenses: coverage (1 finding(s))
 
@@ -294,10 +291,9 @@ FIX: Drop the indirection at plan line 1738 (Task 7, Step 3, the "Add beside the
 
 CODEX_MARKETPLACE_SOURCE="<https://github.com/eranroseman/agent-plugins.git>"
 
-Lines 20 and 58 then need no edit, and the plan's "nothing else in the engine is overridable" becomes true as written. This cannot change the `bash -n` or `shellcheck` results the plan reports for the assembled 475-line script: the variable is still read at line 1710, so no SC2034 appears, and no other construct changes. Prefer this over amending D5 and line 20 to name a second override, which costs more text and forces the plan to state a purpose for a knob no task, test, or CI job reads
----
+### Lines 20 and 58 then need no edit, and the plan's "nothing else in the engine is overridable" becomes true as written. This cannot change the `bash -n` or `shellcheck` results the plan reports for the assembled 475-line script: the variable is still read at line 1710, so no SC2034 appears, and no other construct changes. Prefer this over amending D5 and line 20 to name a second override, which costs more text and forces the plan to state a purpose for a knob no task, test, or CI job reads
 
-### MINOR :: Task 5, Step 2
+## MINOR :: Task 5, Step 2
 
 lenses: executability (1 finding(s))
 
@@ -309,10 +305,9 @@ FIX: Replace line 1265 of docs/superpowers/plans/2026-09-05-setup-and-drift.md:
 
 - Expected: `FAIL: doctor exited 0 on a machine with four seeded faults`, exit 1. (The fixture creates the clone, so Task 4's skeleton `ensure_clone` reports `OK: pinned clone exists`; every other check is still a stub, so nothing is counted as a failure and the doctor exits 0 before any of the four faults is looked at.)
 
-Nothing else changes: the fixture, the assertions and Step 3's implementation are all correct as written
----
+### Nothing else changes: the fixture, the assertions and Step 3's implementation are all correct as written
 
-### MINOR :: Task 5, Step 1 (tests/test-doctor-faults.sh, repair half)
+## MINOR :: Task 5, Step 1 (tests/test-doctor-faults.sh, repair half)
 
 lenses: executability (1 finding(s))
 
@@ -333,5 +328,4 @@ if out="$(env HOME="$H" CODEX_HOME="$H/.codex" PATH="$BIN" /bin/bash "$SETUP" 2>
 printf '%s\n' "$out" | grep -q -- '--- re-checking ---' || fail "bin/setup did not re-check after applying"
 ```
 
-Verified in /tmp/pr5: with `bash` in the list this passes; with `bash` removed it fails loudly with `FAIL: bin/setup exited 127; the re-check must run and report the unrepairable clone`. Nothing in `tests/` is shellchecked (the lint assertion at plan line 926 covers `bin/` only), and `out`/`status` are already declared earlier in the same test, so neither addition affects lint
----
+### Verified in /tmp/pr5: with `bash` in the list this passes; with `bash` removed it fails loudly with `FAIL: bin/setup exited 127; the re-check must run and report the unrepairable clone`. Nothing in `tests/` is shellchecked (the lint assertion at plan line 926 covers `bin/` only), and `out`/`status` are already declared earlier in the same test, so neither addition affects lint

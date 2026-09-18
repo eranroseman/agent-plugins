@@ -44,7 +44,7 @@ Four marketplace entries:
 One command adds the marketplace, and the script it delivers does the rest. It
 is safely re-runnable, and `bin/doctor` is the same engine in check mode.
 
-```
+```sh
 claude plugin marketplace add eranroseman/agent-plugins
 bash ~/.claude/plugins/marketplaces/eranroseman/bin/setup
 ```
@@ -76,7 +76,7 @@ instruction alone, for now.
 The marketplace clone carries both the new declarations and the new copy of the
 script, so it is refreshed first and the script re-run from it:
 
-```
+```sh
 claude plugin marketplace update eranroseman
 codex plugin marketplace upgrade
 bash ~/.claude/plugins/marketplaces/eranroseman/bin/setup

@@ -51,7 +51,7 @@ Exactly: `cat payload.md; printf '\n'; cat payload-rules.md`. `payload.md` alrea
 ```markdown
 # software-dev: working rules
 
-**Worktree cleanup.** `EnterWorktree` places worktrees under `.claude/worktrees/`. `superpowers:finishing-a-development-branch` recognises only `.worktrees/` and `worktrees/` as its own and declines to remove anything else. Once the branch is merged or abandoned, run `git worktree remove <path>` from the main checkout, then `git worktree prune`.
+**Worktree cleanup.** `EnterWorktree` places worktrees under `.claude/worktrees/`. `superpowers:finishing-a-development-branch` recognizes only `.worktrees/` and `worktrees/` as its own and declines to remove anything else. Once the branch is merged or abandoned, run `git worktree remove <path>` from the main checkout, then `git worktree prune`.
 ```
 
 That is the whole file, ending in exactly one newline, which §7 asserts. It carries the one rule that survived the placement test, and it holds for every installer: `EnterWorktree` is Claude Code's, and `finishing-a-development-branch` arrives through the curated `superpowers` dependency.

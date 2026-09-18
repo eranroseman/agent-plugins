@@ -35,7 +35,7 @@ this error. Prefer INVESTIGATE.
 
 ## Process
 
-```
+```text
 1. extract    scripts/extract-functions.py       -> catalog.json
 2. cluster    scripts/cluster.py                 -> structural groups
 3. categorize scripts/categorize-prompt.md       -> categorized.json   (large corpora only)

@@ -194,7 +194,7 @@ jq '{version: 3,
        {key: ., value: {source: $s.repo, ref: $s.ref}}) as $e ({}; . + {($e.key): $e.value})),
      dismissed: {}}' \
   "$REPO_ROOT/upstream/skills.json" >"$H/.agents/.skill-lock.json" \
-  || fail "could not synthesise a pinned lockfile"
+  || fail "could not synthesize a pinned lockfile"
 
 if out="$(env HOME="$H" CODEX_HOME="$H/.codex" PATH="$BIN" /bin/bash "$SETUP" 2>&1)"; then status=0; else status=$?; fi
 [ "$status" -eq 1 ] || fail "bin/setup exited $status; the re-check must run and report the unrepairable clone"

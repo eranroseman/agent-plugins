@@ -69,7 +69,7 @@ Two are blockers that fail on the first run. Both were re-verified by hand again
 
 Found independently by four of the five lenses. The Global Constraints line declares `mattpocock/skills` v1.2.3 as `835450ef244ab7335f75d95b83e7d979eae22a6d` and `obra/superpowers-developing-for-claude-code` v0.3.1 as `aa900d596cf32d20e1cd3700996505d8adf8d823`. Both are **tag objects**. `git ls-remote --tags` peels them:
 
-```
+```text
 835450ef244ab7335f75d95b83e7d979eae22a6d  refs/tags/v1.2.3
 6acc160e4e0cd062dbbbd7a1b26ae92855edf07e  refs/tags/v1.2.3^{}      <- the commit
 aa900d596cf32d20e1cd3700996505d8adf8d823  refs/tags/v0.3.1

@@ -339,7 +339,7 @@ ensure_links() {
 
     if [ -L "$link" ]; then
       # Dangling first, and by `[ -e ]` on the link rather than by an empty
-      # readlink: `readlink -f` canonicalises a path whose last component does
+      # readlink: `readlink -f` canonicalizes a path whose last component does
       # not exist and returns it, so a dangling link reports a target here, not
       # the empty string. `[ -e ]` follows the link and is false exactly when
       # the target is missing -- which is also why the README's guard passed on
@@ -352,7 +352,7 @@ ensure_links() {
         # Moved aside like every other squatter, never deleted: the target may
         # be a volume that is merely unmounted. Plain readlink rather than -f,
         # because what the link stores is the only record of where it pointed
-        # and -f canonicalises a missing target into something else.
+        # and -f canonicalizes a missing target into something else.
         actual="$(readlink "$link" 2>/dev/null)"
         aside="$(aside_path "$link")"
         mv "$link" "$aside" || {

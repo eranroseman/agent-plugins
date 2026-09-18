@@ -507,7 +507,7 @@ Expected: the `validate` workflow concludes `success`. If it fails, read the fai
 ### Task 6: Claude Code cutover, G3 rerun, G7 baseline — COMPLETE, both gates PASS
 
 > **Amended 2026-09-05.** The version shipped is **0.3.0**, not 0.2.0. The payload still carries exactly one rule, worktree cleanup: a task-reports rule was admitted and withdrawn the same day, because its destination clause is repository-specific and it belongs beside each repository's tracker declaration instead (hook spec §10, [setup and drift spec](../specs/2026-09-05-setup-and-drift-design.md) §8). So one paragraph leaves `~/.claude/CLAUDE.md`, not two, and the task-reports paragraph stays in **both** global files until the scaffolding skill ships. And the verification step moved **before** the deletion, so you prove the hook carries the rule before you delete its only other copy.
-
+>
 > **Do not dispatch an implementer for this task.** It restarts Claude Code and edits files under `~`. The controller hands the steps below to the user and records what they report.
 
 **Files:**
