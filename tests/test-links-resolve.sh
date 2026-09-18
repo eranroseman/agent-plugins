@@ -27,13 +27,13 @@ for f in $docs; do
   # [text](target) — skip external URLs and bare anchors
   while IFS= read -r target; do
     [ -n "$target" ] || continue
-    case "$target" in http://*|https://*|mailto:*|'#'*) continue ;; esac
-    target="${target%%#*}"                       # drop any anchor
+    case "$target" in http://* | https://* | mailto:* | '#'*) continue ;; esac
+    target="${target%%#*}" # drop any anchor
     [ -n "$target" ] || continue
     checked=$((checked + 1))
     case "$target" in
       /*) resolved="$REPO_ROOT$target" ;;
-      *)  resolved="$dir/$target" ;;
+      *) resolved="$dir/$target" ;;
     esac
     [ -e "$resolved" ] || fail "$f links [$target], which does not exist (looked at $resolved)"
   done < <(grep -oE '\]\([^)]+\)' "$f" | sed 's/^](//; s/)$//')

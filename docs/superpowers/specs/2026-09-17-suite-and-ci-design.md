@@ -1,6 +1,6 @@
 # The suite tells the truth, and CI checks what we own
 
-**Status:** design, 2026-09-17, awaiting the maintainer's review. Milestones 1 (*Suite tells the truth*) and 2 (*CI, lint and the Checks section*) of the tracker, in one spec, one plan and one branch, `suite-and-ci`. §3 lists every decision with its source: the maintainer's answers of 2026-09-17, or the deleted design of 2026-09-06 where nothing newer overrides it. §12 lists three deviations from an answer, each with its veto line.
+**Status:** design, 2026-09-17, awaiting the maintainer's review. Milestones 1 (_Suite tells the truth_) and 2 (_CI, lint and the Checks section_) of the tracker, in one spec, one plan and one branch, `suite-and-ci`. §3 lists every decision with its source: the maintainer's answers of 2026-09-17, or the deleted design of 2026-09-06 where nothing newer overrides it. §12 lists three deviations from an answer, each with its veto line.
 **Scope:** milestone 1: [#1](https://github.com/eranroseman/agent-plugins/issues/1), [#5](https://github.com/eranroseman/agent-plugins/issues/5), [#16](https://github.com/eranroseman/agent-plugins/issues/16), [#18](https://github.com/eranroseman/agent-plugins/issues/18) (the extractor only), [#27](https://github.com/eranroseman/agent-plugins/issues/27), [#38](https://github.com/eranroseman/agent-plugins/issues/38), [#40](https://github.com/eranroseman/agent-plugins/issues/40), [#41](https://github.com/eranroseman/agent-plugins/issues/41), [#42](https://github.com/eranroseman/agent-plugins/issues/42) (the repository half), [#43](https://github.com/eranroseman/agent-plugins/issues/43). Milestone 2: [#3](https://github.com/eranroseman/agent-plugins/issues/3), [#6](https://github.com/eranroseman/agent-plugins/issues/6) (item 1), [#7](https://github.com/eranroseman/agent-plugins/issues/7), [#8](https://github.com/eranroseman/agent-plugins/issues/8), [#28](https://github.com/eranroseman/agent-plugins/issues/28), [#29](https://github.com/eranroseman/agent-plugins/issues/29).
 **Not in scope:** the README beyond its Checks section ([#37](https://github.com/eranroseman/agent-plugins/issues/37), [#57](https://github.com/eranroseman/agent-plugins/issues/57), milestone 7), including #18's "on Codex too" sentence; #42's template half, declined by the maintainer (§12); the engine's coverage gaps ([#17](https://github.com/eranroseman/agent-plugins/issues/17)) and the watch surface (milestone 4); vocabulary ([#26](https://github.com/eranroseman/agent-plugins/issues/26), milestone 3).
 
@@ -8,7 +8,7 @@
 
 A claim below is a fact only when it rests on one of: the tree at `aa8e78d`, read on 2026-09-17; the fact-finding pass of the same day (nine investigations, eighteen agents, every claim adversarially re-checked, five corrected); a primary document read the same day; or a run made the same day in a scratch copy of the checkout. Counts are outputs at `aa8e78d`, not targets; the plan re-measures on the branch. §13 lists each mechanism claim with its source.
 
-The design of 2026-09-06, *Repository quality gates* (deleted in `1511eb8`, recoverable as `2825752:docs/superpowers/specs/2026-09-06-repository-quality-gates-design.md`), was read in full. Its measurements and its ownership analysis are reused with attribution. Where a decision here differs from it, the maintainer's newer answer wins and §3 says so.
+The design of 2026-09-06, _Repository quality gates_ (deleted in `1511eb8`, recoverable as `2825752:docs/superpowers/specs/2026-09-06-repository-quality-gates-design.md`), was read in full. Its measurements and its ownership analysis are reused with attribution. Where a decision here differs from it, the maintainer's newer answer wins and §3 says so.
 
 ## 2. Purpose
 
@@ -22,38 +22,38 @@ They land together because each half consumes the other. The ownership derivatio
 
 Sources: **G1** and **G2** are the first and second question rounds of 2026-09-17; **M** is the maintainer's direct ruling in the opening of that session; **D** is the deleted spec of 2026-09-06, kept where nothing newer overrides it.
 
-| Question | Decision | Source |
-| --- | --- | --- |
-| One spec for both milestones? | Yes. One plan, one branch | M |
-| #42, reports that paste test output | `tests/run.sh` writes a result file; reports cite its path. No skill edit, no prose rule anywhere | M |
-| #5, GNU-only constructs in tests | Make the tests portable | M |
-| #3, local and CI validators can disagree | Assert the hash of **both** validator files at the local default path; point at CI's fetch recipe from the README and from the failure message | M, G2 |
-| #8, `pull_request:` trigger | Keep it | G1 Q1 |
-| #8, path filter | None. Every push runs CI, and `docs/` is checked like the rest; the first answer, `docs/**` ignored, was reversed after the Q11 collision on the cost measured in §9.3 | M, 2026-09-17, reversing G2 Q8 |
-| #41, rung 1 in scope? | Both rungs. A `REPORTED` counter bumped in the four reporting helpers, snapshotted around each check | G2 Q2 |
-| #41, a silent check's bucket | `FAIL:`, counted in "N check(s) failed"; exit 1 | G2 Q3 |
-| #38, the second-entry fixture | In the new silence test, beside the first-entry one | G1 Q3, G2 |
-| #29, tool set | All four: `shfmt`, `prettier`, `markdownlint-cli2`, `cspell` | G2 Q4 |
-| #29, spelling locale | `en-US` | G1 Q5 |
-| #29, tool versions | One registry declares tool and version; CI installs exactly that; a local mismatch is a SKIP that names both versions | G2 Q5 |
-| Absent-tool policy | One gate | G2 Q6 |
-| What the gate holds hard | `bash` 4 or later, `jq`, `git`. Everything else is a declared need, skipped when absent. Network stays a FAIL | G2 Q7 |
-| #27 and #29, ownership | One derivation in `tests/lib.sh`, over `git ls-files`, consumed by every list | G2 Q9 |
-| #28, actionlint and the two properties it cannot see | actionlint plus greps in `tests/test-workflows.sh`: every `uses:` sha-pinned, `permissions:` at workflow level; `persist-credentials: false` by hand in the same change | G1 Q7, G2 Q10 |
-| #42, the result file's shape | TSV at a fixed, gitignored path, header with commit and timestamp, one row per test; CI uploads it | G1 Q10 |
-| #43, source of truth for `payload-rules.md` | The spec's §4.2 block, extracted at test time; that spec is maintained, and its stale byte counts are corrected | G2 Q11 |
-| #16, the vacuous refusal grep | Replace the external `dirname` in `bin/setup` and `bin/doctor` with parameter expansion; both survive an empty `PATH` | G2 Q12 |
-| #18, the README extractor | Reset scope on `#` and `##`; a `###` stays inside its parent | G2 Q13 |
-| #18, the LICENSE comma | Decline as moot; correct the issue's wording | G2 Q14 |
-| #18, a `Note:` commit for `4b23edc` | Decline | G1 Q11 |
-| #40, the remaining tab-IFS `read` loops | The same parameter-expansion split, here, with one fixture | G2 Q15 |
-| Plugin versions | Patch bump at the end, both manifests per plugin, one commit | G1 Q13 |
-| Branch and gate | One branch `suite-and-ci`, milestone 1 then milestone 2, full suite green with the result file cited, then merge to `main` and push | G1 Q14 |
-| `shfmt` flags, prettier options, markdownlint rules | `-i 2 -ci -bn`; `proseWrap: preserve`, `embeddedLanguageFormatting: off`; MD013, MD033, MD041 off | D §3, §5.2 |
-| `cspell` over comments in shell and YAML | Yes, through an `overrides` entry, as D §3 ruled; veto drops that entry | D §3 |
-| `cspell` scope | The checked markdown outside the three record directories under `docs/` (`superpowers`, `research`, `archive`); `docs/agents/` stays in | D §3's scope, widened by two directories on the measurement in §8.1 |
-| `bin/format` as the apply script | Yes | G1 Q8 default |
-| A skip in CI | `tests/run.sh --no-skip` makes every unmet need a `FAIL`; CI runs with it, with the pinned binaries ahead of the image's on `PATH` | this spec, from G1 Q6's "CI installs everything, so CI never skips" |
+| Question                                             | Decision                                                                                                                                                                | Source                                                              |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| One spec for both milestones?                        | Yes. One plan, one branch                                                                                                                                               | M                                                                   |
+| #42, reports that paste test output                  | `tests/run.sh` writes a result file; reports cite its path. No skill edit, no prose rule anywhere                                                                       | M                                                                   |
+| #5, GNU-only constructs in tests                     | Make the tests portable                                                                                                                                                 | M                                                                   |
+| #3, local and CI validators can disagree             | Assert the hash of **both** validator files at the local default path; point at CI's fetch recipe from the README and from the failure message                          | M, G2                                                               |
+| #8, `pull_request:` trigger                          | Keep it                                                                                                                                                                 | G1 Q1                                                               |
+| #8, path filter                                      | None. Every push runs CI, and `docs/` is checked like the rest; the first answer, `docs/**` ignored, was reversed after the Q11 collision on the cost measured in §9.3  | M, 2026-09-17, reversing G2 Q8                                      |
+| #41, rung 1 in scope?                                | Both rungs. A `REPORTED` counter bumped in the four reporting helpers, snapshotted around each check                                                                    | G2 Q2                                                               |
+| #41, a silent check's bucket                         | `FAIL:`, counted in "N check(s) failed"; exit 1                                                                                                                         | G2 Q3                                                               |
+| #38, the second-entry fixture                        | In the new silence test, beside the first-entry one                                                                                                                     | G1 Q3, G2                                                           |
+| #29, tool set                                        | All four: `shfmt`, `prettier`, `markdownlint-cli2`, `cspell`                                                                                                            | G2 Q4                                                               |
+| #29, spelling locale                                 | `en-US`                                                                                                                                                                 | G1 Q5                                                               |
+| #29, tool versions                                   | One registry declares tool and version; CI installs exactly that; a local mismatch is a SKIP that names both versions                                                   | G2 Q5                                                               |
+| Absent-tool policy                                   | One gate                                                                                                                                                                | G2 Q6                                                               |
+| What the gate holds hard                             | `bash` 4 or later, `jq`, `git`. Everything else is a declared need, skipped when absent. Network stays a FAIL                                                           | G2 Q7                                                               |
+| #27 and #29, ownership                               | One derivation in `tests/lib.sh`, over `git ls-files`, consumed by every list                                                                                           | G2 Q9                                                               |
+| #28, actionlint and the two properties it cannot see | actionlint plus greps in `tests/test-workflows.sh`: every `uses:` sha-pinned, `permissions:` at workflow level; `persist-credentials: false` by hand in the same change | G1 Q7, G2 Q10                                                       |
+| #42, the result file's shape                         | TSV at a fixed, gitignored path, header with commit and timestamp, one row per test; CI uploads it                                                                      | G1 Q10                                                              |
+| #43, source of truth for `payload-rules.md`          | The spec's §4.2 block, extracted at test time; that spec is maintained, and its stale byte counts are corrected                                                         | G2 Q11                                                              |
+| #16, the vacuous refusal grep                        | Replace the external `dirname` in `bin/setup` and `bin/doctor` with parameter expansion; both survive an empty `PATH`                                                   | G2 Q12                                                              |
+| #18, the README extractor                            | Reset scope on `#` and `##`; a `###` stays inside its parent                                                                                                            | G2 Q13                                                              |
+| #18, the LICENSE comma                               | Decline as moot; correct the issue's wording                                                                                                                            | G2 Q14                                                              |
+| #18, a `Note:` commit for `4b23edc`                  | Decline                                                                                                                                                                 | G1 Q11                                                              |
+| #40, the remaining tab-IFS `read` loops              | The same parameter-expansion split, here, with one fixture                                                                                                              | G2 Q15                                                              |
+| Plugin versions                                      | Patch bump at the end, both manifests per plugin, one commit                                                                                                            | G1 Q13                                                              |
+| Branch and gate                                      | One branch `suite-and-ci`, milestone 1 then milestone 2, full suite green with the result file cited, then merge to `main` and push                                     | G1 Q14                                                              |
+| `shfmt` flags, prettier options, markdownlint rules  | `-i 2 -ci -bn`; `proseWrap: preserve`, `embeddedLanguageFormatting: off`; MD013, MD033, MD041 off                                                                       | D §3, §5.2                                                          |
+| `cspell` over comments in shell and YAML             | Yes, through an `overrides` entry, as D §3 ruled; veto drops that entry                                                                                                 | D §3                                                                |
+| `cspell` scope                                       | The checked markdown outside the three record directories under `docs/` (`superpowers`, `research`, `archive`); `docs/agents/` stays in                                 | D §3's scope, widened by two directories on the measurement in §8.1 |
+| `bin/format` as the apply script                     | Yes                                                                                                                                                                     | G1 Q8 default                                                       |
+| A skip in CI                                         | `tests/run.sh --no-skip` makes every unmet need a `FAIL`; CI runs with it, with the pinned binaries ahead of the image's on `PATH`                                      | this spec, from G1 Q6's "CI installs everything, so CI never skips" |
 
 ## 4. Ownership: one derivation
 
@@ -81,7 +81,7 @@ EXCLUDED='^plugins/sensemaking/skills/adhd/|^plugins/software-dev/skills/(brains
 checked() { git -C "$REPO_ROOT" ls-files "$@" | grep -vE "$EXCLUDED"; }
 ```
 
-`git -C "$REPO_ROOT"`, never bare: `git ls-files` is cwd-relative and `lib.sh` never changes directory. The contract is *tracked files*: a new file joins when it is staged, which is also the moment anything else in the repository notices it. The stale worktree at `.kilo/worktrees/brass-settee` holds byte-identical copies of the tree; a `find` would see them and `ls-files` does not.
+`git -C "$REPO_ROOT"`, never bare: `git ls-files` is cwd-relative and `lib.sh` never changes directory. The contract is _tracked files_: a new file joins when it is staged, which is also the moment anything else in the repository notices it. The stale worktree at `.kilo/worktrees/brass-settee` holds byte-identical copies of the tree; a `find` would see them and `ls-files` does not.
 
 Consumers, each filtering by type and each asserting a non-empty list (#27's vacuity guard; `prettier --check` on a file it cannot parse exits 0, D §5.2, so an empty or wrong list is a false green): the shellcheck list and the `shfmt` list (shell by shebang), the three prettier lists (`*.json`, `*.yml` and `*.yaml`, `*.md`), `markdownlint-cli2` (`*.md`) and `cspell` (`*.md` within §8.1's scope, plus the shell and YAML lists for comments), `tests/test-json-wellformed.sh` (`*.json`, closing #27: eight files where the hardcoded `find` saw seven), `tests/test-links-resolve.sh` (`*.md`), and `bin/format`. The `*/skills/*` exclusion in the JSON check goes; no tracked JSON lives there, and the vendored patterns cover the case it guarded against.
 
@@ -121,15 +121,15 @@ Skips never change the exit status, with one flag that inverts it: `tests/run.sh
 
 Who declares what:
 
-| Test | Needs |
-| --- | --- |
-| `test-claude-validate.sh`, `test-setup-upgrade.sh` (new, §7.2) | `claude` |
-| `test-codex-validate.sh` | `python3 pyyaml codex-validator` |
-| `test-vendored-duplicates.sh` | `python3` |
-| `test-lint-shell.sh` (new, §8.3) | `shellcheck` |
+| Test                                                                                                       | Needs                                                           |
+| ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `test-claude-validate.sh`, `test-setup-upgrade.sh` (new, §7.2)                                             | `claude`                                                        |
+| `test-codex-validate.sh`                                                                                   | `python3 pyyaml codex-validator`                                |
+| `test-vendored-duplicates.sh`                                                                              | `python3`                                                       |
+| `test-lint-shell.sh` (new, §8.3)                                                                           | `shellcheck`                                                    |
 | `test-format-shell.sh`, `test-format-prettier.sh`, `test-lint-markdown.sh`, `test-spelling.sh` (new, §8.3) | `shfmt`, `prettier`, `markdownlint-cli2`, `cspell` respectively |
-| `test-workflows.sh` (new, §9.4) | `actionlint shellcheck` |
-| every other test | nothing beyond §5.1 |
+| `test-workflows.sh` (new, §9.4)                                                                            | `actionlint shellcheck`                                         |
+| every other test                                                                                           | nothing beyond §5.1                                             |
 
 Network is not a need. Ten tests fetch from GitHub and three of those run `git ls-remote` on every run; an offline run fails them with `lib.sh`'s "no network, or the pinned sha is gone", which is the right shape, because a pin that could not be verified is not a pin that was skipped.
 
@@ -214,7 +214,7 @@ Every unguarded `cp`, `mkdir`, `ln`, `cat >` and bare `$(...)` capture in the fi
 
 ### 7.3 The README extractor (#18)
 
-`extract_scoped_blocks` resets scope on `/^## /` only. A `###` under `## Install` stays in scope, which the issue calls a defect, and a `# ` h1 after it leaks too, which the issue missed. The regex becomes `/^##? /`: an h1 or h2 closes the scope, an h3 stays inside its parent, which is what "every fenced block in the Install and Update sections" means. Proved against a synthetic README carrying all three headings.
+`extract_scoped_blocks` resets scope on `/^## /` only. A `###` under `## Install` stays in scope, which the issue calls a defect, and a `#` h1 after it leaks too, which the issue missed. The regex becomes `/^##? /`: an h1 or h2 closes the scope, an h3 stays inside its parent, which is what "every fenced block in the Install and Update sections" means. Proved against a synthetic README carrying all three headings.
 
 The LICENSE comma (`plugins/software-dev/LICENSE:55`) and the `Note:` commit for `4b23edc` are declined in §12. The plugin README's "on Codex too" sentence is milestone 7's, per the milestone note.
 
@@ -240,14 +240,14 @@ Over `checked '*.md'`, `tests/test-links-resolve.sh` finds 23 relative markdown 
 
 ### 8.1 What each type gets
 
-| Type | N | Formats | Lints | Spelling |
-| --- | --- | --- | --- | --- |
-| shell | 26 | `shfmt -i 2 -ci -bn` | `shellcheck -e SC1091 -e SC2016` | `cspell`, `#` comments only |
-| JSON | 8 | `prettier` | the two validators, `test-json-wellformed.sh` | none |
-| YAML | 5 | `prettier` | `actionlint`, the two workflows | `cspell`, `#` comments only |
-| markdown | 27 | `prettier`, `proseWrap: preserve`, embedded code untouched | `markdownlint-cli2`, MD013/MD033/MD041 off | `cspell`, `en-US`, outside the three record directories |
-| Python | 2 | none | none | none; `ast.parse` in the fork's drift test |
-| no parser | 4 | none | none | none |
+| Type      | N   | Formats                                                    | Lints                                         | Spelling                                                |
+| --------- | --- | ---------------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------- |
+| shell     | 26  | `shfmt -i 2 -ci -bn`                                       | `shellcheck -e SC1091 -e SC2016`              | `cspell`, `#` comments only                             |
+| JSON      | 8   | `prettier`                                                 | the two validators, `test-json-wellformed.sh` | none                                                    |
+| YAML      | 5   | `prettier`                                                 | `actionlint`, the two workflows               | `cspell`, `#` comments only                             |
+| markdown  | 27  | `prettier`, `proseWrap: preserve`, embedded code untouched | `markdownlint-cli2`, MD013/MD033/MD041 off    | `cspell`, `en-US`, outside the three record directories |
+| Python    | 2   | none                                                       | none                                          | none; `ast.parse` in the fork's drift test              |
+| no parser | 4   | none                                                       | none                                          | none                                                    |
 
 Measured at `aa8e78d`, plus this spec, on 2026-09-17 with the candidate versions of §8.2:
 
@@ -403,30 +403,30 @@ Deviations from an answer, each with its veto line in place: the hermetic repair
 
 ## 13. Mechanism claims and their sources
 
-| Claim | Source, read or run 2026-09-17 |
-| --- | --- |
-| The checks run in `main`'s own shell with no capture; `bad` and `needs` mutate `FAILURES`, `UNANSWERED`, `UNCHECKED` there; a `$(...)` wrapper would lose them | `bin/setup:61-86`, `:725-731`; fact-finding, #41 |
-| `DID:` never stands alone | fact-finding, #41, every `did` call site |
-| Apply mode's verdict is the child `--check` pass's | `bin/setup:733-737` |
-| Stripping `.skills` from the first entry: jq exit 5, zero rows; from the second: exit 5, thirteen rows | fact-finding, #41, measured |
-| All-empty skill names in `skills.json` pass both guards and print nothing | fact-finding, #41, measured live; `bin/setup:492-495` |
-| `read` with a tab IFS drops an empty leading field | `bin/setup:224-231`, the comment `0aa11d2` wrote; four remaining loops at `:145`, `:392`, `:494`, `:663` |
-| Under an empty `PATH`, `bin/setup` prints `<$0>: dirname: command not found` before its refusal; `$0` contains `.claude` in the deployment path | fact-finding, #16 |
-| `test-doctor-faults.sh` passes with `claude`, `node`, `npx` stubbed in the repair fixture | scratch copy, `/tmp/faults-stub-probe`, exit 0 |
-| The hook spec's §4.2 fence is the only ```` ```markdown ```` fence in the file; the block and `payload-rules.md` are 379 bytes and identical; §4.3's figures are stale by the rename's eight bytes | fact-finding, #43; `wc -c` |
-| A full CI run is 45 to 60 s across two jobs; 9 of the last 30 `main` commits were docs-only; the repository is public | `gh run view`, `git log --name-only`, `gh repo view` |
-| actionlint 1.7.12 runs shellcheck over `run:` blocks (SC2086 mutation surfaced), flags neither `permissions:` nor floating tags nor unresolvable `uses:` | fact-finding, #28, measured |
-| `prettier --check` on a file with no parser exits 0 | D §5.2, prettier 3.3.3 |
-| 95 tracked files with this spec; 23 vendored; 72 checked, 26 of them shell and 27 markdown | `git ls-files` at `aa8e78d` plus this file |
-| `shfmt` v3.14.1 `-i 2 -ci -bn`: 17 of 26 files, 272 lines; three engine tests and shellcheck pass after | release binary in `/tmp`, scratch copy |
-| prettier 3.9.6: 20 of 40 files, 1,020 lines, 945 of them under `docs/`; `AGENTS.md`, `payload-rules.md` unchanged | `npx prettier@3.9.6 --list-different`, and `diff` per file |
-| markdownlint-cli2 0.23.2: 224 findings before prettier, 67 after, 61 of them under `docs/` | `npx markdownlint-cli2@0.23.2` on the tree and on a formatted scratch copy |
-| cspell 10.2.2 `en-US`: 77 hits and about 33 words over the 15 files in scope, four British; `docs/research/` alone 123 hits, 61 words, 15 British forms; `docs/superpowers/` alone 693 hits, 127 words | `npx cspell@10.2.2 --words-only`, per directory |
-| 23 relative markdown links in the 27 authored markdown files; 3 broken, all in one plan | each resolved by hand against its document's directory |
-| Newest releases: shfmt v3.14.1, actionlint v1.7.12, shellcheck v0.11.0; npm prettier 3.9.8, markdownlint-cli2 0.23.2, cspell 10.3.3; installed here: shellcheck 0.9.0, actionlint 1.7.12 | `gh api …/releases/latest`, `npm view`, `--version` |
-| The local `npx` cache holds prettier 3.9.6, markdownlint-cli2 0.23.2, cspell 10.2.2 | `~/.npm/_npx/*/package.json` |
-| Ten tests reach the network; three run `ls-remote` on every run | fact-finding, #7, per file |
-| `git ls-files` does not list `.kilo/worktrees/brass-settee`; it is excluded through `.git/info/exclude` | `git status --ignored` |
+| Claim                                                                                                                                                                                                  | Source, read or run 2026-09-17                                                                           |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| The checks run in `main`'s own shell with no capture; `bad` and `needs` mutate `FAILURES`, `UNANSWERED`, `UNCHECKED` there; a `$(...)` wrapper would lose them                                         | `bin/setup:61-86`, `:725-731`; fact-finding, #41                                                         |
+| `DID:` never stands alone                                                                                                                                                                              | fact-finding, #41, every `did` call site                                                                 |
+| Apply mode's verdict is the child `--check` pass's                                                                                                                                                     | `bin/setup:733-737`                                                                                      |
+| Stripping `.skills` from the first entry: jq exit 5, zero rows; from the second: exit 5, thirteen rows                                                                                                 | fact-finding, #41, measured                                                                              |
+| All-empty skill names in `skills.json` pass both guards and print nothing                                                                                                                              | fact-finding, #41, measured live; `bin/setup:492-495`                                                    |
+| `read` with a tab IFS drops an empty leading field                                                                                                                                                     | `bin/setup:224-231`, the comment `0aa11d2` wrote; four remaining loops at `:145`, `:392`, `:494`, `:663` |
+| Under an empty `PATH`, `bin/setup` prints `<$0>: dirname: command not found` before its refusal; `$0` contains `.claude` in the deployment path                                                        | fact-finding, #16                                                                                        |
+| `test-doctor-faults.sh` passes with `claude`, `node`, `npx` stubbed in the repair fixture                                                                                                              | scratch copy, `/tmp/faults-stub-probe`, exit 0                                                           |
+| The hook spec's §4.2 fence is the only ` ```markdown ` fence in the file; the block and `payload-rules.md` are 379 bytes and identical; §4.3's figures are stale by the rename's eight bytes           | fact-finding, #43; `wc -c`                                                                               |
+| A full CI run is 45 to 60 s across two jobs; 9 of the last 30 `main` commits were docs-only; the repository is public                                                                                  | `gh run view`, `git log --name-only`, `gh repo view`                                                     |
+| actionlint 1.7.12 runs shellcheck over `run:` blocks (SC2086 mutation surfaced), flags neither `permissions:` nor floating tags nor unresolvable `uses:`                                               | fact-finding, #28, measured                                                                              |
+| `prettier --check` on a file with no parser exits 0                                                                                                                                                    | D §5.2, prettier 3.3.3                                                                                   |
+| 95 tracked files with this spec; 23 vendored; 72 checked, 26 of them shell and 27 markdown                                                                                                             | `git ls-files` at `aa8e78d` plus this file                                                               |
+| `shfmt` v3.14.1 `-i 2 -ci -bn`: 17 of 26 files, 272 lines; three engine tests and shellcheck pass after                                                                                                | release binary in `/tmp`, scratch copy                                                                   |
+| prettier 3.9.6: 20 of 40 files, 1,020 lines, 945 of them under `docs/`; `AGENTS.md`, `payload-rules.md` unchanged                                                                                      | `npx prettier@3.9.6 --list-different`, and `diff` per file                                               |
+| markdownlint-cli2 0.23.2: 224 findings before prettier, 67 after, 61 of them under `docs/`                                                                                                             | `npx markdownlint-cli2@0.23.2` on the tree and on a formatted scratch copy                               |
+| cspell 10.2.2 `en-US`: 77 hits and about 33 words over the 15 files in scope, four British; `docs/research/` alone 123 hits, 61 words, 15 British forms; `docs/superpowers/` alone 693 hits, 127 words | `npx cspell@10.2.2 --words-only`, per directory                                                          |
+| 23 relative markdown links in the 27 authored markdown files; 3 broken, all in one plan                                                                                                                | each resolved by hand against its document's directory                                                   |
+| Newest releases: shfmt v3.14.1, actionlint v1.7.12, shellcheck v0.11.0; npm prettier 3.9.8, markdownlint-cli2 0.23.2, cspell 10.3.3; installed here: shellcheck 0.9.0, actionlint 1.7.12               | `gh api …/releases/latest`, `npm view`, `--version`                                                      |
+| The local `npx` cache holds prettier 3.9.6, markdownlint-cli2 0.23.2, cspell 10.2.2                                                                                                                    | `~/.npm/_npx/*/package.json`                                                                             |
+| Ten tests reach the network; three run `ls-remote` on every run                                                                                                                                        | fact-finding, #7, per file                                                                               |
+| `git ls-files` does not list `.kilo/worktrees/brass-settee`; it is excluded through `.git/info/exclude`                                                                                                | `git status --ignored`                                                                                   |
 
 ## 14. Open items carried forward
 

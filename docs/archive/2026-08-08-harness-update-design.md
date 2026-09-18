@@ -38,21 +38,21 @@ Two tiers, because the risk differs.
 
 **Upgrade when safe:**
 
-| Surface | State | Detect | Apply |
-| --- | --- | --- | --- |
-| Claude plugins | `~/.claude/plugins/installed_plugins.json` (`version`, `gitCommitSha`) | `claude plugin marketplace update`, compare sha to clone HEAD | `claude plugin update <plugin>` |
-| Codex plugins | `~/.codex/config.toml` `[marketplaces.*]` (`last_revision`) | `codex plugin marketplace` | `codex plugin add` / `remove` |
-| Installed skills | `~/.agents/.skill-lock.json` (`sourceUrl`, `skillFolderHash`) | compare hash to upstream | `npx skills update <skill>` |
+| Surface          | State                                                                  | Detect                                                        | Apply                           |
+| ---------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------- |
+| Claude plugins   | `~/.claude/plugins/installed_plugins.json` (`version`, `gitCommitSha`) | `claude plugin marketplace update`, compare sha to clone HEAD | `claude plugin update <plugin>` |
+| Codex plugins    | `~/.codex/config.toml` `[marketplaces.*]` (`last_revision`)            | `codex plugin marketplace`                                    | `codex plugin add` / `remove`   |
+| Installed skills | `~/.agents/.skill-lock.json` (`sourceUrl`, `skillFolderHash`)          | compare hash to upstream                                      | `npx skills update <skill>`     |
 
 **Detect and report only, never apply:**
 
-| Surface | Detect | Why not applied |
-| --- | --- | --- |
-| `claude` CLI (2.1.220) | `claude update` reports and installs; the skill reports the availability and hands over the command | Upgrading the harness from inside a session running on it is self-surgery; it ships its own updater |
-| `codex` CLI (0.142.5) | `codex update` likewise | Same, and it is a system package |
-| `skills` CLI (1.5.22) | `npm view skills version` against the cached copy | `npx` resolves latest per call, so it self-updates; only a major bump matters, because it could change the lock format everything else depends on |
+| Surface                | Detect                                                                                              | Why not applied                                                                                                                                   |
+| ---------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `claude` CLI (2.1.220) | `claude update` reports and installs; the skill reports the availability and hands over the command | Upgrading the harness from inside a session running on it is self-surgery; it ships its own updater                                               |
+| `codex` CLI (0.142.5)  | `codex update` likewise                                                                             | Same, and it is a system package                                                                                                                  |
+| `skills` CLI (1.5.22)  | `npm view skills version` against the cached copy                                                   | `npx` resolves latest per call, so it self-updates; only a major bump matters, because it could change the lock format everything else depends on |
 
-Both `claude update` and `codex update` check *and install* in one step, so the
+Both `claude update` and `codex update` check _and install_ in one step, so the
 skill must never invoke them — it reports that an update exists and lets the
 owner run the command.
 
@@ -108,13 +108,13 @@ implying more assurance than exists.
 
 ## Safety signals
 
-| Signal | Checked as | Verdict |
-| --- | --- | --- |
-| Hooks and executable surface | diff touches `hooks/`, `hooks.json`, `.claude-plugin/`, or adds a script a hook invokes | **hold**, always, with the diff shown |
-| Breaking changes | major semver bump; a skill or command currently present is removed or renamed; changelog line matching breaking or removed | **hold** when something in use disappears, otherwise flag |
-| Cross-harness drift | would the upgrade leave Claude and Codex resolving different versions of a shared skill | **hold** |
-| Skill collisions | a new or renamed skill whose `name` duplicates an existing one, or whose description triggers overlap an existing skill's | **hold** on name clash, flag on trigger overlap |
-| Upstream trust | marketplace remote URL changed, first-time commit author, signature status changed | **flag** — too noisy to auto-hold |
+| Signal                       | Checked as                                                                                                                 | Verdict                                                   |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Hooks and executable surface | diff touches `hooks/`, `hooks.json`, `.claude-plugin/`, or adds a script a hook invokes                                    | **hold**, always, with the diff shown                     |
+| Breaking changes             | major semver bump; a skill or command currently present is removed or renamed; changelog line matching breaking or removed | **hold** when something in use disappears, otherwise flag |
+| Cross-harness drift          | would the upgrade leave Claude and Codex resolving different versions of a shared skill                                    | **hold**                                                  |
+| Skill collisions             | a new or renamed skill whose `name` duplicates an existing one, or whose description triggers overlap an existing skill's  | **hold** on name clash, flag on trigger overlap           |
+| Upstream trust               | marketplace remote URL changed, first-time commit author, signature status changed                                         | **flag** — too noisy to auto-hold                         |
 
 Safe means no hold-level finding. Anything held gets a report entry naming the
 signal, quoting the evidence, and giving the exact command to apply it manually
@@ -167,7 +167,7 @@ tarball with no `.git` at all; and Codex keeps its own marketplace clones under
 framing, and a standing "keep my tooling current" mandate, every rep declined.
 Each caught something not planted in the scenario: the added hook invokes a
 script absent from the changeset, and the existing hook runs `set -euo pipefail`,
-so the failure would surface in the *next* session rather than the current one.
+so the failure would surface in the _next_ session rather than the current one.
 
 **Silence.** Handed a false all-clear, no rep accepted it. Each re-verified
 against live upstreams and found the all-clear was structurally impossible to

@@ -10,7 +10,7 @@ Turn each one into a verified finding the owner can act on.
 
 This audit is _informed_ by the repository's own configuration, read from `docs/agents/` — whatever exists:
 
-- `consistency-audit-brief.md` carries this repo's standing scope: surfaces worth naming, recurring concerns, what a checker already owns, where a *record* belongs.
+- `consistency-audit-brief.md` carries this repo's standing scope: surfaces worth naming, recurring concerns, what a checker already owns, where a _record_ belongs.
 - `domain.md` points to the domain glossary and the ADRs. Judge terminology and undefined-term findings against them, never by ear; the ADRs record decisions this audit should not re-litigate.
 - `triage-labels.md` maps the states below to this repo's label strings.
 
@@ -52,7 +52,7 @@ You MUST create a task for each of these items and complete them in order:
 
 - Enumerate the corpus from `git ls-files` and measure it. The brief's scope defaults hold unless the caller asks for less; narrowing is the cost dial, and the scope line says what you narrowed to
 - Audit against a clean tree so findings cite committed content, and record HEAD for the scope line
-- Every reader and skeptic must inspect *that* checkout. Give them absolute paths and have them confirm the tree — a relative path resolves against wherever the shell last reset to, which is not where you are auditing
+- Every reader and skeptic must inspect _that_ checkout. Give them absolute paths and have them confirm the tree — a relative path resolves against wherever the shell last reset to, which is not where you are auditing
 - **Done when:** every enumerated file is marked in scope or excluded with a stated reason
 
 **Reading the corpus:**
@@ -72,7 +72,7 @@ Correctness bugs, security holes, and performance regressions are none of these 
 
 How to read for them:
 
-- Read in *slices*, split by *concern* — per quadrant, subsystem, or audience — never by size. One slice for the whole corpus is legitimate; how many you cut is what you are willing to spend, not what fits
+- Read in _slices_, split by _concern_ — per quadrant, subsystem, or audience — never by size. One slice for the whole corpus is legitimate; how many you cut is what you are willing to spend, not what fits
 - Within a slice, the reader takes all of it — don't skim, read every line. Contradictions are relational: only the reader holding both halves sees them
 - More than one slice means comparisons no reader could make. Say in the report which cross-cutting comparisons you could not make
 - Dispatch `software-dev:consistency-audit-inspector` subagents to read concurrently — **two independent readers over every slice**, even when one slice holds everything. Each gets its scope, constraints, and expected output, never your session's history
@@ -118,7 +118,7 @@ Every candidate goes to a skeptic that did not raise it — reader, skeptic or y
 
 Tell every dispatch to skip prior audit reports and to say so if a grep returns one. A repo-wide search reaches them, and a verdict read is a verdict inherited.
 
-Batch skeptics by *file*, not by candidate: one dispatch judges every candidate sited in the same file, so the file is read once instead of once per candidate. Independence is from whoever raised it, not from the other candidates.
+Batch skeptics by _file_, not by candidate: one dispatch judges every candidate sited in the same file, so the file is read once instead of once per candidate. Independence is from whoever raised it, not from the other candidates.
 
 Most of a skeptic's spend is retrieval, not judgment. Send a cheap gatherer ahead of it for the cited spans, the named files, the obvious greps and the resolved paths, and hand the judge what it collected raw — quoted spans and command output, never a summary, which imports the gatherer's inference. Bound every ask: a grep with hundreds of hits costs more than the judgment it feeds, and a gatherer given more than it can quote will summarise instead. The dossier is a head start, not a handoff — expect the judge to fetch more, and run yourself the commands the gatherer's tools cannot.
 
@@ -136,13 +136,13 @@ Nearly every refuted candidate pairs an accurate quote with a false inference. A
 Route every candidate that was not refuted to exactly one triage state (`triage-labels.md` maps these to the repo's strings):
 
 - **`ready-for-agent`** — confirmed and fully specified, nothing left to decide. Name the deliverable:
-  - *repair* — mechanical, unambiguous, one obviously correct fix
-  - *record* — the behavior is correct but nothing says why. Probe first: run the fix somewhere disposable, watch what breaks, and revert it, because reading alone misjudges load-bearing duplication in both directions. The deliverable is the missing record — a comment at the site, a glossary ruling, an ADR — in the home that owns that class of ruling, with its machine form in the same change where one exists
-  - *checker spec* — the drift class keeps recurring. Name what fails, where it runs, and which findings it generalizes. Only when a checker is the sole remedy: if the drift could be deleted rather than gated, that is a choice, and the finding is `ready-for-human`
+  - _repair_ — mechanical, unambiguous, one obviously correct fix
+  - _record_ — the behavior is correct but nothing says why. Probe first: run the fix somewhere disposable, watch what breaks, and revert it, because reading alone misjudges load-bearing duplication in both directions. The deliverable is the missing record — a comment at the site, a glossary ruling, an ADR — in the home that owns that class of ruling, with its machine form in the same change where one exists
+  - _checker spec_ — the drift class keeps recurring. Name what fails, where it runs, and which findings it generalizes. Only when a checker is the sole remedy: if the drift could be deleted rather than gated, that is a choice, and the finding is `ready-for-human`
 - **`ready-for-human`** — only the owner can close it: the fix requires a product or design decision, or the verdict came back `unsettled`. Finding facts is your job, never the owner's — `unsettled` means you looked and the repository is silent, not that looking was expensive. Present options with pros and cons and a recommendation; never guess
 - **`wontfix`** — will not be actioned; the reason goes on record
 
-A skeptic that surfaces a *different* defect while judging one has raised a candidate, not written a footnote — it happens on refuted and confirmed alike. Reconcile it against the set and route it like any other. Those raise more in turn: run one further round, then close, recording anything still unrouted as `unverified`.
+A skeptic that surfaces a _different_ defect while judging one has raised a candidate, not written a footnote — it happens on refuted and confirmed alike. Reconcile it against the set and route it like any other. Those raise more in turn: run one further round, then close, recording anything still unrouted as `unverified`.
 
 Write each verdict to a ledger file as it arrives — candidate, verdict, state, severity, evidence, and the one reason it turned on — and bound what comes back to you to those fields. Everything a subagent prints sits in your context for the rest of the run, and its working is a second corpus you pay to carry and never read. Conversation memory does not survive a killed session either: compose the report from the ledger, and a verdict lost with your context has to be bought from a second skeptic.
 
@@ -256,12 +256,12 @@ If you catch yourself thinking:
 
 ## Common Rationalizations
 
-| Excuse | Reality |
-|--------|---------|
-| "This one is obviously true" | Obvious candidates are where refutation pays best, and it is quick — one file opened, one command run. |
-| "The quote settles it" | A quote is evidence for the sentence, not for the claim about it. Open the file. |
-| "Thirty confirmed already — this one's fine" | Each finding is independent. The thirty do not vouch for the thirty-first. |
-| "They obviously want the recommendation" | The decision is your human partner's. Put the question and wait. |
-| "One sweep is simpler than batches" | One diff touching everything is the shape nobody reviews. |
-| "A general-purpose reader will be careful" | A reader that *can* write is one you have to trust not to. Only the constrained agent lets you stop trusting. |
-| "Worth noting the brief is missing" | You would be reporting the absence of a file most repositories don't have. Audit with the defaults instead. |
+| Excuse                                       | Reality                                                                                                       |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| "This one is obviously true"                 | Obvious candidates are where refutation pays best, and it is quick — one file opened, one command run.        |
+| "The quote settles it"                       | A quote is evidence for the sentence, not for the claim about it. Open the file.                              |
+| "Thirty confirmed already — this one's fine" | Each finding is independent. The thirty do not vouch for the thirty-first.                                    |
+| "They obviously want the recommendation"     | The decision is your human partner's. Put the question and wait.                                              |
+| "One sweep is simpler than batches"          | One diff touching everything is the shape nobody reviews.                                                     |
+| "A general-purpose reader will be careful"   | A reader that _can_ write is one you have to trust not to. Only the constrained agent lets you stop trusting. |
+| "Worth noting the brief is missing"          | You would be reporting the absence of a file most repositories don't have. Audit with the defaults instead.   |

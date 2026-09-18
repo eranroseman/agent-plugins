@@ -10,10 +10,12 @@
 DOCTOR="$REPO_ROOT/bin/doctor"
 H="$(mktemp -d)"
 trap 'rm -rf "$H"' EXIT
-A="$H/.agents/skills"; C="$H/.claude/skills"; X="$H/.codex/skills"
+A="$H/.agents/skills"
+C="$H/.claude/skills"
+X="$H/.codex/skills"
 mkdir -p "$A" "$C" "$X" "$H/.claude/plugins" || fail "could not seed $H"
 
-skill() { mkdir -p "$1" && printf -- '---\nname: %s\n---\n%s\n' "$(basename "$1")" "$2" > "$1/SKILL.md"; }
+skill() { mkdir -p "$1" && printf -- '---\nname: %s\n---\n%s\n' "$(basename "$1")" "$2" >"$1/SKILL.md"; }
 
 # alpha: one tree, two paths. Same content, so not a finding.
 skill "$A/alpha" "alpha body"
@@ -35,12 +37,12 @@ skill "$X/delta" "delta on codex"
 skill "$H/.claude/plugins/cache/mkt/subdir/1.0.0/epsilon" "epsilon from the curated entry"
 skill "$C/epsilon" "epsilon from a user copy"
 
-cat > "$H/.claude/plugins/installed_plugins.json" <<JSON
+cat >"$H/.claude/plugins/installed_plugins.json" <<JSON
 {"version":2,"plugins":{
   "plug@mkt":[{"scope":"user","version":"2.0.0","installPath":"$H/.claude/plugins/cache/mkt/plug/2.0.0"}],
   "subdir@mkt":[{"scope":"user","version":"1.0.0","installPath":"$H/.claude/plugins/cache/mkt/subdir/1.0.0"}]}}
 JSON
-cat > "$H/.claude/plugins/known_marketplaces.json" <<'JSON'
+cat >"$H/.claude/plugins/known_marketplaces.json" <<'JSON'
 {"mkt":{"source":{"source":"github","repo":"x/y"},"installLocation":"/nowhere"}}
 JSON
 # Residue: a cache directory for a marketplace the registry no longer names.
@@ -51,7 +53,7 @@ mkdir -p "$H/.claude/plugins/cache/gone/old/1.0.0/skills/zeta"
 BIN="$H/bin"
 mkdir -p "$BIN"
 for t in bash git jq sed awk grep find date readlink basename dirname \
-         mv ln mkdir cp cat sha256sum; do
+  mv ln mkdir cp cat sha256sum; do
   p="$(command -v "$t" 2>/dev/null)" || fail "the fixture needs $t on PATH"
   ln -sf "$p" "$BIN/$t"
 done
@@ -93,7 +95,7 @@ printf '%s\n' "$out" | grep -q 'NOTE: Claude: 2 skill tree(s) hashed; no name re
 # plugin half. A stub codex that exits 1 is that machine. The stub prints
 # partial JSON before it fails, because a failed command's stdout is still
 # captured by $(...).
-printf '#!/usr/bin/env bash\nprintf '"'"'{"installed":[\\n'"'"'\nexit 1\n' > "$BIN/codex" || fail "could not write the codex stub"
+printf '#!/usr/bin/env bash\nprintf '"'"'{"installed":[\\n'"'"'\nexit 1\n' >"$BIN/codex" || fail "could not write the codex stub"
 chmod +x "$BIN/codex" || fail "could not make the codex stub executable"
 out="$(env HOME="$H2" CODEX_HOME="$H2/.codex" PATH="$BIN" /bin/bash "$DOCTOR" 2>&1 || true)"
 printf '%s\n' "$out" | grep -q 'FAIL: codex plugin list failed' \

@@ -20,23 +20,23 @@ Four authored assets are the forcing function. `consistency-audit`, its inspecto
 
 ## 3. Decisions
 
-| Question | Decision |
-| --- | --- |
-| Which plugin holds a skill | `sensemaking` if it is **shared** or **not software-development-specific**; `software-dev` only when both are false (§4) |
-| When a skill is copied into a plugin | Only when this marketplace must **change** it. Otherwise skills.sh, or a curated entry pinned by sha (§5) |
-| The eighteen skills.sh skills | None moves. Their destinations are fixed **in advance** so a future adaptation does not relitigate placement (§4.2) |
-| `consistency-audit` + inspector | Authored → `software-dev`. `permissionMode` deleted (§7.1) |
-| `finding-duplicate-functions` | Vendored fork → `software-dev`, with provenance, drift test, LICENSE notice (§7.2) |
-| `rethink-audit` | Authored → `sensemaking`, one reference repointed (§7.3) |
-| `rethink` | **Deleted.** Its whole body already sits inside `rethink-audit` (§7.4) |
-| `diagnosing-bugs` | Adopted, vendored → `software-dev`. **Not** gated — routing is its job, not the operator's (§6.1) |
-| `adhd` | Adopted, **gated**, vendored → `sensemaking`. An expensive skill whose cost is the operator's call (§6.2) |
-| `archify` | Adopted, skills.sh, pinned at `v2.16.0`. **Not** unpinnable (§6.3) |
-| `writing-clearly-and-concisely` | Curated beside `sensemaking` at `path: "dist/plugins/..."` (§6.4) |
-| The duplicated obra-dev pair | Drop the plugin, keep skills.sh — Codex's only route (§6.5) |
-| `harness-backup` | **Deleted whole.** Thirty commits of config history accepted as lost (§8) |
-| `eranroseman/rethink` | **Deleted.** #73 ruled this in 2026-08; none of its three obligations executed (§9) |
-| Order | Migrate → prove on this machine → delete → empty both global files (§10) |
+| Question                             | Decision                                                                                                                 |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| Which plugin holds a skill           | `sensemaking` if it is **shared** or **not software-development-specific**; `software-dev` only when both are false (§4) |
+| When a skill is copied into a plugin | Only when this marketplace must **change** it. Otherwise skills.sh, or a curated entry pinned by sha (§5)                |
+| The eighteen skills.sh skills        | None moves. Their destinations are fixed **in advance** so a future adaptation does not relitigate placement (§4.2)      |
+| `consistency-audit` + inspector      | Authored → `software-dev`. `permissionMode` deleted (§7.1)                                                               |
+| `finding-duplicate-functions`        | Vendored fork → `software-dev`, with provenance, drift test, LICENSE notice (§7.2)                                       |
+| `rethink-audit`                      | Authored → `sensemaking`, one reference repointed (§7.3)                                                                 |
+| `rethink`                            | **Deleted.** Its whole body already sits inside `rethink-audit` (§7.4)                                                   |
+| `diagnosing-bugs`                    | Adopted, vendored → `software-dev`. **Not** gated — routing is its job, not the operator's (§6.1)                        |
+| `adhd`                               | Adopted, **gated**, vendored → `sensemaking`. An expensive skill whose cost is the operator's call (§6.2)                |
+| `archify`                            | Adopted, skills.sh, pinned at `v2.16.0`. **Not** unpinnable (§6.3)                                                       |
+| `writing-clearly-and-concisely`      | Curated beside `sensemaking` at `path: "dist/plugins/..."` (§6.4)                                                        |
+| The duplicated obra-dev pair         | Drop the plugin, keep skills.sh — Codex's only route (§6.5)                                                              |
+| `harness-backup`                     | **Deleted whole.** Thirty commits of config history accepted as lost (§8)                                                |
+| `eranroseman/rethink`                | **Deleted.** #73 ruled this in 2026-08; none of its three obligations executed (§9)                                      |
+| Order                                | Migrate → prove on this machine → delete → empty both global files (§10)                                                 |
 
 ## 4. Which plugin holds a skill
 
@@ -52,9 +52,9 @@ That distinction is load-bearing, and this design records it because getting it 
 
 Applying the rule to the eighteen skills `upstream/skills.json` declares:
 
-| Plugin | Skills |
-| --- | --- |
-| **sensemaking** | `grilling` · `research` · `wayfinder` · `handoff` · `teach` · `to-questionnaire` · `wait-what` · `writing-for-agents` |
+| Plugin           | Skills                                                                                                                                                                                                                        |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **sensemaking**  | `grilling` · `research` · `wayfinder` · `handoff` · `teach` · `to-questionnaire` · `wait-what` · `writing-for-agents`                                                                                                         |
 | **software-dev** | `codebase-design` · `domain-modeling` · `grill-with-docs` · `improve-codebase-architecture` · `prototype` · `resolving-merge-conflicts` · `triage` · `wizard` · `developing-claude-code-plugins` · `working-with-claude-code` |
 
 `grill-with-docs` and `domain-modeling` sit with the code because both maintain ADRs and a glossary — project artifacts, not general ones. `writing-for-agents` is product-neutral.
@@ -81,9 +81,9 @@ Three routes, in ascending cost:
 
 ### 6.1 `diagnosing-bugs` — adopt, vendor, do not gate
 
-**The capability gap is real.** `superpowers:systematic-debugging` treats "Reproduce Consistently" as one bullet inside Phase 1. `diagnosing-bugs` makes the reproduction loop its entire Phase 1 — *"This is the skill. Everything else is mechanical"* — with ten ranked construction techniques, a tightening pass, a strategy for non-deterministic bugs, and an exit criterion that requires naming one command already run. It adds four things the other lacks entirely: minimisation to the smallest still-red scenario, three to five ranked falsifiable hypotheses shown before testing, a performance branch that measures before it logs, and tagged `[DEBUG-…]` instrumentation so cleanup is one grep.
+**The capability gap is real.** `superpowers:systematic-debugging` treats "Reproduce Consistently" as one bullet inside Phase 1. `diagnosing-bugs` makes the reproduction loop its entire Phase 1 — _"This is the skill. Everything else is mechanical"_ — with ten ranked construction techniques, a tightening pass, a strategy for non-deterministic bugs, and an exit criterion that requires naming one command already run. It adds four things the other lacks entirely: minimisation to the smallest still-red scenario, three to five ranked falsifiable hypotheses shown before testing, a performance branch that measures before it logs, and tagged `[DEBUG-…]` instrumentation so cleanup is one grep.
 
-**One audited instance supports it.** The 2026-08-25 coding-companion comparison — a working paper, in this repository's history at `347aba2` and in `eranroseman/research-vault` — records, of this repository's own work: *"the run's most expensive error class … maps onto its Phase-1 red-capable-loop criterion; systematic-debugging has no equivalent."*
+**One audited instance supports it.** The 2026-08-25 coding-companion comparison — a working paper, in this repository's history at `347aba2` and in `eranroseman/research-vault` — records, of this repository's own work: _"the run's most expensive error class … maps onto its Phase-1 red-capable-loop criterion; systematic-debugging has no equivalent."_
 
 **The collision was never measured and could not have been.** `diagnosing-bugs` has never been installed on this machine — absent from all three skill roots, both plugin caches, and the lockfile — so no session has ever held both in one catalog. Every claim about the trigger race is inference from two descriptions. The 2026-08-31 approval recorded in #60 and #75 is a **lapsed recommendation**: two of its three premises are dead, since the vendoring route it assumed was reversed on 2026-09-04 and its claim that `skillOverrides` cannot reach the skill is false on the route actually taken.
 
@@ -103,27 +103,27 @@ Round one, five discriminating scenarios by five replicates, returned **25/25 in
 
 Round two did. Six scenarios that attach `debug this`, `broken`, `throwing`, `slow`, `diagnose` and `failing` to deterministically reproducible bugs, plus two genuinely ambiguous prompts scored separately:
 
-| Scenario, all owned by `systematic-debugging` | Current | Rewritten |
-| --- | --- | --- |
-| "**Debug this**: NPE at line 42, every time I click Save" | 1/5 wrong | 0/5 |
-| "The build is **broken**. Fix it." | 1/5 wrong | 0/5 |
-| "**throwing** on empty input, deterministically" | 0/5 | 0/5 |
-| "Can you **diagnose** why the parser fails? Fails identically every run." | **5/5 wrong** | 0/5 |
-| "Two tests **failing** since my last commit, reproduces every run" | 0/5 | 0/5 |
-| **Total** | **7/25** | **0/25** |
+| Scenario, all owned by `systematic-debugging`                             | Current       | Rewritten |
+| ------------------------------------------------------------------------- | ------------- | --------- |
+| "**Debug this**: NPE at line 42, every time I click Save"                 | 1/5 wrong     | 0/5       |
+| "The build is **broken**. Fix it."                                        | 1/5 wrong     | 0/5       |
+| "**throwing** on empty input, deterministically"                          | 0/5           | 0/5       |
+| "Can you **diagnose** why the parser fails? Fails identically every run." | **5/5 wrong** | 0/5       |
+| "Two tests **failing** since my last commit, reproduces every run"        | 0/5           | 0/5       |
+| **Total**                                                                 | **7/25**      | **0/25**  |
 
-The failure concentrates where the description invites it: the bare word *diagnose* pulls `diagnosing-bugs` five times out of five onto a reproducible parser bug. On the ambiguous pair the current description is also unstable — a 3/2 split on one, and *"something's broken and I'm not sure where to start"* routed to `diagnosing-bugs` 5/5, which is backwards, since not knowing where to start is the front door's job. The rewritten description is stable and correct on both.
+The failure concentrates where the description invites it: the bare word _diagnose_ pulls `diagnosing-bugs` five times out of five onto a reproducible parser bug. On the ambiguous pair the current description is also unstable — a 3/2 split on one, and _"something's broken and I'm not sure where to start"_ routed to `diagnosing-bugs` 5/5, which is backwards, since not knowing where to start is the front door's job. The rewritten description is stable and correct on both.
 
-**Round three measured recall** — whether the skill fires when it is genuinely needed — on positives that deliberately avoid the new description's vocabulary: *"Sentry shows this crash twice a day, I have never once made it happen myself"*, *"git bisect points at a commit that only touches the README"*, *"two customers have reported it, we have never seen it internally"*. Two obvious reproducible bugs served as controls.
+**Round three measured recall** — whether the skill fires when it is genuinely needed — on positives that deliberately avoid the new description's vocabulary: _"Sentry shows this crash twice a day, I have never once made it happen myself"_, _"git bisect points at a commit that only touches the README"_, _"two customers have reported it, we have never seen it internally"_. Two obvious reproducible bugs served as controls.
 
-| | Current | Rewritten |
-| --- | --- | --- |
-| **Recall**, five scenarios | 24/25 | **25/25** |
-| **Control**, two scenarios | 7/10 | **10/10** |
+|                            | Current | Rewritten |
+| -------------------------- | ------- | --------- |
+| **Recall**, five scenarios | 24/25   | **25/25** |
+| **Control**, two scenarios | 7/10    | **10/10** |
 
 Across rounds two and three the rewritten description is **0 false positives in 35 negative trials and 25 of 25 on recall**. The current description misses one recall and three controls, two of them leaking to `test-driven-development` on a plain stack trace.
 
-**Two scenarios are excluded, and both were the author's error rather than the descriptions'.** One sent 5/5 to `test-driven-development` in *both* arms because it stated the cause was already identified, which makes writing a failing test first correct. The other — *"I've tried three different fixes and none of them helped"* — is `systematic-debugging`'s documented territory: its body lists *"You've already tried multiple fixes"* and *"Previous fix didn't work"* under **Use this ESPECIALLY when**. Both expectations were written without reading the competing skill's body first, which is the check that would have caught them.
+**Two scenarios are excluded, and both were the author's error rather than the descriptions'.** One sent 5/5 to `test-driven-development` in _both_ arms because it stated the cause was already identified, which makes writing a failing test first correct. The other — _"I've tried three different fixes and none of them helped"_ — is `systematic-debugging`'s documented territory: its body lists _"You've already tried multiple fixes"_ and _"Previous fix didn't work"_ under **Use this ESPECIALLY when**. Both expectations were written without reading the competing skill's body first, which is the check that would have caught them.
 
 **Limits of this evidence.** It measures description-based selection with the descriptions in context, not a live catalogue on either harness. Two of eighty round-three cells returned with the safety classifier unavailable; both were current-description cells and both returned a bare skill name, so the risk to the result is negligible but it is recorded rather than dropped. It is a proxy, and a strong one for the mechanism at issue — the model reads descriptions and picks — but a live confirmation on both harnesses belongs to [#23](https://github.com/eranroseman/agent-plugins/issues/23)'s campaign.
 
@@ -139,7 +139,7 @@ Option E from #60 — restructuring `systematic-debugging` into a three-path cla
 
 The skill defends its own cost by asking the model to talk itself out of running — prose at the bottom of the ladder. `disable-model-invocation: true` makes it structural, and it places `adhd` with the five gated escalation skills already on the roster: `wayfinder`, `handoff`, `teach`, `to-questionnaire`, `wait-what`. All five are gated upstream, verified on this machine. That is the class it belongs to.
 
-**Gating dissolves two collisions, not one.** Its description claims *"brainstorm/ideate intents, or open-ended design, architecture, naming, API/SDK surface"*, which runs into `software-dev:brainstorming`, and *"fuzzy-debugging decisions"*, which runs into `systematic-debugging`. A gated skill competes for neither. The parent spec's standing instruction — that `adhd`, if adopted, is checked against `brainstorming`'s narrowed description — is discharged this way rather than by a second rewrite.
+**Gating dissolves two collisions, not one.** Its description claims _"brainstorm/ideate intents, or open-ended design, architecture, naming, API/SDK surface"_, which runs into `software-dev:brainstorming`, and _"fuzzy-debugging decisions"_, which runs into `systematic-debugging`. A gated skill competes for neither. The parent spec's standing instruction — that `adhd`, if adopted, is checked against `brainstorming`'s narrowed description — is discharged this way rather than by a second rewrite.
 
 Its description is also **over 500 characters** against Codex's 122, so Codex sees a fragment ending inside the cognitive-frame list. On Codex the equivalent gate is `policy.allow_implicit_invocation: false`; the repository ships no `agents/` directory, so `agents/openai.yaml` is authored here.
 
@@ -161,16 +161,16 @@ Three edits follow:
 
 - `tests/test-skills-pin.sh` asserts `[ "$total" -eq 18 ]`; it becomes 19.
 - `bin/upstream-watch`'s prerelease filter matches `-alpha|-beta`. `archify` uses `-dev.N` and publishes a parallel `archify-dsh-*` tag series, so an unwidened filter will pick a dev tag as "newest" and report false drift indefinitely.
-- **`archify` performs a version check per invocation.** Read at the source rather than taken from the ticket, it is milder than "phones home" suggests: the skill says to run the packaged checker once and *"if the command cannot run, continue without mentioning the check"*, and *"this workflow never downloads, installs, or executes an update, and silence is never consent."* A notification that degrades silently and cannot act on what it finds.
+- **`archify` performs a version check per invocation.** Read at the source rather than taken from the ticket, it is milder than "phones home" suggests: the skill says to run the packaged checker once and _"if the command cannot run, continue without mentioning the check"_, and _"this workflow never downloads, installs, or executes an update, and silence is never consent."_ A notification that degrades silently and cannot act on what it finds.
 
 **The disposition is a README instruction, and the ladder requires saying why.** Higher rungs, in order, and why each was not taken:
 
-  - *Do not adopt it* — eliminates the behaviour by losing the capability.
-  - *Vendor and strip the update-awareness section* — an adaptation, so route 3. It forks a maintained project and takes ownership of a 137-line skill plus `bin/`, `scripts/`, `assets/` and `test/`, to remove a notification.
-  - *`bin/setup` sets `ARCHIFY_UPDATE_CHECK_DISABLED=1`* — contradicts §7.6 of sub-project 2, which deliberately does not set the telemetry variable because a network-behaviour decision belongs to the operator. The same reasoning applies here and was not re-litigated.
-  - *`bin/doctor` reports the variable's state* — available, cheap, and the shape of the existing telemetry note. Deferred as not yet worth a check.
+- _Do not adopt it_ — eliminates the behaviour by losing the capability.
+- _Vendor and strip the update-awareness section_ — an adaptation, so route 3. It forks a maintained project and takes ownership of a 137-line skill plus `bin/`, `scripts/`, `assets/` and `test/`, to remove a notification.
+- _`bin/setup` sets `ARCHIFY_UPDATE_CHECK_DISABLED=1`_ — contradicts §7.6 of sub-project 2, which deliberately does not set the telemetry variable because a network-behaviour decision belongs to the operator. The same reasoning applies here and was not re-litigated.
+- _`bin/doctor` reports the variable's state_ — available, cheap, and the shape of the existing telemetry note. Deferred as not yet worth a check.
 
-  So: the README documents the behaviour and the variable that disables it. **This is prose, chosen knowingly and provisionally**, and it upgrades to the doctor check the first time it is not enough.
+So: the README documents the behaviour and the variable that disables it. **This is prose, chosen knowingly and provisionally**, and it upgrades to the doctor check the first time it is not enough.
 
 - **The pin must be re-resolved, not copied.** The survey read tag `v2.16.0`; the repository was pushed 2026-09-06 and its skill metadata reads `version: "2.17"`. The plan resolves the tag against the source rather than inheriting a ticket's number.
 
@@ -212,7 +212,7 @@ This design creates three such cases: this pair, `writing-clearly-and-concisely@
 
 **The check is derived, not declared.** A hand-maintained table of "if this is installed, ours is duplicated" can only know what someone remembered to add, and goes stale silently — a rule where a mechanism is available. `bin/doctor` already reads every route: `upstream/skills.json`, the vendored skill directories, `claude plugin list`, `codex plugin list --json`, and the three skill roots. A duplicate is computable from what it already has.
 
-**By resolved target, not by name.** `~/.agents/skills` holds 31 entries, thirteen of them symlinks into the pinned `superpowers` clone — same name, same target, harmless. The hazard is one name resolving to two *different* trees, which is precisely the D1 incident: an adapted and an unadapted `setup-matt-pocock-skills` installed together, where a bare invocation reached the wrong one and wrote its block to the wrong file.
+**By resolved target, not by name.** `~/.agents/skills` holds 31 entries, thirteen of them symlinks into the pinned `superpowers` clone — same name, same target, harmless. The hazard is one name resolving to two _different_ trees, which is precisely the D1 incident: an adapted and an unadapted `setup-matt-pocock-skills` installed together, where a bare invocation reached the wrong one and wrote its block to the wrong file.
 
 **Three rules, each earned from a measured false positive.** The naive form — name to resolved target, report any name with more than one — was implemented and run against this machine on 2026-09-06, while `bin/doctor` reported clean. It fired **25 times**.
 
@@ -248,7 +248,7 @@ The evidence is this design's own construction. Two survey passes ran 143 agents
 
 Authored. After `harness-backup` is deleted this repository is their only version, so there is no upstream, no provenance header and no drift test. They move together: the inspector is dispatched by the skill and by nothing else.
 
-**`permissionMode: plan` is deleted from the inspector.** It guards nothing. The tool grant is `Read, Bash, WebFetch, WebSearch` — no write tool for plan mode to block — and the only write vector is Bash, which plan mode permits. Read-only is enforced where it already was: by the tool grant, and by a body that says *"Never create, edit, delete, stage, commit, switch branches, alter refs, install software, or change repository state."* No commit in the file's history explains the field. Deleting it also dissolves a migration hazard, since Claude Code's handling of `permissionMode` for plugin-shipped agents no longer matters to anything.
+**`permissionMode: plan` is deleted from the inspector.** It guards nothing. The tool grant is `Read, Bash, WebFetch, WebSearch` — no write tool for plan mode to block — and the only write vector is Bash, which plan mode permits. Read-only is enforced where it already was: by the tool grant, and by a body that says _"Never create, edit, delete, stage, commit, switch branches, alter refs, install software, or change repository state."_ No commit in the file's history explains the field. Deleting it also dissolves a migration hazard, since Claude Code's handling of `permissionMode` for plugin-shipped agents no longer matters to anything.
 
 **A cost this placement carries, priced here rather than discovered later.** A Codex plugin cannot bundle a subagent declaratively — its manifest's components are skills, hooks, MCP servers, apps and interface. So on Codex, `consistency-audit` degrades to a single-reader, single-pass audit, losing the two-independent-readers property its own Iron Law rests on. The skill states that degradation in its own text rather than failing silently.
 
@@ -377,37 +377,37 @@ The two Codex cache directories hold the same five and two. `~/.agents/skills/wr
 
 **One expectation in §10 step 6 was wrong, and the gate is right.** It expects `codex exec` to list `consistency-audit` and `adhd` among the skills available to it. Neither appears. The two absent are exactly the two gated ones, and `policy.allow_implicit_invocation: false` is what keeps them out of the implicit-invocation list — both are installed and present in the Codex cache. The step should expect a gated skill not to be offered; its appearance would mean the Codex half of the gate was not working. What did list: `archify`, `sensemaking:rethink-audit`, `software-dev:diagnosing-bugs`, `software-dev:finding-duplicate-functions`, `writing-clearly-and-concisely`.
 
-**The same correction does not transfer to the Claude bullet, and the difference is the point of the two gates.** Codex's `policy.allow_implicit_invocation: false` removes a skill from the list offered to the model, which is why `consistency-audit` and `adhd` are absent above. Claude's `disable-model-invocation: true` stops the *model* reaching for a skill but leaves the *user* able to type it, so all three gated skills — `adhd`, `consistency-audit` and `setup-repository` — should still appear in a user's slash menu while being absent from any model-side list. §10 step 6's Claude bullet asks about the menu and is therefore correct as written; a model-side inventory is the wrong instrument for it, and that bullet is the one item of the gate no agent can self-certify. The maintainer checked the menu and confirmed it on 2026-09-06: no bare `/consistency-audit`, `/rethink` or `/rethink-audit` remains. That closes the last open item of §10's gate, and with it the plan.
+**The same correction does not transfer to the Claude bullet, and the difference is the point of the two gates.** Codex's `policy.allow_implicit_invocation: false` removes a skill from the list offered to the model, which is why `consistency-audit` and `adhd` are absent above. Claude's `disable-model-invocation: true` stops the _model_ reaching for a skill but leaves the _user_ able to type it, so all three gated skills — `adhd`, `consistency-audit` and `setup-repository` — should still appear in a user's slash menu while being absent from any model-side list. §10 step 6's Claude bullet asks about the menu and is therefore correct as written; a model-side inventory is the wrong instrument for it, and that bullet is the one item of the gate no agent can self-certify. The maintainer checked the menu and confirmed it on 2026-09-06: no bare `/consistency-audit`, `/rethink` or `/rethink-audit` remains. That closes the last open item of §10's gate, and with it the plan.
 
 ## 11. Positions from the tickets not adopted
 
-| Position | Disposition | Why |
-| --- | --- | --- |
-| `diagnosing-bugs` at rung 4, hard-gated (#60, #75) | Not adopted | A lapsed recommendation. Two of three premises dead, and gating charges attention on every hard bug for the outcome rejection gives free |
-| Option E, the three-path classifier in `systematic-debugging` (#60) | Not adopted | Unexecutable against a `git-subdir` install of unmodified upstream |
-| `archify` is unpinnable (#110) | **Refuted** | `#` is the ref selector; `bin/setup:441` has used it since 2026-09-05 |
-| Fork `UditAkhourii/adhd` (#111 rung 2) | Not adopted | Buys merge flow for one skill file at the price of a repository and permanent merge duty. The survey's supporting claim, that the file is unchanged since 2026-06-04, is dropped: the repository was pushed 2026-08-29 and per-file staleness was not verified |
-| `adhd` cannot use skills.sh (#80, #111) | **Refuted** | Both inferred install shape from repository shape; upstream prescribes `npx skills add` |
-| The backup-to-intent inversion (#64) | Not adopted | Its mechanism was declined in sub-project 2's §3 and §7.6 |
-| A `--capture` mode (#62) | Not adopted | Moot once nothing is backed up |
-| `research` covers prior-art search | **Refuted** | Twelve lines; no corpus routing, citation graph, screening or gate |
-| `consistency-audit` versus adversarial-verification as a boundary (#79) | **Closed** | No second party exists, and none is wanted: 143 agents in this design's own surveys performed adversarial verification on prompt alone, downgrading 61 claims |
-| An adversarial-verification skill | Not adopted | The capability is reliable on request; a skill would codify what already works |
+| Position                                                                | Disposition | Why                                                                                                                                                                                                                                                            |
+| ----------------------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `diagnosing-bugs` at rung 4, hard-gated (#60, #75)                      | Not adopted | A lapsed recommendation. Two of three premises dead, and gating charges attention on every hard bug for the outcome rejection gives free                                                                                                                       |
+| Option E, the three-path classifier in `systematic-debugging` (#60)     | Not adopted | Unexecutable against a `git-subdir` install of unmodified upstream                                                                                                                                                                                             |
+| `archify` is unpinnable (#110)                                          | **Refuted** | `#` is the ref selector; `bin/setup:441` has used it since 2026-09-05                                                                                                                                                                                          |
+| Fork `UditAkhourii/adhd` (#111 rung 2)                                  | Not adopted | Buys merge flow for one skill file at the price of a repository and permanent merge duty. The survey's supporting claim, that the file is unchanged since 2026-06-04, is dropped: the repository was pushed 2026-08-29 and per-file staleness was not verified |
+| `adhd` cannot use skills.sh (#80, #111)                                 | **Refuted** | Both inferred install shape from repository shape; upstream prescribes `npx skills add`                                                                                                                                                                        |
+| The backup-to-intent inversion (#64)                                    | Not adopted | Its mechanism was declined in sub-project 2's §3 and §7.6                                                                                                                                                                                                      |
+| A `--capture` mode (#62)                                                | Not adopted | Moot once nothing is backed up                                                                                                                                                                                                                                 |
+| `research` covers prior-art search                                      | **Refuted** | Twelve lines; no corpus routing, citation graph, screening or gate                                                                                                                                                                                             |
+| `consistency-audit` versus adversarial-verification as a boundary (#79) | **Closed**  | No second party exists, and none is wanted: 143 agents in this design's own surveys performed adversarial verification on prompt alone, downgrading 61 claims                                                                                                  |
+| An adversarial-verification skill                                       | Not adopted | The capability is reliable on request; a skill would codify what already works                                                                                                                                                                                 |
 
 ## 12. Mechanism claims and their sources
 
-| Claim | Source |
-| --- | --- |
+| Claim                                                                         | Source                                                                          |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | `git-subdir` copies a whole subdirectory regardless of the `skills` allowlist | `brainstorming` present in this machine's `superpowers` cache despite exclusion |
-| Codex plugins cannot bundle a subagent declaratively | The Codex plugin manifest's component list |
-| `skillOverrides: user-invocable-only` reaches skills.sh skills | Claude Code 2.1.263, read on this machine |
-| A hand-added `policy:` block in an installed skill is clobbered on update | The skills.sh lockfile hash-tracks skill folders |
-| Codex truncates descriptions at ~122 characters | Measured 2026-09-05, 198-character source |
-| `#` is the skills.sh ref selector | `bin/setup:441`, in use since 2026-09-05 |
-| `upstream-watch` runs correctly on demand | Run 34048034312, 2026-09-06, 10s, success |
-| `diagnosing-bugs` has never been installed here | Absent from three skill roots, both plugin caches, and the lockfile |
-| The inspector outweighs its skill 5:1 in invocations | Session transcript archive |
-| `permissionMode` is set by no shipped plugin agent on this machine | caveman ×3, codex ×1, all absent |
+| Codex plugins cannot bundle a subagent declaratively                          | The Codex plugin manifest's component list                                      |
+| `skillOverrides: user-invocable-only` reaches skills.sh skills                | Claude Code 2.1.263, read on this machine                                       |
+| A hand-added `policy:` block in an installed skill is clobbered on update     | The skills.sh lockfile hash-tracks skill folders                                |
+| Codex truncates descriptions at ~122 characters                               | Measured 2026-09-05, 198-character source                                       |
+| `#` is the skills.sh ref selector                                             | `bin/setup:441`, in use since 2026-09-05                                        |
+| `upstream-watch` runs correctly on demand                                     | Run 34048034312, 2026-09-06, 10s, success                                       |
+| `diagnosing-bugs` has never been installed here                               | Absent from three skill roots, both plugin caches, and the lockfile             |
+| The inspector outweighs its skill 5:1 in invocations                          | Session transcript archive                                                      |
+| `permissionMode` is set by no shipped plugin agent on this machine            | caveman ×3, codex ×1, all absent                                                |
 
 Two claims are marked weaker than their sources suggested. Plan mode's exact Bash behaviour was **not** read from the installed binary, which could not be located; §7.1's conclusion rests on the tool grant and the body, not on that inference. And deleting `harness-backup` costs the **restore path**, not the current content of the two live configuration files, which the survey overstated.
 

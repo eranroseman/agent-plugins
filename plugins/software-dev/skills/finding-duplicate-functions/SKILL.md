@@ -2,6 +2,7 @@
 name: finding-duplicate-functions
 description: Find functions that serve the same purpose under different names. Use when auditing a Python codebase for semantic duplication, before a consolidation refactor, or when agent-written code is suspected of reimplementing helpers it could have imported.
 ---
+
 <!-- Forked from https://github.com/obra/superpowers-lab at commit 51111f74f24058117752d9aa917cb19859f8ec86
      path: skills/finding-duplicate-functions/
      MIT, (c) 2025 Jesse Vincent. A rewritten fork, not a copy: scripts/categorize-prompt.md and
@@ -13,8 +14,8 @@ description: Find functions that serve the same purpose under different names. U
 
 Agent-written codebases accumulate semantic duplicates: helpers implemented
 again because importing the existing one was never considered. Copy-paste
-detectors find syntactic duplicates. This finds *same intent, different name* —
-and the expensive case underneath it, *same name, different contract*.
+detectors find syntactic duplicates. This finds _same intent, different name_ —
+and the expensive case underneath it, _same name, different contract_.
 
 Fork of `finding-duplicate-functions` in
 [obra/superpowers-lab](https://github.com/obra/superpowers-lab) (MIT). The

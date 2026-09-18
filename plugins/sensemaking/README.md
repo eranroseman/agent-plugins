@@ -23,9 +23,9 @@ declares, so the day one of them needs a change its placement is already
 settled and is not relitigated under deadline. Nothing moves on this table
 until a skill must change; a skill is copied into a plugin only then.
 
-| Plugin | Skills |
-| --- | --- |
-| **sensemaking** | `grilling` · `research` · `wayfinder` · `handoff` · `teach` · `to-questionnaire` · `wait-what` · `writing-for-agents` |
+| Plugin           | Skills                                                                                                                                                                                                                        |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **sensemaking**  | `grilling` · `research` · `wayfinder` · `handoff` · `teach` · `to-questionnaire` · `wait-what` · `writing-for-agents`                                                                                                         |
 | **software-dev** | `codebase-design` · `domain-modeling` · `grill-with-docs` · `improve-codebase-architecture` · `prototype` · `resolving-merge-conflicts` · `triage` · `wizard` · `developing-claude-code-plugins` · `working-with-claude-code` |
 
 `grill-with-docs` and `domain-modeling` sit with the code because both
@@ -39,7 +39,7 @@ maintain ADRs and a glossary — project artifacts, not general ones.
 - `adhd`: parallel divergent ideation under five isolated cognitive frames,
   scored, clustered and deepened. About ten agent calls and five to ten times
   the cost of one answer, so it is user-invoked on both harnesses: `/adhd
-  <problem>`. Vendored from `UditAkhourii/adhd` at a pinned commit; the
+<problem>`. Vendored from `UditAkhourii/adhd` at a pinned commit; the
   provenance header at the top of `SKILL.md` names it and the two local
   changes.
 

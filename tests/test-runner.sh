@@ -17,14 +17,14 @@ R="$T/repo"
 mkdir -p "$R/tests" || fail "could not create $R/tests"
 cp "$REPO_ROOT/tests/run.sh" "$R/tests/run.sh" || fail "could not copy run.sh"
 cp "$REPO_ROOT/tests/tools.txt" "$R/tests/tools.txt" || fail "could not copy tools.txt"
-printf 'tests/results.tsv\n' > "$R/.gitignore" || fail "could not write .gitignore"
-printf '#!/usr/bin/env bash\n# passes, and says so\nprintf "alpha ok\\n"\n' > "$R/tests/test-a-pass.sh" \
+printf 'tests/results.tsv\n' >"$R/.gitignore" || fail "could not write .gitignore"
+printf '#!/usr/bin/env bash\n# passes, and says so\nprintf "alpha ok\\n"\n' >"$R/tests/test-a-pass.sh" \
   || fail "could not write test-a-pass.sh"
-printf '#!/usr/bin/env bash\n# fails with status 3\nprintf "beta broke\\n"\nexit 3\n' > "$R/tests/test-b-fail.sh" \
+printf '#!/usr/bin/env bash\n# fails with status 3\nprintf "beta broke\\n"\nexit 3\n' >"$R/tests/test-b-fail.sh" \
   || fail "could not write test-b-fail.sh"
-printf '#!/usr/bin/env bash\n# needs: claude\nexit 0\n' > "$R/tests/test-c-needs-claude.sh" \
+printf '#!/usr/bin/env bash\n# needs: claude\nexit 0\n' >"$R/tests/test-c-needs-claude.sh" \
   || fail "could not write test-c-needs-claude.sh"
-printf '#!/usr/bin/env bash\n# needs: shfmt\nexit 0\n' > "$R/tests/test-d-needs-shfmt.sh" \
+printf '#!/usr/bin/env bash\n# needs: shfmt\nexit 0\n' >"$R/tests/test-d-needs-shfmt.sh" \
   || fail "could not write test-d-needs-shfmt.sh"
 git -C "$R" init -q || fail "git init failed in $R"
 git -C "$R" add -A || fail "git add failed in $R"
@@ -39,7 +39,7 @@ for t in bash dirname rm git jq awk grep head tail tee tr date mktemp cat; do
   p="$(command -v "$t" 2>/dev/null)" || fail "the fixture needs $t on PATH"
   ln -sf "$p" "$BIN/$t" || fail "could not link $t into $BIN"
 done
-printf '#!/usr/bin/env bash\nprintf "v0.0.1\\n"\n' > "$BIN/shfmt" || fail "could not write the shfmt stub"
+printf '#!/usr/bin/env bash\nprintf "v0.0.1\\n"\n' >"$BIN/shfmt" || fail "could not write the shfmt stub"
 chmod +x "$BIN/shfmt" || fail "could not make the shfmt stub executable"
 NOJQ="$T/bin-nojq"
 mkdir -p "$NOJQ" || fail "could not create $NOJQ"
@@ -62,8 +62,7 @@ for line in \
   'FAIL tests/test-b-fail.sh' \
   'SKIP tests/test-c-needs-claude.sh (needs claude)' \
   'SKIP tests/test-d-needs-shfmt.sh (needs shfmt 3.14.1; found 0.0.1)' \
-  '1 passed, 1 failed, 2 skipped for want of: claude, shfmt 3.14.1 (found 0.0.1)'
-do
+  '1 passed, 1 failed, 2 skipped for want of: claude, shfmt 3.14.1 (found 0.0.1)'; do
   printf '%s\n' "$out" | grep -qxF -- "$line" || fail "missing line: $line"$'\n'"$out"
 done
 RES="$R/tests/results.tsv"
@@ -74,8 +73,7 @@ for row in \
   "$(printf 'tests/test-a-pass.sh\tPASS\t0\talpha ok')" \
   "$(printf 'tests/test-b-fail.sh\tFAIL\t3\tbeta broke')" \
   "$(printf 'tests/test-c-needs-claude.sh\tSKIP\t-\tneeds claude')" \
-  "$(printf 'tests/test-d-needs-shfmt.sh\tSKIP\t-\tneeds shfmt 3.14.1; found 0.0.1')"
-do
+  "$(printf 'tests/test-d-needs-shfmt.sh\tSKIP\t-\tneeds shfmt 3.14.1; found 0.0.1')"; do
   grep -qxF -- "$row" "$RES" || fail "missing row in results.tsv: $row"$'\n'"$(cat "$RES")"
 done
 [ "$(grep -c . "$RES")" -eq 5 ] || fail "results.tsv should hold a header and four rows:"$'\n'"$(cat "$RES")"
@@ -86,22 +84,21 @@ if out="$(env PATH="$BIN" /bin/bash "$R/tests/run.sh" --no-skip 2>&1)"; then sta
 for line in \
   'FAIL tests/test-c-needs-claude.sh (needs claude)' \
   'FAIL tests/test-d-needs-shfmt.sh (needs shfmt 3.14.1; found 0.0.1)' \
-  '1 passed, 3 failed, 0 skipped for want of: claude, shfmt 3.14.1 (found 0.0.1)'
-do
+  '1 passed, 3 failed, 0 skipped for want of: claude, shfmt 3.14.1 (found 0.0.1)'; do
   printf '%s\n' "$out" | grep -qxF -- "$line" || fail "missing line under --no-skip: $line"$'\n'"$out"
 done
 grep -qxF -- "$(printf 'tests/test-c-needs-claude.sh\tFAIL\t-\tneeds claude')" "$RES" \
   || fail "under --no-skip the result row must read FAIL:"$'\n'"$(cat "$RES")"
 
 # 4. A dirty tree is named as such.
-printf 'scratch\n' > "$R/untracked" || fail "could not dirty the scratch tree"
+printf 'scratch\n' >"$R/untracked" || fail "could not dirty the scratch tree"
 env PATH="$BIN" /bin/bash "$R/tests/run.sh" >/dev/null 2>&1 || true
 sed -n 1p "$RES" | grep -qE "^# $sha dirty [0-9]{4}-" \
   || fail "the header must say dirty when git status is non-empty: $(sed -n 1p "$RES")"
 rm -f "$R/untracked"
 
 # 5. A need no probe knows is exit 2, naming the test and the need.
-printf '#!/usr/bin/env bash\n# needs: nosuchtool\nexit 0\n' > "$R/tests/test-e-unknown.sh" \
+printf '#!/usr/bin/env bash\n# needs: nosuchtool\nexit 0\n' >"$R/tests/test-e-unknown.sh" \
   || fail "could not write test-e-unknown.sh"
 if out="$(env PATH="$BIN" /bin/bash "$R/tests/run.sh" 2>&1)"; then status=0; else status=$?; fi
 [ "$status" -eq 2 ] || fail "an unknown need must exit 2, got $status:"$'\n'"$out"

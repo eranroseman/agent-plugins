@@ -13,8 +13,8 @@ V="$REPO_ROOT/plugins/software-dev/skills/setup-repository"
 [ -d "$V" ] || fail "missing $V"
 
 REF="v1.2.3"
-SHA="6acc160e4e0cd062dbbbd7a1b26ae92855edf07e"      # the commit v1.2.3 peels to
-TAG_OBJ="835450ef244ab7335f75d95b83e7d979eae22a6d"  # v1.2.3 is annotated; ls-remote prints this
+SHA="6acc160e4e0cd062dbbbd7a1b26ae92855edf07e"     # the commit v1.2.3 peels to
+TAG_OBJ="835450ef244ab7335f75d95b83e7d979eae22a6d" # v1.2.3 is annotated; ls-remote prints this
 
 d="$(mktemp -d)"
 trap 'rm -rf "$d"' EXIT
@@ -40,14 +40,14 @@ diff <(cd "$U" && find . -type f | sort) <(cd "$V" && find . -type f | sort) \
 # The five seed templates: identical bytes. SKILL.md and agents/openai.yaml
 # carry the declared local changes and are checked separately below.
 while IFS= read -r f; do
-  case "$f" in ./SKILL.md|./agents/openai.yaml) continue ;; esac
+  case "$f" in ./SKILL.md | ./agents/openai.yaml) continue ;; esac
   cmp -s "$U/$f" "$V/$f" || fail "$f differs from upstream; templates are taken byte-for-byte"
 done < <(cd "$V" && find . -type f | sort)
 
 # agents/openai.yaml: one line differs, the Codex display name, because the
 # skill is renamed. Everything else is upstream's.
 diff <(grep -v '^  display_name:' "$U/agents/openai.yaml") \
-     <(grep -v '^  display_name:' "$V/agents/openai.yaml") \
+  <(grep -v '^  display_name:' "$V/agents/openai.yaml") \
   || fail "agents/openai.yaml differs from upstream outside display_name"
 grep -qx '  display_name: "Setup Repository"' "$V/agents/openai.yaml" \
   || fail "agents/openai.yaml must carry the renamed Codex display name"
@@ -105,7 +105,7 @@ strip_regions() {
       $0 == a { skip = 1 }
       skip != 1 { print }
       $0 == b && skip == 1 { skip = 0 }
-    ' "$work" > "$next" || fail "$label: awk failed while stripping '$1'"
+    ' "$work" >"$next" || fail "$label: awk failed while stripping '$1'"
     [ -s "$next" ] || fail "$label: stripping '$1' left nothing"
     mv "$next" "$work" || fail "$label: could not advance the working copy"
     shift 2
@@ -117,7 +117,7 @@ strip_regions() {
 # section before that heading, so ending at Section D's last line would leave
 # our side one blank line longer. Region 5 likewise ends at the paragraph after
 # the fenced block, because ours adds prose there.
-sed '1,5d' "$U/SKILL.md" > "$d/up.md" || fail "could not strip upstream frontmatter"
+sed '1,5d' "$U/SKILL.md" >"$d/up.md" || fail "could not strip upstream frontmatter"
 up_body="$(strip_regions upstream "$d/up.md" \
   "# Setup Matt Pocock's Skills" \
   "# Setup Matt Pocock's Skills" \
@@ -132,7 +132,7 @@ up_body="$(strip_regions upstream "$d/up.md" \
   '```markdown' \
   'Include the `### Triage labels` sub-block, and write `docs/agents/triage-labels.md`, only when `triage` is installed and Section B ran. When it isn'"'"'t, both are omitted.')"
 
-sed '1,13d' "$V/SKILL.md" > "$d/ours.md" || fail "could not strip our frontmatter and header"
+sed '1,13d' "$V/SKILL.md" >"$d/ours.md" || fail "could not strip our frontmatter and header"
 our_body="$(strip_regions vendored "$d/ours.md" \
   '# Setup Repository' \
   '# Setup Repository' \
@@ -206,7 +206,10 @@ done
 bt='`'
 available="$(
   jq -r '[.sources[].skills[]] | .[]' "$REPO_ROOT/upstream/skills.json"
-  for d in "$REPO_ROOT"/plugins/*/skills/*/; do d="${d%/}"; printf '%s\n' "${d##*/}"; done
+  for d in "$REPO_ROOT"/plugins/*/skills/*/; do
+    d="${d%/}"
+    printf '%s\n' "${d##*/}"
+  done
 )"
 named=0
 while IFS= read -r s; do
@@ -214,7 +217,10 @@ while IFS= read -r s; do
   named=$((named + 1))
   grep -qxF -- "$s" <<<"$available" \
     || fail "SKILL.md names \`$s\`, which is neither declared in upstream/skills.json nor vendored here"
-done < <(for d in "$U"/../*/; do d="${d%/}"; printf '%s\n' "${d##*/}"; done)
+done < <(for d in "$U"/../*/; do
+  d="${d%/}"
+  printf '%s\n' "${d##*/}"
+done)
 [ "$named" -gt 0 ] || fail "SKILL.md names no upstream skill at all; the resolution check went vacuous"
 
 # The LICENSE's third provenance notice names the same ref and commit.

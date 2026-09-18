@@ -23,7 +23,10 @@ done
 # listed + brainstorming must be the whole upstream set, so a new upstream skill
 # is a visible decision at the next sha bump rather than a silent omission.
 diff <(printf '%s\n' "${listed[@]}" brainstorming | sort) \
-     <(for d in "$UP"/skills/*/; do d="${d%/}"; printf '%s\n' "${d##*/}"; done | sort) \
+  <(for d in "$UP"/skills/*/; do
+    d="${d%/}"
+    printf '%s\n' "${d##*/}"
+  done | sort) \
   || fail "listed skills + brainstorming != upstream skill directories"
 
 want_version="$(jq -r '.plugins[] | select(.name == "superpowers") | .version' "$MARKETPLACE")"

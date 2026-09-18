@@ -18,9 +18,9 @@ PJ="plugins/software-dev/.claude-plugin/plugin.json"
 # not carry it, so its own update path is exercised here on every run.
 PJS="plugins/sensemaking/.claude-plugin/plugin.json"
 cp -a "$REPO_ROOT" "$W/repo" || fail "could not copy the checkout into $W"
-jq '.version = "0.0.1"' "$REPO_ROOT/$PJ" > "$W/lowered" || fail "could not lower the version"
+jq '.version = "0.0.1"' "$REPO_ROOT/$PJ" >"$W/lowered" || fail "could not lower the version"
 cp "$W/lowered" "$W/repo/$PJ" || fail "could not seed the lowered manifest"
-jq '.version = "0.0.1"' "$REPO_ROOT/$PJS" > "$W/lowered-s" || fail "could not lower sensemaking's version"
+jq '.version = "0.0.1"' "$REPO_ROOT/$PJS" >"$W/lowered-s" || fail "could not lower sensemaking's version"
 cp "$W/lowered-s" "$W/repo/$PJS" || fail "could not seed sensemaking's lowered manifest"
 
 mkdir -p "$W/home" || fail "could not create $W/home"
@@ -62,11 +62,11 @@ done < <(jq -r '.plugins[] | select(.source.source? == "git-subdir")
 BIN="$W/bin"
 mkdir -p "$BIN" || fail "could not create $BIN"
 for t in bash git jq node claude sed awk grep find date readlink basename dirname \
-         rm mv ln mkdir cp cat sha256sum; do
+  rm mv ln mkdir cp cat sha256sum; do
   p="$(command -v "$t" 2>/dev/null)" || fail "the fixture needs $t on PATH"
   ln -sf "$p" "$BIN/$t" || fail "could not link $t into $BIN"
 done
-printf '#!/usr/bin/env bash\nexit 1\n' > "$BIN/npx" || fail "could not write the npx stub"
+printf '#!/usr/bin/env bash\nexit 1\n' >"$BIN/npx" || fail "could not write the npx stub"
 chmod +x "$BIN/npx" || fail "could not make the npx stub executable"
 
 # A fully pinned lockfile, mirroring tests/test-doctor-faults.sh: without it,
@@ -77,12 +77,12 @@ jq '{version: 3,
      skills: (reduce (.sources[] as $s | $s.skills[] |
        {key: ., value: {source: $s.repo, ref: $s.ref}}) as $e ({}; . + {($e.key): $e.value})),
      dismissed: {}}' \
-  "$REPO_ROOT/upstream/skills.json" > "$W/home/.agents/.skill-lock.json" \
+  "$REPO_ROOT/upstream/skills.json" >"$W/home/.agents/.skill-lock.json" \
   || fail "could not synthesize a pinned lockfile"
 
 want="$(jq -r .version "$REPO_ROOT/$PJ")" || fail "could not read the declared version"
 if out="$(env HOME="$W/home" CODEX_HOME="$W/home/.codex" SD_MARKETPLACE_SOURCE="$W/repo" \
-    PATH="$BIN" bash "$SETUP" 2>&1)"; then status=0; else status=$?; fi
+  PATH="$BIN" bash "$SETUP" 2>&1)"; then status=0; else status=$?; fi
 got="$(jq -r '.plugins["software-dev@eranroseman"][0].version' \
   "$W/home/.claude/plugins/installed_plugins.json")" || fail "could not read the installed version"
 [ "$got" = "$want" ] \

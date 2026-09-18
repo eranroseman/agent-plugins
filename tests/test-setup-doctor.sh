@@ -93,7 +93,7 @@ printf '%s\n' "$out" | grep -q 'auto-update' \
 # A scratch HOME whose marketplace entry is a directory has no clone to compare,
 # so the staleness check must skip rather than fail.
 mkdir -p "$H/.claude/plugins" || fail "could not create $H/.claude/plugins"
-cat > "$H/.claude/plugins/known_marketplaces.json" <<JSON || fail "could not write known_marketplaces.json"
+cat >"$H/.claude/plugins/known_marketplaces.json" <<JSON || fail "could not write known_marketplaces.json"
 {"eranroseman":{"source":{"source":"directory","path":"$REPO_ROOT"},"installLocation":"$REPO_ROOT"}}
 JSON
 out="$(env HOME="$H" CODEX_HOME="$H/.codex" bash "$DOCTOR" 2>&1 || true)"
@@ -125,7 +125,7 @@ extract_scoped_blocks() {
 S="$H/scope.md"
 printf '%s\n' '# Title' '```' 'h1-before' '```' '## Install' '```' 'in-install' '# note' '```' \
   '### Sub' '```' 'in-sub' '```' '# Top' '```' 'after-h1' '```' '## Update' '```' 'in-update' '```' \
-  '## Other' '```' 'in-other' '```' > "$S" || fail "could not write $S"
+  '## Other' '```' 'in-other' '```' >"$S" || fail "could not write $S"
 got="$(extract_scoped_blocks "$S" | tr -d '\036' | grep . | tr '\n' ' ')" || true
 [ "$got" = "in-install # note in-sub in-update " ] \
   || fail "extract_scoped_blocks must keep an h3 inside its section and close on an h1 or h2; got '$got'"

@@ -15,7 +15,7 @@ Recorded 2026-08-29, resolving the provenance gap found by
 **Fork point: unknown.** It was not recorded when the fork was taken, and a
 shallow clone cannot recover it. Upstream's tip when this file was written was
 `51111f7` (`51111f74f24058117752d9aa917cb19859f8ec86`, 2026-06-01); every comparison below is against that commit, which is
-where the fork stands *now*, not where it started.
+where the fork stands _now_, not where it started.
 
 ## What changed
 
@@ -28,7 +28,7 @@ adding a structural pre-filter — and upstream's three shell scripts have no lo
 counterpart. `SKILL.md` was rewritten.
 
 `SKILL.md`'s phrase "the upstream extractor is TypeScript/JavaScript" means the
-language it *reads*, not the language it is *written in*. Both readings have
+language it _reads_, not the language it is _written in_. Both readings have
 appeared in notes about this skill; the extractor is bash, and it parses TS/JS.
 
 ## What is carried unchanged

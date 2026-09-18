@@ -20,8 +20,11 @@ U="$UP/skills/adhd"
 [ -f "$U/SKILL.md" ] || fail "upstream has no skills/adhd/SKILL.md at $SHA"
 
 # Upstream ships one file; ours adds the Codex policy file and nothing else.
-diff <(cd "$U" && find . -type f | sort; printf './agents/openai.yaml\n' | sort) \
-     <(cd "$V" && find . -type f | sort) \
+diff <(
+  cd "$U" && find . -type f | sort
+  printf './agents/openai.yaml\n' | sort
+) \
+  <(cd "$V" && find . -type f | sort) \
   || fail "file set is not upstream's plus agents/openai.yaml"
 
 # Frontmatter: lines 1, 2 and 4 are upstream's; 3 is ours; 5 is the gate; 6 closes.

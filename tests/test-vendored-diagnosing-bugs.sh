@@ -11,7 +11,7 @@ V="$REPO_ROOT/plugins/software-dev/skills/diagnosing-bugs"
 [ -d "$V" ] || fail "missing $V"
 
 REF="v1.2.3"
-SHA="6acc160e4e0cd062dbbbd7a1b26ae92855edf07e"   # the commit v1.2.3 peels to
+SHA="6acc160e4e0cd062dbbbd7a1b26ae92855edf07e" # the commit v1.2.3 peels to
 # One upstream state for the whole mattpocock set: the vendored copy and the
 # skills.sh install must come from the same tag, or a bump moves one without
 # the other.

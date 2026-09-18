@@ -26,7 +26,8 @@ for skill in "$REPO_ROOT"/plugins/*/skills/*/; do
   checked=$((checked + 1))
 
   # Gates travel as a pair.
-  claude_gated=false; codex_gated=false
+  claude_gated=false
+  codex_gated=false
   grep -qx 'disable-model-invocation: true' "$md" && claude_gated=true
   [ -f "$skill/agents/openai.yaml" ] && grep -qx '  allow_implicit_invocation: false' "$skill/agents/openai.yaml" && codex_gated=true
   [ "$claude_gated" = "$codex_gated" ] \
@@ -35,15 +36,18 @@ for skill in "$REPO_ROOT"/plugins/*/skills/*/; do
   # Qualified references resolve.
   while IFS= read -r ref; do
     [ -n "$ref" ] || continue
-    p="${ref%%:*}"; s="${ref#*:}"
+    p="${ref%%:*}"
+    s="${ref#*:}"
     case "$p" in
       superpowers)
         printf '%s\n' "$curated" | grep -qxF -- "$s" \
-          || fail "$plugin:$name names $ref, which the curated superpowers entry does not list" ;;
-      software-dev|sensemaking)
+          || fail "$plugin:$name names $ref, which the curated superpowers entry does not list"
+        ;;
+      software-dev | sensemaking)
         # A skill, or a plugin agent, which resolves by the same prefix.
         [ -f "$REPO_ROOT/plugins/$p/skills/$s/SKILL.md" ] || [ -f "$REPO_ROOT/plugins/$p/agents/$s.md" ] \
-          || fail "$plugin:$name names $ref, which $p ships neither as a skill nor as an agent" ;;
+          || fail "$plugin:$name names $ref, which $p ships neither as a skill nor as an agent"
+        ;;
     esac
   done < <(grep -o '\b\(superpowers\|software-dev\|sensemaking\):[a-z][a-z0-9-]*' "$md" | sort -u)
 done

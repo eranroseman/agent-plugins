@@ -45,7 +45,7 @@ These are not predictions. Each was run on 2026-09-05 against the real upstreams
 - `bin/setup` assembled from Tasks 4 to 9 (475 lines), plus `bin/doctor`, `bin/bump-superpowers` and `bin/upstream-watch`: `bash -n` and `shellcheck` clean on all four.
 - `tests/test-setup-doctor.sh` with every task's additions, and `tests/test-doctor-faults.sh` with all five faults, run against that assembled engine in a scratch repository: both exit 0, and the fault fixture repairs the links it is supposed to.
 
-Two defects were found that way and are already fixed in the text below: `readlink -f` canonicalises a *dangling* link rather than returning empty, so dangling detection uses `[ -e ]` on the link; and the fault fixture's restricted `PATH` has to carry `rm`, `mv`, `ln` and `mkdir`, or a repair fails for the wrong reason.
+Two defects were found that way and are already fixed in the text below: `readlink -f` canonicalises a _dangling_ link rather than returning empty, so dangling detection uses `[ -e ]` on the link; and the fault fixture's restricted `PATH` has to carry `rm`, `mv`, `ln` and `mkdir`, or a repair fails for the wrong reason.
 
 ### Deviations from the spec, decided while planning
 
@@ -82,9 +82,9 @@ Independent corroboration for the second: `~/.claude/plugins/installed_plugins.j
 
 ### B2. Neither harness is actually upgraded, only installed
 
-`ensure_claude` (Task 6 Step 3) reaches for the plugin with `claude plugin install`. Measured on 2.1.261, and observed live in this repository's own cutover on 2026-09-05: on an already-installed plugin, `install` prints "already installed", exits 0, and does **not** move the version. Only `claude plugin update <plugin> -y --scope user` does; that is what moved this machine from 0.1.0 to 0.3.0. `update` on a *not*-installed plugin exits 1, so the apply branch has to split on presence.
+`ensure_claude` (Task 6 Step 3) reaches for the plugin with `claude plugin install`. Measured on 2.1.261, and observed live in this repository's own cutover on 2026-09-05: on an already-installed plugin, `install` prints "already installed", exits 0, and does **not** move the version. Only `claude plugin update <plugin> -y --scope user` does; that is what moved this machine from 0.1.0 to 0.3.0. `update` on a _not_-installed plugin exits 1, so the apply branch has to split on presence.
 
-The same gap has a Codex twin. `ensure_codex` (Task 7 Step 3) compares presence only, and `codex plugin add` is Codex's *only* upgrade verb, so an installed plugin never moves. This machine holds `~/.codex/plugins/cache/eranroseman/software-development/0.3.0`, so after the 0.3.0 to 0.4.0 bump Codex would silently stay behind and never receive the vendored scaffolder. Spec §9 step 3 calls for exactly this re-add.
+The same gap has a Codex twin. `ensure_codex` (Task 7 Step 3) compares presence only, and `codex plugin add` is Codex's _only_ upgrade verb, so an installed plugin never moves. This machine holds `~/.codex/plugins/cache/eranroseman/software-development/0.3.0`, so after the 0.3.0 to 0.4.0 bump Codex would silently stay behind and never receive the vendored scaffolder. Spec §9 step 3 calls for exactly this re-add.
 
 A dependency is not carried by its parent's update, measured, so `superpowers@eranroseman` needs the same treatment when a §10 pin bump moves its declared version.
 
@@ -98,9 +98,9 @@ One important and eleven minor, each with its location and fix, are listed in th
 - **Task 5 Step 1, minor.** The restricted-`PATH` tool list omits `bash`, and apply mode ends by executing `bin/setup --check` as a file, so its shebang cannot resolve. Add `bash`.
 - **Task 5 Step 2, minor.** The predicted failure cannot occur: the fixture `git init`s the clone, so the skeleton's `ensure_clone` reports OK and the doctor exits 0 clean.
 - **Task 7 Step 3, minor.** Introduces a second environment override, `SD_CODEX_MARKETPLACE_SOURCE`, which the Global Constraints and Deviation D5 both say does not exist, and which nothing reads or sets. Delete it or amend D5.
-- **Task 9 Step 3, minor.** The stale-marketplace-clone check sits last inside `report_only`, while spec §7.1 states in bold that it is the doctor's *first* check.
+- **Task 9 Step 3, minor.** The stale-marketplace-clone check sits last inside `report_only`, while spec §7.1 states in bold that it is the doctor's _first_ check.
 - **Task 10 Step 3, minor.** The README places the thirteen symlinks inside the Codex-gated paragraph, but `main` calls `ensure_links` ungated.
-- **Task 13 Steps 2 and 7, important.** Gate S3's experiment is consumed before it can be observed: Step 2 installs 0.4.0 by explicit command, so by Step 7 there is nothing left for auto-update to deliver. Either toggle auto-update on *before* Step 2 and let it deliver the bump, or move S3 to the next release and say so.
+- **Task 13 Steps 2 and 7, important.** Gate S3's experiment is consumed before it can be observed: Step 2 installs 0.4.0 by explicit command, so by Step 7 there is nothing left for auto-update to deliver. Either toggle auto-update on _before_ Step 2 and let it deliver the bump, or move S3 to the next release and say so.
 
 **Provenance of this section.** Written by a reviewing session, not by the plan's author. Every claim above was re-verified by hand rather than taken from the review; the two blockers were reproduced against the live upstreams and this machine.
 
@@ -137,10 +137,12 @@ docs/superpowers/specs/2026-09-05-setup-and-drift-design.md   Task 13: gate resu
 ### Task 1: Declare the skills.sh set and test the pins
 
 **Files:**
+
 - Create: `upstream/skills.json`
 - Create: `tests/test-skills-pin.sh`
 
 **Interfaces:**
+
 - Consumes: nothing from other tasks.
 - Produces: `upstream/skills.json` with the shape `{"sources": [{"repo", "ref", "skills": [...]}, ...]}`. Task 8 reads it with `jq -r '.sources[] as $s | $s.skills[] | [$s.repo, $s.ref, .] | @tsv'`. Task 11 reads `.sources[] | [.repo, .ref] | @tsv`.
 
@@ -275,6 +277,7 @@ EOF
 ### Task 2: Vendor and adapt the repository scaffolder, and ship 0.4.0
 
 **Files:**
+
 - Create: `plugins/software-development/skills/setup-matt-pocock-skills/SKILL.md`
 - Create: `plugins/software-development/skills/setup-matt-pocock-skills/agents/openai.yaml`
 - Create: `plugins/software-development/skills/setup-matt-pocock-skills/domain.md`
@@ -291,6 +294,7 @@ EOF
 - Modify: `tests/test-codex-validate.sh` (one recorded exception, Deviation D7)
 
 **Interfaces:**
+
 - Consumes: nothing from other tasks.
 - Produces: the vendored skill directory; both manifests at `0.4.0`. Task 10's README edits assume the skill exists; Task 12 assumes the block shape this skill writes.
 
@@ -300,7 +304,7 @@ The test builds no expectation of its own for the unedited parts: it strips the 
 
 Create `tests/test-vendored-scaffolder.sh`:
 
-```bash
+````bash
 #!/usr/bin/env bash
 # The vendored scaffolder must equal mattpocock/skills at the ref this
 # repository declares, except for a provenance header and two regions of
@@ -403,7 +407,7 @@ grep -q "at tag $REF, commit $SHA" "$REPO_ROOT/plugins/software-development/LICE
   || fail "LICENSE provenance does not name $REF / $SHA"
 
 printf 'vendored-scaffolder: matches mattpocock/skills %s except header + two regions\n' "$REF"
-```
+````
 
 - [ ] **Step 2: Run the test to verify it fails**
 
@@ -474,7 +478,7 @@ Never leave the block in `CLAUDE.md` alone: a Claude-only carrier leaves Codex r
 
 - [ ] **Step 6: Replace region two, the Agent skills block and the paragraph after it**
 
-Region two runs from the opening ` ```markdown ` (upstream line 86) through the sentence that follows the closing fence, `Include the ### Triage labels sub-block, … When it isn't, both are omitted.` (upstream line 102). Replace all of it — the fence *and* that sentence — with what follows. Everything the adaptation adds has to live inside this region, or the drift test finds prose on our side with no counterpart upstream and fails.
+Region two runs from the opening ` ```markdown ` (upstream line 86) through the sentence that follows the closing fence, `Include the ### Triage labels sub-block, … When it isn't, both are omitted.` (upstream line 102). Replace all of it — the fence _and_ that sentence — with what follows. Everything the adaptation adds has to live inside this region, or the drift test finds prose on our side with no counterpart upstream and fails.
 
 The `### Git` and `### Task reports` bodies are fixed text; the four bracketed lines stay as instructions to the running skill. Wrap the final paragraph exactly as shown: its last line is the sentinel the drift test uses to find the end of the region.
 
@@ -690,10 +694,12 @@ Today the recipe that turns upstream's `using-superpowers` into `hooks/payload.m
 The extraction was verified on 2026-09-05 against the current `payload.md`: upstream's `hooks/session-start` builds the frame on one line, `session_context="…${using_superpowers_escaped}…"`, and splitting that line on the placeholder reproduces `payload.md` byte-for-byte. Upstream reads the skill with `$(cat …)`, which strips the trailing newline, so the recipe must too — hence `printf '%s' "$(sed …)"` rather than plain `sed`.
 
 **Files:**
+
 - Create: `bin/bump-superpowers`
 - Modify: `tests/test-hook.sh` (section `(1) payload exactness`)
 
 **Interfaces:**
+
 - Consumes: `tests/lib.sh`'s `fetch_upstream` and `upstream_sha` (unchanged).
 - Produces: `bin/bump-superpowers --emit-payload <clone-dir>`, which prints the payload to stdout and is the only copy of the recipe. Task 4's `tests/test-setup-doctor.sh` shellchecks this file too.
 
@@ -940,11 +946,13 @@ EOF
 ### Task 4: The engine skeleton — two entry points, prerequisites, declarations
 
 **Files:**
+
 - Create: `bin/setup`
 - Create: `bin/doctor`
 - Create: `tests/test-setup-doctor.sh`
 
 **Interfaces:**
+
 - Consumes: `upstream/skills.json` from Task 1.
 - Produces, for Tasks 5 to 9 to build on:
   - Reporting helpers `ok "msg"`, `bad "msg"` (increments `FAILURES`) and `die "msg"` (exit 2). The other three are staged like the variables, added by the task that first calls them: `did` in Task 5, `skip` in Task 6, `note` in Task 9.
@@ -1197,11 +1205,13 @@ EOF
 The README's `[ -e ]` guard misses three failure modes, all measured (§7.3): a dangling link makes `[ -e ]` false so `ln -s` then fails "File exists"; an existing directory symlink nests a link inside its target and exits 0; a regular file where a link belongs is reported as already existing and never repaired. The engine compares `readlink -f` against the intended target instead, and moves anything unexpected aside rather than deleting it.
 
 **Files:**
+
 - Modify: `bin/setup` (`ensure_clone`, `ensure_links`)
 - Create: `tests/test-doctor-faults.sh`
 - Modify: `.github/workflows/validate.yml` (guarantee shellcheck)
 
 **Interfaces:**
+
 - Consumes: the Task 4 helpers.
 - Produces: `declared_sha` and `curated_skills` helper functions, used again by Tasks 9 and 11; the fault fixture that Task 8 extends with a fifth fault.
 
@@ -1498,10 +1508,12 @@ EOF
 ### Task 6: The Claude half, and the end-to-end run in CI
 
 **Files:**
+
 - Modify: `bin/setup` (`ensure_claude`)
 - Modify: `.github/workflows/validate.yml` (a second job)
 
 **Interfaces:**
+
 - Consumes: Task 4's helpers, `MARKETPLACE_SOURCE`.
 - Produces: nothing other tasks read. The CI job is the automated half of gate S1.
 
@@ -1688,10 +1700,12 @@ EOF
 Measured 2026-09-05: `codex plugin list` prints a table whose first column is `<plugin>@<marketplace>` and whose status column reads `installed, enabled` or `not installed`; `codex plugin marketplace list` prints `MARKETPLACE` and `ROOT` columns. Neither reads `config.toml`, which §7.4 forbids as an installation check because `marketplace remove` orphans `[plugins.*]` tables silently.
 
 **Files:**
+
 - Modify: `bin/setup` (`ensure_codex`)
 - Modify: `tests/test-setup-doctor.sh` (the gating assertion)
 
 **Interfaces:**
+
 - Consumes: Task 4's helpers.
 - Produces: nothing other tasks read.
 
@@ -1836,10 +1850,12 @@ EOF
 Measured 2026-09-05 in a scratch `HOME`: `npx skills add "mattpocock/skills#v1.2.3" --skill wait-what -g -y` writes `.skills["wait-what"].ref = "v1.2.3"` into `~/.agents/.skill-lock.json`. A sha in place of the tag is rejected. The `-g` flag is what keeps the install in the shared root rather than a project tree.
 
 **Files:**
+
 - Modify: `bin/setup` (`ensure_skills_sh`)
 - Modify: `tests/test-doctor-faults.sh` (the fifth fault)
 
 **Interfaces:**
+
 - Consumes: `upstream/skills.json` (Task 1), Task 4's helpers.
 - Produces: the completed five-fault fixture that gate S2 mirrors.
 
@@ -1977,10 +1993,12 @@ EOF
 Four things the engine describes without touching: the telemetry variable (§7.6 — setup writes nothing, the user decides), the redundant Codex links (§7.3 — their disposition is sub-project 5's), the marketplace clone's freshness (§7.1 — a stale script applies stale pins), and a skills.sh entry for a skill this plugin now vendors (Deviation D1).
 
 **Files:**
+
 - Modify: `bin/setup` (`report_only`)
 - Modify: `tests/test-setup-doctor.sh`
 
 **Interfaces:**
+
 - Consumes: Task 4's helpers, Task 5's `curated_skills`.
 - Produces: nothing other tasks read.
 
@@ -2147,11 +2165,13 @@ EOF
 The repository README's Codex section still carries the four-ways-broken clone-and-symlink recipe. Both READMEs gain fenced blocks — the file has none today, and a test cannot extract what does not exist — and a test then asserts every fenced block in the install and update sections appears verbatim in `bin/setup --help`, so the instructions and the script cannot drift.
 
 **Files:**
+
 - Modify: `README.md`
 - Modify: `plugins/software-development/README.md`
 - Modify: `tests/test-setup-doctor.sh`
 
 **Interfaces:**
+
 - Consumes: the `usage()` text written in Task 4.
 - Produces: nothing other tasks read.
 
@@ -2159,7 +2179,7 @@ The repository README's Codex section still carries the four-ways-broken clone-a
 
 Append to `tests/test-setup-doctor.sh`, before its final `printf`:
 
-```bash
+````bash
 # Every fenced block in the README's install and update sections must appear
 # verbatim in the usage text, so a command cannot be documented in one place and
 # not the other.
@@ -2190,7 +2210,7 @@ $line"
   fi
 done < <(extract_blocks "$REPO_ROOT/README.md")
 [ "$blocks" -ge 2 ] || fail "expected at least two fenced README blocks, found $blocks"
-```
+````
 
 - [ ] **Step 2: Run the test to verify it fails**
 
@@ -2317,7 +2337,7 @@ bash tests/test-setup-doctor.sh
 bash tests/run.sh
 ```
 
-Expected: the setup-doctor summary line, then twelve `PASS` lines. If the block-extraction assertion fails on a block you did not intend to test — a JSON sample, say — the fix is in the test's extraction, not in the README: narrow it to the blocks under `## Install` and `## Update` by tracking the current `## ` heading in the awk program.
+Expected: the setup-doctor summary line, then twelve `PASS` lines. If the block-extraction assertion fails on a block you did not intend to test — a JSON sample, say — the fix is in the test's extraction, not in the README: narrow it to the blocks under `## Install` and `## Update` by tracking the current `##` heading in the awk program.
 
 - [ ] **Step 7: Commit**
 
@@ -2348,11 +2368,13 @@ Three properties are inherited from `harness-backup/bin/harness-drift-check.py`,
 The two Codex constants were verified on 2026-09-05 at both `rust-v0.147.0` and the then-latest stable tag `rust-v0.153.4`: `DEFAULT_HOOKS_CONFIG_FILE` is `"hooks/hooks.json"` and `.codex-plugin/plugin.json` is first in `DISCOVERABLE_PLUGIN_MANIFEST_PATHS`. The watch is green on day one.
 
 **Files:**
+
 - Create: `bin/upstream-watch`
 - Create: `.github/workflows/upstream-watch.yml`
 - Modify: `tests/test-setup-doctor.sh` (shellcheck the new script)
 
 **Interfaces:**
+
 - Consumes: `.claude-plugin/marketplace.json`, `upstream/skills.json`.
 - Produces: a markdown report on stdout and exit 0 when everything matches, exit 1 when something moved, exit 2 on an error it could not interpret.
 
@@ -2613,9 +2635,11 @@ EOF
 Two rules move down a layer before their current carrier is emptied, so neither is homeless for a single commit (§4.1).
 
 **Files:**
+
 - Modify: `AGENTS.md`
 
 **Interfaces:**
+
 - Consumes: the block shape Task 2's vendored skill writes.
 - Produces: the repository-level carrier Task 13 depends on.
 
@@ -2680,12 +2704,14 @@ EOF
 The global-file edits are last and are gated on **0.4.0 being installed on this machine**, not merely merged: the worktree-cleanup paragraph is deleted only because `hooks/payload-rules.md` carries it, and the installed plugin is the thing that injects that file (§4.1).
 
 **Files:**
+
 - Modify: `~/.claude/CLAUDE.md` (outside the repository)
 - Modify: `~/.codex/AGENTS.md` (outside the repository)
 - Modify: `~/harness-backup` (its copies of both, per its README refresh block)
 - Modify: `docs/superpowers/specs/2026-09-05-setup-and-drift-design.md` (gate results)
 
 **Interfaces:**
+
 - Consumes: everything above.
 - Produces: the recorded gate results this sub-project's successors read.
 
@@ -2841,7 +2867,7 @@ Both harnesses proceed silently with their global instruction file absent or zer
 
 - [ ] **Step 11: Refresh the harness backup**
 
-Both edited files are *copies* in `~/harness-backup`, not symlinks, so the edits do not propagate on their own:
+Both edited files are _copies_ in `~/harness-backup`, not symlinks, so the edits do not propagate on their own:
 
 ```bash
 cd ~/harness-backup
@@ -2902,7 +2928,6 @@ Three spec sentences are deliberately not implemented as written, each recorded 
 **Placeholder scan.** Every code step carries the code. The four bracketed spans that remain are all in Task 13's gate-results table, where the value is the result of a run that has not happened yet, and in the vendored skill's block template, where upstream's own bracketed instructions are quoted verbatim.
 
 **Type consistency.** `ensure_clone`, `ensure_links`, `ensure_claude`, `ensure_codex`, `ensure_skills_sh` and `report_only` are stubbed in Task 4 and filled in Tasks 5 to 9 under exactly those names. `declared_sha` and `curated_skills` (Task 5) are reused in Tasks 9 and 11 and by `tests/test-doctor-faults.sh`. `emit_payload` is reached only through `bin/bump-superpowers --emit-payload`, which is the form `tests/test-hook.sh` calls; `revendor_brainstorming` and the `DESCRIPTION` literal beside it are internal to that script, and that literal must stay identical to the `want=` string in `tests/test-vendored-brainstorming.sh`. `locked_ref` reads `.skills.<name>.ref`, the key measured on 2026-09-05. `MARKETPLACE_SOURCE` (Claude, owner/repo form) and `CODEX_MARKETPLACE_SOURCE` (Codex, git URL form) are distinct on purpose: the two CLIs take different arguments.
-
 
 ---
 

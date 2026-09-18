@@ -70,12 +70,28 @@ UNCHECKED=""
 # `did` in Task 5, `skip` in Task 6, `note` in Task 9 — for the same reason the
 # path variables are staged: shellcheck reports a function nothing calls
 # (SC2317) and the lint assertion requires a clean exit.
-ok()   { printf 'OK:   %s\n' "$*"; REPORTED=$((REPORTED + 1)); }
-bad()  { printf 'FAIL: %s\n' "$*"; FAILURES=$((FAILURES + 1)); REPORTED=$((REPORTED + 1)); }
-die()  { printf 'ERROR: %s\n' "$*" >&2; exit 2; }
-did()  { printf 'DID:  %s\n' "$*"; }
-skip() { printf 'SKIP: %s\n' "$*"; REPORTED=$((REPORTED + 1)); }
-note() { printf 'NOTE: %s\n' "$*"; REPORTED=$((REPORTED + 1)); }
+ok() {
+  printf 'OK:   %s\n' "$*"
+  REPORTED=$((REPORTED + 1))
+}
+bad() {
+  printf 'FAIL: %s\n' "$*"
+  FAILURES=$((FAILURES + 1))
+  REPORTED=$((REPORTED + 1))
+}
+die() {
+  printf 'ERROR: %s\n' "$*" >&2
+  exit 2
+}
+did() { printf 'DID:  %s\n' "$*"; }
+skip() {
+  printf 'SKIP: %s\n' "$*"
+  REPORTED=$((REPORTED + 1))
+}
+note() {
+  printf 'NOTE: %s\n' "$*"
+  REPORTED=$((REPORTED + 1))
+}
 
 applying() { [ "$MODE" = apply ]; }
 have() { command -v "$1" >/dev/null 2>&1; }
@@ -210,7 +226,10 @@ ensure_clones() {
         bad "the pinned clone for $name is missing: $dir"
         continue
       fi
-      mkdir -p "$(dirname "$dir")" || { bad "could not create $(dirname "$dir")"; continue; }
+      mkdir -p "$(dirname "$dir")" || {
+        bad "could not create $(dirname "$dir")"
+        continue
+      }
       # Never chained with &&: a failed clone would short-circuit the checkout
       # and leave the directory at whatever it happened to be.
       if git clone -q "$url" "$dir"; then
@@ -230,7 +249,10 @@ ensure_clones() {
       bad "pinned clone $name is at ${have:-an unknown revision}, declared $sha"
       continue
     fi
-    git -C "$dir" fetch -q origin || { bad "could not fetch in $dir"; continue; }
+    git -C "$dir" fetch -q origin || {
+      bad "could not fetch in $dir"
+      continue
+    }
     if git -C "$dir" checkout -q "$sha"; then
       did "checked out $sha in $dir"
     else
@@ -250,7 +272,10 @@ ensure_clones() {
 ensure_links() {
   local entry epath skill name target link actual aside lines line rest
   if applying; then
-    mkdir -p "$SKILL_ROOT" || { bad "could not create $SKILL_ROOT"; return; }
+    mkdir -p "$SKILL_ROOT" || {
+      bad "could not create $SKILL_ROOT"
+      return
+    }
   elif [ ! -d "$SKILL_ROOT" ]; then
     bad "the skill root is missing: $SKILL_ROOT"
     return
@@ -269,8 +294,14 @@ ensure_links() {
   # is the only thing that tells the two cases apart.
   lines="$(jq -r '.plugins[] | select(.source.source? == "git-subdir") as $p
                   | $p.skills[] | [$p.name, $p.source.path, (. | sub("^\\./"; ""))] | @tsv' "$MARKETPLACE")" \
-    || { bad "the curated skill list could not be read from $MARKETPLACE"; return; }
-  [ -n "$lines" ] || { bad "no curated skill is declared in $MARKETPLACE"; return; }
+    || {
+      bad "the curated skill list could not be read from $MARKETPLACE"
+      return
+    }
+  [ -n "$lines" ] || {
+    bad "no curated skill is declared in $MARKETPLACE"
+    return
+  }
 
   # Every skill of every curated entry: the link target is the skill directory
   # inside that entry's pinned clone, under the entry's source.path, and the
@@ -314,14 +345,20 @@ ensure_links() {
       # the target is missing -- which is also why the README's guard passed on
       # a dangling link and let `ln -s` fail with "File exists".
       if [ ! -e "$link" ]; then
-        if ! applying; then bad "dangling link: $link"; continue; fi
+        if ! applying; then
+          bad "dangling link: $link"
+          continue
+        fi
         # Moved aside like every other squatter, never deleted: the target may
         # be a volume that is merely unmounted. Plain readlink rather than -f,
         # because what the link stores is the only record of where it pointed
         # and -f canonicalises a missing target into something else.
         actual="$(readlink "$link" 2>/dev/null)"
         aside="$(aside_path "$link")"
-        mv "$link" "$aside" || { bad "could not move the dangling $link aside"; continue; }
+        mv "$link" "$aside" || {
+          bad "could not move the dangling $link aside"
+          continue
+        }
         did "moved $link aside to $aside (it pointed at $actual)"
       else
         actual="$(readlink -f "$link" 2>/dev/null)"
@@ -329,16 +366,28 @@ ensure_links() {
           ok "link $name"
           continue
         fi
-        if ! applying; then bad "link $name points at $actual, not $target"; continue; fi
+        if ! applying; then
+          bad "link $name points at $actual, not $target"
+          continue
+        fi
         aside="$(aside_path "$link")"
-        mv "$link" "$aside" || { bad "could not move $link aside"; continue; }
+        mv "$link" "$aside" || {
+          bad "could not move $link aside"
+          continue
+        }
         did "moved $link aside to $aside (it pointed at $actual)"
       fi
     elif [ -e "$link" ]; then
       # A directory or a regular file where a link belongs. Never deleted.
-      if ! applying; then bad "$name exists and is not a symlink: $link"; continue; fi
+      if ! applying; then
+        bad "$name exists and is not a symlink: $link"
+        continue
+      fi
       aside="$(aside_path "$link")"
-      mv "$link" "$aside" || { bad "could not move $link aside"; continue; }
+      mv "$link" "$aside" || {
+        bad "could not move $link aside"
+        continue
+      }
       did "moved $link aside to $aside (not a symlink)"
     fi
 
@@ -372,7 +421,10 @@ ensure_claude() {
   fi
   needs jq "the declared plugin versions cannot be read, so the Claude half is unchecked" || return
   want="$(plugin_version)"
-  [ -n "$want" ] || { bad "could not read the declared plugin version"; return; }
+  [ -n "$want" ] || {
+    bad "could not read the declared plugin version"
+    return
+  }
 
   installed_sd="$(installed_version software-dev)"
   if [ "$installed_sd" != "$want" ] && applying; then
@@ -491,7 +543,11 @@ ensure_codex() {
     return
   fi
   needs jq "the declared plugin versions cannot be read, so the Codex half is unchecked" || return
-  CODEX_LIST="$(codex plugin list --json 2>/dev/null)" || { CODEX_LIST=""; bad "codex plugin list failed"; return; }
+  CODEX_LIST="$(codex plugin list --json 2>/dev/null)" || {
+    CODEX_LIST=""
+    bad "codex plugin list failed"
+    return
+  }
 
   for p in software-dev sensemaking; do
     want="$(jq -r '.version' "$REPO_ROOT/plugins/$p/.codex-plugin/plugin.json")"
@@ -549,8 +605,14 @@ ensure_skills_sh() {
   # `skills` array, or a non-string element, aborted the program partway, and
   # a row count cannot distinguish that from a short but complete list.
   lines="$(jq -r '.sources[] as $s | $s.skills[] | [$s.repo, $s.ref, .] | @tsv' "$SKILLS_JSON")" \
-    || { bad "the declared skill set could not be read from $SKILLS_JSON"; return; }
-  [ -n "$lines" ] || { bad "no skill is declared in $SKILLS_JSON"; return; }
+    || {
+      bad "the declared skill set could not be read from $SKILLS_JSON"
+      return
+    }
+  [ -n "$lines" ] || {
+    bad "no skill is declared in $SKILLS_JSON"
+    return
+  }
 
   while IFS= read -r line; do
     [ -n "$line" ] || continue
@@ -644,7 +706,7 @@ report_only() {
 
   # 2. Auto-update. A consent decision, made once in /plugin under Marketplaces.
   if jq -e '.extraKnownMarketplaces.eranroseman.autoUpdate == true' \
-       "$HOME/.claude/settings.json" >/dev/null 2>&1; then
+    "$HOME/.claude/settings.json" >/dev/null 2>&1; then
     note "marketplace auto-update is on for eranroseman"
   else
     note "marketplace auto-update is off for eranroseman; turn it on in /plugin if you want releases without an update command"
@@ -668,7 +730,7 @@ report_only() {
   # 4. A skills.sh copy of a skill this plugin vendors under another name. A
   # rename is invisible to the by-name check below, so this one stays declared.
   if [ -f "$LOCKFILE" ] \
-     && jq -e '.skills["setup-matt-pocock-skills"]' "$LOCKFILE" >/dev/null 2>&1; then
+    && jq -e '.skills["setup-matt-pocock-skills"]' "$LOCKFILE" >/dev/null 2>&1; then
     note "setup-matt-pocock-skills is installed through skills.sh, but this plugin vendors an adapted copy as setup-repository; remove the unadapted one with 'npx skills remove setup-matt-pocock-skills -g'"
   fi
 
@@ -783,8 +845,10 @@ report_pool() {
     h="${h%% *}"
     case " ${hashes[$name]:-} " in
       *" $h "*) ;;
-      *) hashes[$name]="${hashes[$name]:-} $h"
-         places[$name]="${places[$name]:-}${places[$name]:+, }$dir (${h:0:12})" ;;
+      *)
+        hashes[$name]="${hashes[$name]:-} $h"
+        places[$name]="${places[$name]:-}${places[$name]:+, }$dir (${h:0:12})"
+        ;;
     esac
   done
   for name in "${!hashes[@]}"; do
@@ -801,8 +865,15 @@ main() {
   while [ $# -gt 0 ]; do
     case "$1" in
       --check) MODE=check ;;
-      -h|--help) usage; exit 0 ;;
-      *) printf 'ERROR: unknown argument: %s\n\n' "$1" >&2; usage >&2; exit 2 ;;
+      -h | --help)
+        usage
+        exit 0
+        ;;
+      *)
+        printf 'ERROR: unknown argument: %s\n\n' "$1" >&2
+        usage >&2
+        exit 2
+        ;;
     esac
     shift
   done

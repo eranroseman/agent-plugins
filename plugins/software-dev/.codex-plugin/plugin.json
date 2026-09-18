@@ -16,6 +16,9 @@
     "category": "Developer Tools",
     "capabilities": ["Instructions"],
     "websiteURL": "https://github.com/eranroseman/agent-plugins",
-    "defaultPrompt": ["Let's build a feature.", "Design this change before we implement it."]
+    "defaultPrompt": [
+      "Let's build a feature.",
+      "Design this change before we implement it."
+    ]
   }
 }

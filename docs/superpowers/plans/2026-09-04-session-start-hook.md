@@ -18,7 +18,7 @@
 - After Task 1 no file named `hooks/hooks.json` exists anywhere under `plugins/`. The Claude manifest declares `"hooks": "./hooks/claude-hooks.json"` with the leading `./`; `claude plugin validate --strict` rejects the path without it.
 - The Codex manifest never gains a `hooks` key in any form. Its `interface.capabilities` is `["Instructions"]`.
 - Matcher stays `startup|clear|compact`.
-- Both `software-development` manifests move from `0.1.0` to `0.2.0`. `sensemaking` stays `0.1.0`. *(Tasks 1 to 5 shipped 0.2.0 and the references below record that. A later change, the task-reports rule, moved the shipped version to **0.3.0** before the cutover ran; Tasks 6 to 8 are written against 0.3.0.)*
+- Both `software-development` manifests move from `0.1.0` to `0.2.0`. `sensemaking` stays `0.1.0`. _(Tasks 1 to 5 shipped 0.2.0 and the references below record that. A later change, the task-reports rule, moved the shipped version to **0.3.0** before the cutover ran; Tasks 6 to 8 are written against 0.3.0.)_
 - The strings `bridge rules` and `Lifecycle hooks` appear in neither `software-development` manifest nor `.claude-plugin/marketplace.json` after Task 3.
 - `additionalContext` length, `jq '.hookSpecificOutput.additionalContext | length'`, stays under 8,000.
 - Test scripts call `grep` with plain patterns only (no `.{0,n}` quantifiers); `grep` on this machine may resolve to ugrep.
@@ -48,12 +48,14 @@ docs/superpowers/specs/2026-09-04-session-start-hook-design.md                  
 ### Task 1: Move the hook registration to a Claude-declared path
 
 **Files:**
+
 - Modify: `tests/test-hook.sh` (the file-existence checks near the top, and section "(3) wiring")
 - Rename: `plugins/software-development/hooks/hooks.json` → `plugins/software-development/hooks/claude-hooks.json`
 - Modify: `plugins/software-development/.claude-plugin/plugin.json`
 - Modify: `plugins/software-development/.codex-plugin/plugin.json`
 
 **Interfaces:**
+
 - Consumes: nothing from other tasks.
 - Produces: `hooks/claude-hooks.json` at the plugin root, declared by the Claude manifest; `hooks/hooks.json` absent. Task 2 and Task 3 edit `tests/test-hook.sh` on top of the version this task leaves.
 
@@ -157,11 +159,13 @@ MSG
 ### Task 2: Append the authored rules file to the payload
 
 **Files:**
+
 - Modify: `tests/test-hook.sh` (top-of-file checks, section "(1)" gains a rules block after it, section "(2) envelope round-trip", section "(4)" control characters)
 - Create: `plugins/software-development/hooks/payload-rules.md`
 - Modify: `plugins/software-development/hooks/session-start` (header comment and the `payload=` line only)
 
 **Interfaces:**
+
 - Consumes: the `tests/test-hook.sh` Task 1 left.
 - Produces: `hooks/payload-rules.md`; `session-start` emitting `payload.md` + blank line + `payload-rules.md`. Task 3 adds one loop to section "(3) wiring" of the same test.
 
@@ -281,6 +285,7 @@ MSG
 ### Task 3: Retire "bridge rules" from the catalog surfaces and rewrite the READMEs
 
 **Files:**
+
 - Modify: `tests/test-hook.sh` (end of section "(3) wiring")
 - Modify: `.claude-plugin/marketplace.json` (the `software-development` entry's `description`)
 - Modify: `plugins/software-development/.codex-plugin/plugin.json` (`interface.longDescription`)
@@ -288,6 +293,7 @@ MSG
 - Modify: `README.md` (line 7)
 
 **Interfaces:**
+
 - Consumes: the `tests/test-hook.sh` Task 2 left.
 - Produces: catalog strings and READMEs matching §5 and §6. Nothing later depends on the wording.
 
@@ -385,7 +391,7 @@ MIT. The vendored `skills/brainstorming/` is MIT, © 2025 Jesse Vincent. See
 
 - [ ] **Step 5: Edit the repository README**
 
-In `README.md`, line 7 reads `  skill vendored with a narrowed description, plus a SessionStart hook.`. Change it to:
+In `README.md`, line 7 reads `skill vendored with a narrowed description, plus a SessionStart hook.`. Change it to:
 
 ```markdown
   skill vendored with a narrowed description, plus a SessionStart hook on
@@ -418,15 +424,17 @@ MSG
 ### Task 4: Annotate the parent spec where the layout moved
 
 **Files:**
+
 - Modify: `docs/superpowers/specs/2026-09-04-software-development-layout-and-tracer-design.md` (lines 176, 235, 421)
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: nothing code-facing. Documentation only.
 
 - [ ] **Step 1: Append the §6.1 note**
 
-Line 176 ends with `Hooks load from the default path `hooks/hooks.json`.` Append one sentence after it, same line:
+Line 176 ends with `Hooks load from the default path`hooks/hooks.json`.` Append one sentence after it, same line:
 
 ```markdown
  *Amended 2026-09-04: the hook file is now `hooks/claude-hooks.json`, declared in this manifest; see the [hook spec](../specs/2026-09-04-session-start-hook-design.md) §5.*
@@ -442,7 +450,7 @@ Line 235 is exactly `` `hooks/hooks.json`: ``. Insert one line before it:
 
 - [ ] **Step 3: Close the §13 item**
 
-Line 421 is `- Why the `loader.rs` fallback did not fire, given that the source reads as §12 records (opened by G4, sub-project 3).` Replace it with:
+Line 421 is `- Why the`loader.rs`fallback did not fire, given that the source reads as §12 records (opened by G4, sub-project 3).` Replace it with:
 
 ```markdown
 - ~~Why the `loader.rs` fallback did not fire, given that the source reads as §12 records (opened by G4, sub-project 3).~~ Closed 2026-09-04 as moot: the plugin no longer offers Codex a hook, so nothing exists for the fallback to load; see the [hook spec](../specs/2026-09-04-session-start-hook-design.md) §6.
@@ -471,6 +479,7 @@ MSG
 **Files:** none new.
 
 **Interfaces:**
+
 - Consumes: the four commits above on `session-start-hook`.
 - Produces: `main` at the merge commit, pushed, CI green. Tasks 6 and 7 install from it.
 
@@ -502,6 +511,7 @@ Expected: the `validate` workflow concludes `success`. If it fails, read the fai
 > **Do not dispatch an implementer for this task.** It restarts Claude Code and edits files under `~`. The controller hands the steps below to the user and records what they report.
 
 **Files:**
+
 - Modify (by the user): `~/.claude/CLAUDE.md`, `~/harness-backup/claude/CLAUDE.md`
 
 - [x] **Step 1: Refresh the plugin** — done 2026-09-05, 0.1.0 to 0.3.0
@@ -612,9 +622,11 @@ Observed, real machine, codex-cli 0.147.0:
 ### Task 8: Record the cutover results in the spec — DONE 2026-09-05
 
 **Files:**
+
 - Modify: `docs/superpowers/specs/2026-09-04-session-start-hook-design.md` (append a section)
 
 **Interfaces:**
+
 - Consumes: the user's reports from Tasks 6 and 7.
 - Produces: the spec's results section; the plan closes.
 
@@ -648,7 +660,6 @@ MSG
 )"
 git push origin main
 ```
-
 
 ---
 

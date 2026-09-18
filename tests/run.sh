@@ -18,13 +18,19 @@
 # Every run writes tests/results.tsv (gitignored, rewritten): a header naming
 # the tree, then one row per test. A report cites the file (spec §5.4).
 set -uo pipefail
-cd "$(dirname "$0")/.." || { printf 'FAIL: could not cd to the repository root\n' >&2; exit 1; }
+cd "$(dirname "$0")/.." || {
+  printf 'FAIL: could not cd to the repository root\n' >&2
+  exit 1
+}
 
 NO_SKIP=0
 case "${1:-}" in
   '') ;;
   --no-skip) NO_SKIP=1 ;;
-  *) printf 'usage: tests/run.sh [--no-skip]\n' >&2; exit 2 ;;
+  *)
+    printf 'usage: tests/run.sh [--no-skip]\n' >&2
+    exit 2
+    ;;
 esac
 
 RESULTS=tests/results.tsv
@@ -37,8 +43,14 @@ missing=""
   || missing="$missing, bash 4 or later (found ${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]})"
 command -v jq >/dev/null 2>&1 || missing="$missing, jq"
 command -v git >/dev/null 2>&1 || missing="$missing, git"
-[ -z "$missing" ] || { printf 'the test suite needs:%s\n' "${missing#,}" >&2; exit 2; }
-[ -f "$REGISTRY" ] || { printf 'FAIL: %s is missing\n' "$REGISTRY" >&2; exit 2; }
+[ -z "$missing" ] || {
+  printf 'the test suite needs:%s\n' "${missing#,}" >&2
+  exit 2
+}
+[ -f "$REGISTRY" ] || {
+  printf 'FAIL: %s is missing\n' "$REGISTRY" >&2
+  exit 2
+}
 
 # The version a tool reports: the first dotted triple in its version output.
 tool_version() {
@@ -78,15 +90,19 @@ probe() {
   fi
   case "$need" in
     claude | python3)
-      command -v "$need" >/dev/null 2>&1 || WANT[$need]="$need" ;;
+      command -v "$need" >/dev/null 2>&1 || WANT[$need]="$need"
+      ;;
     pyyaml)
-      python3 -c 'import yaml' >/dev/null 2>&1 || WANT[$need]="pyyaml" ;;
+      python3 -c 'import yaml' >/dev/null 2>&1 || WANT[$need]="pyyaml"
+      ;;
     codex-validator)
       [ -f "${CODEX_PLUGIN_VALIDATOR:-$HOME/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py}" ] \
-        || WANT[$need]="codex-validator (the file codex-cli installs, or a copy fetched by the recipe in .github/workflows/validate.yml, named by CODEX_PLUGIN_VALIDATOR)" ;;
+        || WANT[$need]="codex-validator (the file codex-cli installs, or a copy fetched by the recipe in .github/workflows/validate.yml, named by CODEX_PLUGIN_VALIDATOR)"
+      ;;
     *)
       printf 'ERROR: %s declares a need no probe knows: %s\n' "$2" "$need" >&2
-      exit 2 ;;
+      exit 2
+      ;;
   esac
 }
 
@@ -97,11 +113,14 @@ declared_needs() {
   while IFS= read -r line; do
     case "$line" in
       '#!'*) ;;
-      '# needs: '*) printf '%s\n' "${line#'# needs: '}"; return 0 ;;
+      '# needs: '*)
+        printf '%s\n' "${line#'# needs: '}"
+        return 0
+        ;;
       '#'*) ;;
       *) return 0 ;;
     esac
-  done < "$1"
+  done <"$1"
   return 0
 }
 
@@ -109,7 +128,7 @@ declared_needs() {
 # tests/results.tsv is gitignored, so the run's own output never counts.
 tree="$(git rev-parse --short HEAD 2>/dev/null || printf 'no-commit')"
 [ -z "$(git status --porcelain 2>/dev/null)" ] || tree="$tree dirty"
-printf '# %s %s\n' "$tree" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$RESULTS"
+printf '# %s %s\n' "$tree" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"$RESULTS"
 
 passed=0 failed=0 skipped=0 unmet_list=""
 for t in tests/test-*.sh; do
@@ -129,11 +148,11 @@ for t in tests/test-*.sh; do
     unmet="${unmet#, }"
     if [ "$NO_SKIP" -eq 1 ]; then
       printf 'FAIL %s (needs %s)\n' "$t" "$unmet"
-      printf '%s\tFAIL\t-\tneeds %s\n' "$t" "$unmet" >> "$RESULTS"
+      printf '%s\tFAIL\t-\tneeds %s\n' "$t" "$unmet" >>"$RESULTS"
       failed=$((failed + 1))
     else
       printf 'SKIP %s (needs %s)\n' "$t" "$unmet"
-      printf '%s\tSKIP\t-\tneeds %s\n' "$t" "$unmet" >> "$RESULTS"
+      printf '%s\tSKIP\t-\tneeds %s\n' "$t" "$unmet" >>"$RESULTS"
       skipped=$((skipped + 1))
     fi
     continue
@@ -145,11 +164,11 @@ for t in tests/test-*.sh; do
   rm -f "$log"
   if [ "$status" -eq 0 ]; then
     printf 'PASS %s\n' "$t"
-    printf '%s\tPASS\t%s\t%s\n' "$t" "$status" "$last" >> "$RESULTS"
+    printf '%s\tPASS\t%s\t%s\n' "$t" "$status" "$last" >>"$RESULTS"
     passed=$((passed + 1))
   else
     printf 'FAIL %s\n' "$t"
-    printf '%s\tFAIL\t%s\t%s\n' "$t" "$status" "$last" >> "$RESULTS"
+    printf '%s\tFAIL\t%s\t%s\n' "$t" "$status" "$last" >>"$RESULTS"
     failed=$((failed + 1))
   fi
 done

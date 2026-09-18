@@ -118,10 +118,12 @@ tests/test-hook.sh                           Task 11: 0.7.0
 ### Task 1: Cut the branch, state the placement rule, and correct the spec's own contradiction
 
 **Files:**
+
 - Modify: `plugins/sensemaking/README.md`
 - Modify: `docs/superpowers/specs/2026-09-06-roster-and-retirement-design.md` (§10 step 5)
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: the branch every later task commits to; the README section Task 5 and Task 11 extend.
 
@@ -200,13 +202,13 @@ MIT. See `LICENSE`.
 
 - [ ] **Step 3: Correct §10 step 5 in the spec**
 
-In `docs/superpowers/specs/2026-09-06-roster-and-retirement-design.md`, the line beginning `5. `diagnosing-bugs` vendored into `software-dev`` contains the clause `` `ARCHIFY_UPDATE_CHECK_DISABLED=1` set by `bin/setup` ``. Replace that clause with:
+In `docs/superpowers/specs/2026-09-06-roster-and-retirement-design.md`, the line beginning `5.`diagnosing-bugs`vendored into`software-dev`contains the clause` `ARCHIFY_UPDATE_CHECK_DISABLED=1` set by `bin/setup` ``. Replace that clause with:
 
 ```
 `ARCHIFY_UPDATE_CHECK_DISABLED` documented in the plugin README and not set by `bin/setup` (§6.3)
 ```
 
-so the step reads `…; `archify` declared in `upstream/skills.json` at `v2.16.0`; `ARCHIFY_UPDATE_CHECK_DISABLED` documented in the plugin README and not set by `bin/setup` (§6.3); `test-skills-pin.sh` count to 19; …`.
+so the step reads `…;`archify`declared in`upstream/skills.json`at`v2.16.0`;`ARCHIFY_UPDATE_CHECK_DISABLED`documented in the plugin README and not set by`bin/setup`(§6.3);`test-skills-pin.sh`count to 19; …`.
 
 - [ ] **Step 4: Verify**
 
@@ -243,10 +245,12 @@ EOF
 ### Task 2: Repoint rethink-audit, and add the cross-cutting plugin-skills test
 
 **Files:**
+
 - Modify: `plugins/sensemaking/skills/rethink-audit/SKILL.md:82`
 - Create: `tests/test-plugin-skills.sh`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: `tests/test-plugin-skills.sh`, which every later task that adds a plugin skill must keep green. Task 3 appends its consistency-audit block. Its qualified-reference check resolves `superpowers:<s>` against the curated list, and `software-dev:<s>` / `sensemaking:<s>` against `plugins/<p>/skills/<s>/SKILL.md` **or** `plugins/<p>/agents/<s>.md`.
 
@@ -325,7 +329,7 @@ sed -i 's/`superpowers:brainstorming`/`software-dev:brainstorming`/' plugins/sen
 grep -n 'brainstorming' plugins/sensemaking/skills/rethink-audit/SKILL.md
 ```
 
-Expected: exactly one line, `82:  known job — `software-dev:brainstorming` elicits them in dialogue first, and`.
+Expected: exactly one line, `82:  known job —`software-dev:brainstorming`elicits them in dialogue first, and`.
 
 - [ ] **Step 4: Run the test to verify it passes**
 
@@ -358,6 +362,7 @@ EOF
 ### Task 3: consistency-audit and its inspector, into software-dev
 
 **Files:**
+
 - Create: `plugins/software-dev/skills/consistency-audit/SKILL.md` (from `~/harness-backup/claude/skills/consistency-audit/SKILL.md`, three edits)
 - Create: `plugins/software-dev/skills/consistency-audit/agents/openai.yaml`
 - Create: `plugins/software-dev/agents/consistency-audit-inspector.md` (from `~/harness-backup/claude/agents/consistency-audit-inspector.md`, one line removed)
@@ -365,6 +370,7 @@ EOF
 - Modify: `tests/test-codex-validate.sh` (the known-bullet set)
 
 **Interfaces:**
+
 - Consumes: Task 2's test.
 - Produces: the agent at `plugins/software-dev/agents/`, which Claude discovers from that directory with no manifest key and exposes as `software-dev:consistency-audit-inspector`.
 
@@ -519,12 +525,14 @@ EOF
 ### Task 4: finding-duplicate-functions, into software-dev
 
 **Files:**
+
 - Create: `plugins/software-dev/skills/finding-duplicate-functions/` (six files from `~/harness-backup/claude/skills/finding-duplicate-functions/`, one header added, one file amended)
 - Modify: `plugins/software-dev/LICENSE` (append one block)
 - Modify: `tests/lib.sh` (`fetch_pinned`)
 - Create: `tests/test-vendored-duplicates.sh`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: `fetch_pinned <url> <sha> <dir>` in `tests/lib.sh`, printing the checkout path; Tasks 5, 6, 8 and 9 call it. `fetch_upstream` keeps its signature.
 
@@ -738,9 +746,11 @@ EOF
 ```
 
 ---
+
 ### Task 5: adhd, vendored and gated, into sensemaking
 
 **Files:**
+
 - Create: `plugins/sensemaking/skills/adhd/SKILL.md` (from `UditAkhourii/adhd` at `16dc239…`, three edits)
 - Create: `plugins/sensemaking/skills/adhd/agents/openai.yaml`
 - Modify: `plugins/sensemaking/LICENSE` (append one block)
@@ -748,6 +758,7 @@ EOF
 - Create: `tests/test-vendored-adhd.sh`
 
 **Interfaces:**
+
 - Consumes: `fetch_pinned` from Task 4; the `adhd` bullet Task 3 already recorded in `tests/test-codex-validate.sh`.
 - Produces: `sensemaking:adhd`, user-invoked on both harnesses.
 
@@ -940,12 +951,14 @@ EOF
 ### Task 6: diagnosing-bugs, vendored and not gated, into software-dev
 
 **Files:**
+
 - Create: `plugins/software-dev/skills/diagnosing-bugs/` (three files from `mattpocock/skills` at `v1.2.3`, one line rewritten)
 - Modify: `plugins/software-dev/LICENSE` (append one block)
 - Modify: `tests/test-skills-pin.sh` (one negative assertion)
 - Create: `tests/test-vendored-diagnosing-bugs.sh`
 
 **Interfaces:**
+
 - Consumes: `fetch_pinned`.
 - Produces: `software-dev:diagnosing-bugs`, model-invocable, with the 69-character description from §6.1.
 
@@ -1129,6 +1142,7 @@ EOF
 ### Task 7: archify through skills.sh, and a watch that survives its tag series
 
 **Files:**
+
 - Modify: `upstream/skills.json` (a third source)
 - Modify: `tests/test-skills-pin.sh` (18 → 19)
 - Modify: `bin/upstream-watch` (the stable-tag filter, the `--newest-stable-tag` mode, every curated entry)
@@ -1136,6 +1150,7 @@ EOF
 - Modify: `plugins/software-dev/README.md` (the `## Environment` section)
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: `bin/upstream-watch --newest-stable-tag` reading tag names on stdin and printing the newest stable one; the curated-entry loop Task 8's second entry will be picked up by.
 
@@ -1267,7 +1282,7 @@ with
 The `openai/codex` section keeps its own `rust-v0.*` pattern and filter; its tag shape is different and was not the problem.
 
 Run: `shellcheck bin/upstream-watch && bash tests/test-setup-doctor.sh && bash bin/upstream-watch`
-Expected: shellcheck silent; `setup-doctor: two entry points, lint clean, prerequisites split as documented`; then a report whose `### superpowers (https://github.com/obra/superpowers.git)` section reads `Pinned at … which is main. Nothing to do.` and `Latest upstream tag: `v6.3.0`.`, whose skills.sh section lists all three sources `pinned at …, the newest tag.` including `` `tt-a1i/archify` pinned at `v2.16.0`, the newest tag. ``, and which ends `Everything matches. No action.`, exit 0.
+Expected: shellcheck silent; `setup-doctor: two entry points, lint clean, prerequisites split as documented`; then a report whose `### superpowers (https://github.com/obra/superpowers.git)` section reads `Pinned at … which is main. Nothing to do.` and `Latest upstream tag:`v6.3.0`.`, whose skills.sh section lists all three sources `pinned at …, the newest tag.` including `` `tt-a1i/archify` pinned at `v2.16.0`, the newest tag. ``, and which ends `Everything matches. No action.`, exit 0.
 
 - [ ] **Step 5: Document the update check and the variable**
 
@@ -1328,11 +1343,13 @@ EOF
 ### Task 8: Curate writing-clearly-and-concisely
 
 **Files:**
+
 - Modify: `.claude-plugin/marketplace.json` (a fourth entry)
 - Modify: `plugins/software-dev/.claude-plugin/plugin.json` (a third dependency)
 - Create: `tests/test-curated-writing.sh`
 
 **Interfaces:**
+
 - Consumes: `fetch_pinned`.
 - Produces: the `writing-clearly-and-concisely` entry, `git-subdir` at `3027f20f…`, version `0.1.0`, path `dist/plugins/writing-clearly-and-concisely`, one skill. Task 9's engine reads it through `curated_entries`.
 
@@ -1458,14 +1475,17 @@ EOF
 ```
 
 ---
+
 ### Task 9: One engine for every curated entry
 
 **Files:**
+
 - Modify: `bin/setup` (header comment; `UPSTREAM_ROOT`; `curated_entries`, `clone_dir`; `ensure_clones` replacing `ensure_clone`; `ensure_links`; `ensure_claude`; `main`)
 - Modify: `tests/test-doctor-faults.sh` (a seeded second clone; one pattern)
 - Modify: `tests/test-setup-doctor.sh` (the upgrade fixture seeds the second clone)
 
 **Interfaces:**
+
 - Consumes: Task 8's entry; `fetch_pinned`.
 - Produces: `curated_entries` (tab-separated `name url ref sha path version`, one line per `git-subdir` entry) and `clone_dir <name>`; both used by Task 10. `ensure_clones`, `ensure_links` and `ensure_claude` report `pinned clone <name> is at …`, `link <name>`, `<name>@eranroseman <version> installed`.
 
@@ -1856,11 +1876,13 @@ EOF
 ### Task 10: The doctor sees one name reaching two skills
 
 **Files:**
+
 - Modify: `bin/setup` (`report_only` item 4's comment, a `report_duplicates` call, and two new functions)
 - Modify: `tests/test-doctor-faults.sh`, `tests/test-setup-doctor.sh` (`sha256sum` in the four restricted-`PATH` lists)
 - Create: `tests/test-doctor-duplicates.sh`
 
 **Interfaces:**
+
 - Consumes: `CODEX_LIST`, set by `ensure_codex`; `INSTALLED_PLUGINS`, `KNOWN_MARKETPLACES`, `SKILL_ROOT`, `CODEX_SKILLS`.
 - Produces: `NOTE: <Claude|Codex>: skill <name> resolves to N different trees: <dir> (<hash12>), …`, `NOTE: <harness>: no skill name resolves to more than one tree`, and `NOTE: plugin cache for an unregistered marketplace: <dir> (left alone; remove it by hand)`. Task 12's gate enumerates them.
 
@@ -2114,6 +2136,7 @@ EOF
 ### Task 11: Release 0.7.0 and 0.2.0, and say what the marketplace now carries
 
 **Files:**
+
 - Modify: `plugins/software-dev/.claude-plugin/plugin.json`, `plugins/software-dev/.codex-plugin/plugin.json` (`0.7.0`, descriptions)
 - Modify: `plugins/sensemaking/.claude-plugin/plugin.json`, `plugins/sensemaking/.codex-plugin/plugin.json` (`0.2.0`, descriptions)
 - Modify: `.claude-plugin/marketplace.json` (two descriptions)
@@ -2121,6 +2144,7 @@ EOF
 - Modify: `README.md`, `plugins/software-dev/README.md`
 
 **Interfaces:**
+
 - Consumes: everything above.
 - Produces: the release the cutover installs.
 
@@ -2138,7 +2162,7 @@ By hand, preserving each file's formatting:
 - `plugins/software-dev/.claude-plugin/plugin.json`: `"version": "0.7.0"`; `"description": "Glue over superpowers and mattpocock/skills for Claude Code and Codex: narrowed brainstorming, the repository scaffolder, the consistency audit and its inspector, diagnosing-bugs, and finding-duplicate-functions."`.
 - `plugins/software-dev/.codex-plugin/plugin.json`: the same `version` and `description`; `"longDescription": "Narrowed brainstorming front door over the superpowers spine and mattpocock's engineering skills, plus the repository scaffolder, a refuted-before-reported consistency audit, a reproduction-first debugging loop, and a Python duplicate-function finder."`.
 - `plugins/sensemaking/.claude-plugin/plugin.json`: `"version": "0.2.0"`; `"description": "Skills shared by software-dev and research-vault: rethink-audit and adhd."`.
-- `plugins/sensemaking/.codex-plugin/plugin.json`: the same `version` and `description`; `"longDescription": "Clean-slate redesign audits and parallel divergent ideation, shared by `software-dev` and `research-vault`."`.
+- `plugins/sensemaking/.codex-plugin/plugin.json`: the same `version` and `description`; `"longDescription": "Clean-slate redesign audits and parallel divergent ideation, shared by`software-dev`and`research-vault`."`.
 - `.claude-plugin/marketplace.json`: the `software-dev` entry's description becomes `"Glue over superpowers and mattpocock/skills: narrowed brainstorming, the repository scaffolder, the consistency audit, diagnosing-bugs, finding-duplicate-functions, plus a SessionStart hook on Claude Code."`; the `sensemaking` entry's becomes `"Skills shared by software-dev and research-vault: rethink-audit and adhd."`.
 
 - [ ] **Step 3: Rewrite the two READMEs' inventories**
@@ -2253,14 +2277,17 @@ Wait for `validate` to finish: `gh run watch "$(gh run list --branch roster-and-
 Expected: both jobs green. The `setup-e2e` job now installs four plugins from the scratch marketplace, clones `softaworks/agent-toolkit`, and links fourteen skills; its `bin/doctor` step must print `clean`. If `setup-e2e` fails on the agent-toolkit clone or the fourteenth link, the engine is wrong and the cutover must not start: fix on the branch and re-push.
 
 ---
+
 ### Task 12: Merge, converge this machine, and pass the gate
 
 This task acts on this machine. Every removal below is preceded by showing the user what will go and waiting for their go. Nothing here is on a branch: `main` carries the release, and the results land in the spec.
 
 **Files:**
+
 - Modify: `docs/superpowers/specs/2026-09-06-roster-and-retirement-design.md` (a `### Results` subsection under §10)
 
 **Interfaces:**
+
 - Consumes: the release on `main`.
 - Produces: a machine on which `bin/doctor` prints `clean`, both harnesses hold `software-dev` 0.7.0 and `sensemaking` 0.2.0, and the eight `harness-backup` symlinks are gone — the precondition for Tasks 13 to 15.
 
@@ -2485,6 +2512,7 @@ EOF
 Irreversible. Order, from §10 step 10 and the blast radius in §8.3: the cron line, the out-of-repo drift issue, the archived spec, then the repository, then the directory. The eight symlinks are already gone (Task 12).
 
 **Files:**
+
 - Create: `docs/archive/2026-08-08-harness-update-design.md`
 
 - [ ] **Step 1: Remove the weekly cron and close the drift issue**
@@ -2563,6 +2591,7 @@ Expected: not found; `No such file or directory`; `clean`.
 ### Task 15: Empty both global files, and land every disposition
 
 **Files:**
+
 - Modify: `docs/superpowers/specs/2026-09-06-roster-and-retirement-design.md` (extend the Results subsection)
 
 - [ ] **Step 1: Confirm the precondition, then empty the files after the go**

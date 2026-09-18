@@ -29,7 +29,7 @@ Work the rungs in order, proposal last. A short section of output per tag.
 2. `prior-art:` — How is this class of problem solved well elsewhere? Run the
    `research` skill, if available: it works the question against primary
    sources in a background agent. **Done when** every pattern named carries
-   where it is used and why it fits *these* requirements; every caveat in the
+   where it is used and why it fits _these_ requirements; every caveat in the
    sourced reading travels into the summary — the summary is never stronger
    than its source, and a citation not checked against its primary is marked
    unverified; and a requirement with no anchor is named unanchored, never
@@ -60,7 +60,7 @@ Work the rungs in order, proposal last. A short section of output per tag.
 On a fresh design question there is no implementation: run through `design:`,
 then `trade-offs:`.
 
-If the current implementation already *is* the first-principles answer, say
+If the current implementation already _is_ the first-principles answer, say
 `Already sound. Keep.` and stop; a redesign invented to justify the audit is the
 failure this stop prevents.
 

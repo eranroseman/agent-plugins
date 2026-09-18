@@ -73,6 +73,7 @@ All tests are bash scripts that `source tests/lib.sh`, use `set -euo pipefail`, 
 ### Task 1: Test runner, JSON check, and the `sensemaking` plugin (Claude side)
 
 **Files:**
+
 - Create: `tests/run.sh`
 - Create: `tests/lib.sh`
 - Create: `tests/test-json-wellformed.sh`
@@ -82,6 +83,7 @@ All tests are bash scripts that `source tests/lib.sh`, use `set -euo pipefail`, 
 - Create: `plugins/sensemaking/README.md`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: `tests/lib.sh` exporting `REPO_ROOT` (absolute repo path), `MARKETPLACE` (path to `.claude-plugin/marketplace.json`), `fail <msg>` (prints `FAIL: <msg>` to stderr, exit 1), `upstream_sha` (prints the sha from the marketplace's `superpowers` entry), `fetch_upstream` (prints an absolute path to a checkout of obra/superpowers at that sha). `tests/run.sh` runs every `tests/test-*.sh`. Later tasks add tests by dropping a `tests/test-<name>.sh` file.
 
@@ -295,12 +297,14 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ### Task 2: `sensemaking` Codex manifest and the `rethink-audit` skill
 
 **Files:**
+
 - Create: `plugins/sensemaking/.codex-plugin/plugin.json`
 - Create: `plugins/sensemaking/skills/rethink-audit/SKILL.md` (copy)
 - Create: `plugins/sensemaking/skills/rethink-audit/agents/openai.yaml` (copy)
 - Create: `tests/test-codex-validate.sh`
 
 **Interfaces:**
+
 - Consumes: `tests/lib.sh` (`REPO_ROOT`, `fail`).
 - Produces: the `CODEX_PLUGIN_VALIDATOR` environment variable contract. The test reads the validator path from it, defaulting to `$HOME/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py`. Task 8's CI sets it.
 
@@ -398,11 +402,13 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ### Task 3: Claude marketplace manifest and the upstream pin test
 
 **Files:**
+
 - Create: `.claude-plugin/marketplace.json`
 - Create: `tests/test-upstream-pin.sh`
 - Modify: `tests/test-claude-validate.sh`
 
 **Interfaces:**
+
 - Consumes: `tests/lib.sh` (`MARKETPLACE`, `upstream_sha`, `fetch_upstream`, `fail`).
 - Produces: `.claude-plugin/marketplace.json`, the single source of truth for the pinned sha, the `6.3.0` version, and the 13-name list. Tasks 4, 5, 6, 7 and 10 read from it. Two files repeat the sha as human-readable provenance, the `software-development` LICENSE (Task 4) and the vendored `SKILL.md` header (Task 5); Task 5's test asserts both equal the marketplace value.
 
@@ -557,6 +563,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ### Task 4: `software-development` manifests, LICENSE, README, and spec amendment
 
 **Files:**
+
 - Create: `plugins/software-development/.claude-plugin/plugin.json`
 - Create: `plugins/software-development/.codex-plugin/plugin.json`
 - Create: `plugins/software-development/LICENSE`
@@ -565,6 +572,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Modify: `docs/superpowers/specs/2026-09-04-software-development-layout-and-tracer-design.md` (§6.2, §10.2, §10.3, §12, §13)
 
 **Interfaces:**
+
 - Consumes: `tests/test-claude-validate.sh`, `tests/test-codex-validate.sh` (both already iterate `plugins/*/`); `tests/lib.sh` (`REPO_ROOT`, `MARKETPLACE`, `fail`) for the new test in Step 2.
 - Produces: plugin id `software-development@eranroseman` with `dependencies: ["sensemaking", "superpowers"]`; Codex manifest with `"skills": "./skills/"` and no `hooks` key; `tests/test-references-resolve.sh`, which holds every string-source marketplace path and every `dependencies` name to a real plugin.
 
@@ -846,6 +854,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ### Task 5: Vendor the `brainstorming` skill
 
 **Files:**
+
 - Create: `plugins/software-development/skills/brainstorming/SKILL.md` (copied, then two edits)
 - Create: `plugins/software-development/skills/brainstorming/visual-companion.md` (copy)
 - Create: `plugins/software-development/skills/brainstorming/spec-document-reviewer-prompt.md` (copy)
@@ -857,6 +866,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Create: `tests/test-vendored-brainstorming.sh`
 
 **Interfaces:**
+
 - Consumes: `tests/lib.sh` (`fetch_upstream`, `upstream_sha`, `fail`).
 - Produces: skill `software-development:brainstorming` (Claude) / `software-development:brainstorming` (Codex catalog), invocable as `/brainstorming`. The provenance header's first line is `<!-- Vendored from https://github.com/obra/superpowers at <sha>`; sub-project 4 reads the sha from it. The drift test reads the sha from `.claude-plugin/marketplace.json` via `upstream_sha` and asserts the header carries that value.
 
@@ -1023,12 +1033,14 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ### Task 6: SessionStart hook
 
 **Files:**
+
 - Create: `plugins/software-development/hooks/hooks.json`
 - Create: `plugins/software-development/hooks/session-start` (mode 755)
 - Create: `plugins/software-development/hooks/payload.md`
 - Create: `tests/test-hook.sh`
 
 **Interfaces:**
+
 - Consumes: `tests/lib.sh` (`fetch_upstream`, `fail`); upstream `skills/using-superpowers/SKILL.md` at the pinned sha.
 - Produces: an executable `hooks/session-start` that takes no arguments, reads `hooks/payload.md` next to itself, and prints one JSON object on stdout: `{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"<payload>"}}`. Every C0 control character in the payload is escaped, not only the common five, so a future payload cannot silently break the envelope. `hooks/hooks.json` wires it for `startup|clear|compact`. Sub-project 3 replaces only `payload.md`.
 
@@ -1218,11 +1230,13 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ### Task 7: Codex marketplace manifest
 
 **Files:**
+
 - Create: `.agents/plugins/marketplace.json`
 - Create: `README.md` (repository root)
 - Create: `tests/test-codex-marketplace.sh`
 
 **Interfaces:**
+
 - Consumes: `tests/lib.sh` (`REPO_ROOT`, `MARKETPLACE`, `fail`); both `.codex-plugin/plugin.json` files.
 - Produces: Codex marketplace `eranroseman` exposing `software-development@eranroseman` and `sensemaking@eranroseman`.
 
@@ -1379,9 +1393,11 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ### Task 8: CI workflow, push, and merge
 
 **Files:**
+
 - Create: `.github/workflows/validate.yml`
 
 **Interfaces:**
+
 - Consumes: `tests/run.sh`; the `CODEX_PLUGIN_VALIDATOR` contract from Task 2.
 - Produces: a green `validate` check on every push and pull request; `main` containing everything above, which Tasks 9 and 10 install from GitHub.
 
@@ -1497,11 +1513,13 @@ Expected: `main` carries every commit above, the branch is gone locally and on o
 > **Stop and confirm with the user before this task.** It uninstalls the `superpowers` plugin the current Claude Code session may be running on, edits `~/.claude/settings.json` and `~/.claude/CLAUDE.md`, and is run from a terminal outside Claude Code, followed by a restart. The executing agent presents these commands to the user and waits for the reported output; it must not run them through its own Bash tool, because the session it runs in is the one being changed underneath it. Prerequisite: Task 8 merged to `main` on GitHub.
 
 **Files:**
+
 - Modify: `~/.claude/settings.json` (delete `skillOverrides.grilling`)
 - Modify: `~/.claude/CLAUDE.md` (delete the paragraph documenting that override)
 - Modify: `~/harness-backup/claude/CLAUDE.md`, `~/harness-backup/claude/settings.json` (refresh copies)
 
 **Interfaces:**
+
 - Consumes: `main` on GitHub.
 - Produces: `software-development@eranroseman`, `sensemaking@eranroseman`, `superpowers@eranroseman` installed at user scope; `superpowers@superpowers-dev` gone at both scopes; recorded G1/G3/G5 outcomes for Task 11.
 
@@ -1633,12 +1651,14 @@ Record each answer verbatim for Task 11. If G1 fails, the fallback is the fork r
 > **Stop and confirm with the user before this task.** It removes `superpowers@superpowers-dev` from Codex, edits `~/.codex/config.toml`, and creates 13 symlinks under `~/.codex/skills/`. As in Task 9, the executing agent presents the commands and the in-session checks to the user and records the reported results. Prerequisite: Task 9 done.
 
 **Files:**
+
 - Modify: `~/.codex/config.toml` (marketplace removed, plugins added, hook trust recorded by Codex)
 - Modify: `~/harness-backup/codex/config.toml` (refresh copy, committed in Step 7)
 - Create: `~/.local/share/software-development/upstream/superpowers` (clone at the pinned sha)
 - Create: 13 symlinks `~/.codex/skills/<name>` → that clone's `skills/<name>`
 
 **Interfaces:**
+
 - Consumes: `main` on GitHub; the 13-name list in `.claude-plugin/marketplace.json`.
 - Produces: `software-development@eranroseman` and `sensemaking@eranroseman` installed on Codex; 13 bare superpowers skills reachable as `$<name>`; recorded G2/G4 outcomes for Task 11.
 
@@ -1724,9 +1744,11 @@ cd -
 ### Task 11: Record gate results and finish the cutover
 
 **Files:**
+
 - Modify: `docs/superpowers/specs/2026-09-04-software-development-layout-and-tracer-design.md` (append §14)
 
 **Interfaces:**
+
 - Consumes: the recorded G1 to G5 observations from Tasks 9 and 10.
 - Produces: §14 in the spec, the input sub-projects 2, 3 and 4 read; the `superpowers-dev` marketplace removed from Claude Code.
 

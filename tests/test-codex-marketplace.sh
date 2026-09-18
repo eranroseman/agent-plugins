@@ -30,7 +30,7 @@ if jq -e '.plugins[] | select(.name == "superpowers")' "$M" >/dev/null; then
 fi
 
 diff <(jq -r '.plugins[] | select(.source | type == "string") | .name' "$MARKETPLACE" | sort) \
-     <(jq -r '.plugins[].name' "$M" | sort) \
+  <(jq -r '.plugins[].name' "$M" | sort) \
   || fail "Claude and Codex marketplaces disagree on the local plugins"
 
 echo "codex-marketplace: 2 local plugins, manifests match, no superpowers entry"

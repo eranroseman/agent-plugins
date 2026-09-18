@@ -17,7 +17,7 @@ bin_without() {
   local dir="$T/bin-without${1:+-$1}" t x skip p
   mkdir -p "$dir" || fail "could not create $dir"
   for t in bash git jq sed awk grep find date readlink basename dirname \
-           mv ln mkdir cp cat sha256sum; do
+    mv ln mkdir cp cat sha256sum; do
     skip=0
     for x in "$@"; do [ "$t" != "$x" ] || skip=1; done
     [ "$skip" -eq 0 ] || continue
@@ -46,7 +46,7 @@ run_case() {
   local label="$1" repo="$2" home="$3" path="$4" status
   mkdir -p "$home" || fail "$label: could not create $home"
   if OUT="$(env HOME="$home" CODEX_HOME="$home/.codex" PATH="$path" \
-      /bin/bash "$repo/bin/setup" --check 2>&1)"; then status=0; else status=$?; fi
+    /bin/bash "$repo/bin/setup" --check 2>&1)"; then status=0; else status=$?; fi
   [ "$status" -ne 0 ] || fail "$label: bin/setup --check exited 0:"$'\n'"$OUT"
   printf '%s\n' "$OUT" | grep -qx 'clean' \
     && fail "$label: the doctor called an unread machine clean:"$'\n'"$OUT"
@@ -66,7 +66,7 @@ BIN="$(bin_without)"
 # 1. A malformed marketplace.json: jq fails on every read, and each reader
 # says so rather than iterating nothing.
 R="$(scratch_repo malformed)"
-printf '{\n' > "$R/.claude-plugin/marketplace.json" || fail "could not corrupt the marketplace"
+printf '{\n' >"$R/.claude-plugin/marketplace.json" || fail "could not corrupt the marketplace"
 run_case "malformed marketplace" "$R" "$(seeded_home 1)" "$BIN"
 saw 'no curated (git-subdir) entry could be read' \
   || fail "malformed marketplace: ensure_clones did not report the unreadable declarations:"$'\n'"$OUT"
@@ -77,7 +77,7 @@ saw 'the curated skill list could not be read from' \
 # is a declaration defect, not a clean machine.
 R="$(scratch_repo no-curated)"
 jq 'del(.plugins[] | select(.source.source? == "git-subdir"))' "$MARKETPLACE" \
-  > "$R/.claude-plugin/marketplace.json" || fail "could not remove the git-subdir entries"
+  >"$R/.claude-plugin/marketplace.json" || fail "could not remove the git-subdir entries"
 run_case "no curated entries" "$R" "$(seeded_home 2)" "$BIN"
 saw 'no curated (git-subdir) entry could be read' \
   || fail "no curated entries: the zero-entry guard did not fire:"$'\n'"$OUT"
@@ -94,7 +94,7 @@ first="$(jq -r '[.plugins[] | select(.source.source? == "git-subdir")][0].name' 
   || fail "could not read the first git-subdir entry"
 R="$(scratch_repo first-no-skills)"
 jq --arg n "$first" 'del(.plugins[] | select(.name == $n) | .skills)' "$MARKETPLACE" \
-  > "$R/.claude-plugin/marketplace.json" || fail "could not strip .skills from $first"
+  >"$R/.claude-plugin/marketplace.json" || fail "could not strip .skills from $first"
 run_case "first entry without .skills" "$R" "$(seeded_home 3)" "$BIN"
 saw 'the curated skill list could not be read from' \
   || fail "first entry without .skills: the unreadable list was not reported:"$'\n'"$OUT"
@@ -108,7 +108,7 @@ second="$(jq -r '[.plugins[] | select(.source.source? == "git-subdir")][1].name'
 if [ -z "$second" ] || [ "$second" = null ]; then fail "the marketplace declares fewer than two git-subdir entries"; fi
 R="$(scratch_repo second-no-skills)"
 jq --arg n "$second" 'del(.plugins[] | select(.name == $n) | .skills)' "$MARKETPLACE" \
-  > "$R/.claude-plugin/marketplace.json" || fail "could not strip .skills from $second"
+  >"$R/.claude-plugin/marketplace.json" || fail "could not strip .skills from $second"
 run_case "second entry without .skills" "$R" "$(seeded_home 4)" "$BIN"
 saw 'the curated skill list could not be read from' \
   || fail "second entry without .skills: the partial list was not reported:"$'\n'"$OUT"
@@ -149,7 +149,7 @@ saw 'the skill root is missing' || fail "empty HOME: the skill root was not repo
 # skipped.
 R="$(scratch_repo empty-skill-names)"
 jq '.sources |= map(.skills |= map(""))' "$REPO_ROOT/upstream/skills.json" \
-  > "$R/upstream/skills.json" || fail "could not blank the skill names"
+  >"$R/upstream/skills.json" || fail "could not blank the skill names"
 run_case "all-empty skill names" "$R" "$(seeded_home 8)" "$BIN"
 saw 'a declared skill line is malformed' \
   || fail "all-empty skill names: ensure_skills_sh did not report the malformed rows:"$'\n'"$OUT"
@@ -160,7 +160,7 @@ saw 'a declared skill line is malformed' \
 # keeps each field where it was and reports the empty one (spec §6.3).
 R="$(scratch_repo empty-entry-name)"
 jq '(.plugins[] | select(.name == "superpowers") | .name) = ""' "$MARKETPLACE" \
-  > "$R/.claude-plugin/marketplace.json" || fail "could not blank the entry name"
+  >"$R/.claude-plugin/marketplace.json" || fail "could not blank the entry name"
 run_case "empty entry name" "$R" "$(seeded_home 9)" "$BIN"
 saw "a curated entry is malformed: name=''" \
   || fail "empty entry name: ensure_clones did not name the empty field:"$'\n'"$OUT"
@@ -177,7 +177,10 @@ saw 'the https://github.com/obra/superpowers.git entry' \
   || fail "bin/setup no longer ends in 'main \"\$@\"'; this fixture needs to know where to override"
 R="$(scratch_repo silent-check)"
 rm "$R/bin/setup" || fail "could not drop the symlink for the silent-check copy"
-{ sed '$d' "$REPO_ROOT/bin/setup"; printf 'ensure_fresh_clone() { :; }\nmain "$@"\n'; } > "$R/bin/setup" \
+{
+  sed '$d' "$REPO_ROOT/bin/setup"
+  printf 'ensure_fresh_clone() { :; }\nmain "$@"\n'
+} >"$R/bin/setup" \
   || fail "could not write the silent-check copy"
 run_case "silent check" "$R" "$(seeded_home 10)" "$BIN"
 saw 'FAIL: check ensure_fresh_clone reported nothing; this machine is unchecked, not verified' \

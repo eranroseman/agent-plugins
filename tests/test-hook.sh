@@ -32,7 +32,7 @@ src="$UP/skills/using-superpowers/SKILL.md"
 [ "$(sed -n 30p "$src")" = '- "Let'"'"'s build X" → superpowers:brainstorming first, then implementation skills.' ] \
   || fail "upstream line 30 is not the expected superpowers:brainstorming line; re-audit the edit"
 expected="$(mktemp)"
-bash "$REPO_ROOT/bin/bump-superpowers" --emit-payload "$UP" > "$expected" \
+bash "$REPO_ROOT/bin/bump-superpowers" --emit-payload "$UP" >"$expected" \
   || fail "bin/bump-superpowers --emit-payload failed"
 diff "$expected" "$H/payload.md" || fail "payload.md != the recipe's output for the pinned clone"
 [ "$(grep -c 'software-dev:brainstorming' "$H/payload.md")" -eq 1 ] || fail "expected exactly one software-dev:brainstorming"
@@ -79,7 +79,11 @@ printf '%s' "$out" | jq -e '.hookSpecificOutput.hookEventName == "SessionStart"'
   || fail "output is not the SessionStart envelope: $out"
 [ "$(printf '%s' "$out" | jq 'keys | length')" -eq 1 ] || fail "envelope has extra top-level keys"
 diff <(printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext') \
-     <(cat "$H/payload.md"; printf '\n'; cat "$H/payload-rules.md") \
+  <(
+    cat "$H/payload.md"
+    printf '\n'
+    cat "$H/payload-rules.md"
+  ) \
   || fail "additionalContext does not round-trip to payload.md + blank line + payload-rules.md"
 len="$(printf '%s' "$out" | jq '.hookSpecificOutput.additionalContext | length')"
 [ "$len" -lt 8000 ] || fail "additionalContext is $len code points; the tripwire is 8000"
@@ -112,8 +116,8 @@ done
 T="$(mktemp -d)"
 cp "$H/session-start" "$T/session-start"
 sample=$'x\x01\x0c\x1b\x1fy "q" \\ end'
-printf '%s' "$sample" > "$T/payload.md"
-: > "$T/payload-rules.md"   # the script now reads it; empty keeps the expectation the sample alone
+printf '%s' "$sample" >"$T/payload.md"
+: >"$T/payload-rules.md" # the script now reads it; empty keeps the expectation the sample alone
 out="$("$T/session-start")"
 printf '%s' "$out" | jq -e . >/dev/null || fail "control characters produced invalid JSON"
 [ "$(printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext')" = "$sample" ] \
@@ -125,7 +129,7 @@ printf '%s' "$out" | jq -e . >/dev/null || fail "control characters produced inv
 # rules-only envelope. Assert the fixed `&&`-joined form fails instead.
 T2="$(mktemp -d)"
 cp "$H/session-start" "$T2/session-start"
-printf 'some rules\n' > "$T2/payload-rules.md"
+printf 'some rules\n' >"$T2/payload-rules.md"
 if "$T2/session-start" >/dev/null 2>&1; then
   fail "session-start must exit non-zero when payload.md is missing"
 fi

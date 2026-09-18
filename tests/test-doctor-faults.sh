@@ -47,13 +47,13 @@ seed_other_clones() {
 }
 seed_other_clones
 
-ln -s "$H/nowhere" "$SKILLS/writing-plans"            # dangling
-mkdir -p "$SKILLS/executing-plans"                    # a directory where a link belongs
-printf 'squat\n' > "$SKILLS/writing-skills"           # a regular file where a link belongs
+ln -s "$H/nowhere" "$SKILLS/writing-plans" # dangling
+mkdir -p "$SKILLS/executing-plans"         # a directory where a link belongs
+printf 'squat\n' >"$SKILLS/writing-skills" # a regular file where a link belongs
 
 # A lockfile entry with no ref: the state every skills.sh install is in today.
 mkdir -p "$H/.agents"
-cat > "$H/.agents/.skill-lock.json" <<'JSON'
+cat >"$H/.agents/.skill-lock.json" <<'JSON'
 {
   "version": 3,
   "skills": {
@@ -76,8 +76,7 @@ for pat in \
   'dangling link' \
   'executing-plans exists and is not a symlink' \
   'writing-skills exists and is not a symlink' \
-  'lockfile entry for grilling records no ref'
-do
+  'lockfile entry for grilling records no ref'; do
   printf '%s\n' "$out" | grep -q "$pat" || fail "doctor did not report: $pat"
 done
 printf '%s\n' "$out" | grep -q 'FAIL' || fail "doctor reported no FAIL line"
@@ -108,7 +107,7 @@ while IFS= read -r s; do
   mkdir -p "$CLONE2/skills/$s"
 done < <(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$MARKETPLACE" | sed 's#^\./##')
 UPSTREAM="$H2/.local/share/software-dev/upstream" seed_other_clones
-cat > "$H2/.claude/plugins/installed_plugins.json" <<JSON
+cat >"$H2/.claude/plugins/installed_plugins.json" <<JSON
 {"version":2,"plugins":{
   "software-dev@eranroseman":[{"scope":"user","version":"$sd"}],
   "sensemaking@eranroseman":[{"scope":"user","version":"$sm"}],
@@ -120,18 +119,18 @@ JSON
 BIN2="$H2/bin"
 mkdir -p "$BIN2"
 for t in bash git jq node sed awk grep find date readlink basename dirname \
-         rm mv ln mkdir cp cat sha256sum; do
+  rm mv ln mkdir cp cat sha256sum; do
   p="$(command -v "$t" 2>/dev/null)" || fail "the fixture needs $t on PATH"
   ln -sf "$p" "$BIN2/$t"
 done
-cat > "$BIN2/npx" <<'STUB'
+cat >"$BIN2/npx" <<'STUB'
 #!/usr/bin/env bash
 # Drains stdin exactly as the real npx does -- that inheritance is the defect
 # under test -- then records the invocation rather than installing anything.
 cat >/dev/null 2>&1
 printf '%s\n' "$*" >> "$NPX_LOG"
 STUB
-cat > "$BIN2/claude" <<'STUB'
+cat >"$BIN2/claude" <<'STUB'
 #!/usr/bin/env bash
 # On PATH for the prerequisite check only: the seeded installed_plugins.json
 # already carries the declared versions, so the Claude half runs no command.
@@ -142,7 +141,7 @@ chmod +x "$BIN2/npx" "$BIN2/claude" || fail "could not make the stubs executable
 
 NPX_LOG="$H2/npx.log"
 if out="$(env HOME="$H2" CODEX_HOME="$H2/.codex" PATH="$BIN2" NPX_LOG="$NPX_LOG" \
-    /bin/bash "$SETUP" 2>&1)"; then status=0; else status=$?; fi
+  /bin/bash "$SETUP" 2>&1)"; then status=0; else status=$?; fi
 declared="$(jq '[.sources[].skills[]] | length' "$REPO_ROOT/upstream/skills.json")"
 attempted="$(grep -c 'skills add' "$NPX_LOG" 2>/dev/null || true)"
 [ "${attempted:-0}" -eq "$declared" ] \
@@ -169,7 +168,7 @@ done < <(jq -r '.sources[].skills[]' "$REPO_ROOT/upstream/skills.json")
 BIN="$H/bin"
 mkdir -p "$BIN" || fail "could not create $BIN"
 for t in bash git jq sed awk grep find date readlink basename dirname \
-         rm mv ln mkdir cp cat sha256sum; do
+  rm mv ln mkdir cp cat sha256sum; do
   p="$(command -v "$t" 2>/dev/null)" || fail "the fixture needs $t on PATH"
   ln -sf "$p" "$BIN/$t" || fail "could not link $t into $BIN"
 done
@@ -179,11 +178,11 @@ done
 # a stub does not, and an unexpected invocation becomes a visible FAIL line.
 # This is what makes the test hermetic on a machine without the CLI.
 for t in claude node npx; do
-  printf '#!/usr/bin/env bash\nexit 1\n' > "$BIN/$t" || fail "could not write the $t stub"
+  printf '#!/usr/bin/env bash\nexit 1\n' >"$BIN/$t" || fail "could not write the $t stub"
   chmod +x "$BIN/$t" || fail "could not make the $t stub executable"
 done
 mkdir -p "$H/.claude/plugins"
-cat > "$H/.claude/plugins/installed_plugins.json" <<JSON
+cat >"$H/.claude/plugins/installed_plugins.json" <<JSON
 {"version":2,"plugins":{
   "software-dev@eranroseman":[{"scope":"user","version":"$sd"}],
   "sensemaking@eranroseman":[{"scope":"user","version":"$sm"}],
@@ -194,7 +193,7 @@ jq '{version: 3,
      skills: (reduce (.sources[] as $s | $s.skills[] |
        {key: ., value: {source: $s.repo, ref: $s.ref}}) as $e ({}; . + {($e.key): $e.value})),
      dismissed: {}}' \
-  "$REPO_ROOT/upstream/skills.json" > "$H/.agents/.skill-lock.json" \
+  "$REPO_ROOT/upstream/skills.json" >"$H/.agents/.skill-lock.json" \
   || fail "could not synthesise a pinned lockfile"
 
 if out="$(env HOME="$H" CODEX_HOME="$H/.codex" PATH="$BIN" /bin/bash "$SETUP" 2>&1)"; then status=0; else status=$?; fi

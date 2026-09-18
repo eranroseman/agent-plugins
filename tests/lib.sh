@@ -75,7 +75,10 @@ VENDORED_GUARDS=(
   tests/test-vendored-duplicates.sh
   tests/test-hook.sh
 )
-EXCLUDED="$(IFS='|'; printf '%s' "${VENDORED_PATTERNS[*]}")"
+EXCLUDED="$(
+  IFS='|'
+  printf '%s' "${VENDORED_PATTERNS[*]}"
+)"
 
 # Tracked files this repository owns, one path per line relative to
 # REPO_ROOT. Arguments are git pathspecs: checked '*.md', or

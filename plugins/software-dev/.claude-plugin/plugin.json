@@ -7,6 +7,10 @@
   "repository": "https://github.com/eranroseman/agent-plugins",
   "license": "MIT",
   "keywords": ["software-dev", "superpowers", "skills", "workflow"],
-  "dependencies": ["sensemaking", "superpowers", "writing-clearly-and-concisely"],
+  "dependencies": [
+    "sensemaking",
+    "superpowers",
+    "writing-clearly-and-concisely"
+  ],
   "hooks": "./hooks/claude-hooks.json"
 }
