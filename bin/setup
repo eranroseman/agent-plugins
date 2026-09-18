@@ -18,7 +18,14 @@
 # exits early, with status 2.
 set -uo pipefail
 
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# Builtins only until require_tools has spoken: under an empty PATH the
+# external dirname is `command not found`, and that line, carrying the
+# script's own path, once satisfied a test's grep for `claude` before the
+# refusal was printed (#16). A $0 with no slash was found through PATH or run
+# as `bash setup` from its own directory, so its directory is `.`.
+script_dir="${0%/*}"
+[ "$script_dir" != "$0" ] || script_dir=.
+REPO_ROOT="$(cd "$script_dir/.." && pwd)"
 MARKETPLACE="$REPO_ROOT/.claude-plugin/marketplace.json"
 SKILLS_JSON="$REPO_ROOT/upstream/skills.json"
 
