@@ -141,4 +141,30 @@ run_case "empty HOME" "$R" "$T/home-7" "$BIN"
 saw 'FAIL:' || fail "empty HOME: no FAIL line at all:"$'\n'"$OUT"
 saw 'the skill root is missing' || fail "empty HOME: the skill root was not reported:"$'\n'"$OUT"
 
-printf 'doctor-silence: 7 unreadable machines, none reported clean\n'
+# 8. upstream/skills.json whose declared skill names are all empty strings:
+# it passes the exit-status guard (jq exits 0) and the non-empty guard (each
+# row is repo<TAB>ref<TAB>), and before the loop split every iteration hit
+# `[ -n "$name" ] || continue` and the check printed nothing at all -- the
+# seventh shape (spec §6.1). An empty field is reported as malformed, never
+# skipped.
+R="$(scratch_repo empty-skill-names)"
+jq '.sources |= map(.skills |= map(""))' "$REPO_ROOT/upstream/skills.json" \
+  > "$R/upstream/skills.json" || fail "could not blank the skill names"
+run_case "all-empty skill names" "$R" "$(seeded_home 8)" "$BIN"
+saw 'a declared skill line is malformed' \
+  || fail "all-empty skill names: ensure_skills_sh did not report the malformed rows:"$'\n'"$OUT"
+
+# 9. A git-subdir entry whose name is the empty string. With a tab IFS,
+# `read` dropped the empty leading field and shifted every value left, so
+# the entry was reported under its URL; the split by parameter expansion
+# keeps each field where it was and reports the empty one (spec §6.3).
+R="$(scratch_repo empty-entry-name)"
+jq '(.plugins[] | select(.name == "superpowers") | .name) = ""' "$MARKETPLACE" \
+  > "$R/.claude-plugin/marketplace.json" || fail "could not blank the entry name"
+run_case "empty entry name" "$R" "$(seeded_home 9)" "$BIN"
+saw "a curated entry is malformed: name=''" \
+  || fail "empty entry name: ensure_clones did not name the empty field:"$'\n'"$OUT"
+saw 'the https://github.com/obra/superpowers.git entry' \
+  && fail "empty entry name: the URL was read as the name:"$'\n'"$OUT"
+
+printf 'doctor-silence: 9 unreadable machines, none reported clean\n'

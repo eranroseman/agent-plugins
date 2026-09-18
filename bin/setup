@@ -146,12 +146,35 @@ clone_dir() { printf '%s/%s' "$UPSTREAM_ROOT" "$1"; }
 # A timestamped sibling, so nothing a user put here is ever destroyed.
 aside_path() { printf '%s.aside.%s' "$1" "$(date +%Y%m%d%H%M%S)"; }
 
+# Split a tab-separated line into the six fields of F by parameter expansion,
+# never by feeding `read` a tab IFS: a tab is IFS whitespace, so `read`
+# collapses a run of them and drops one at either end, and a row with an
+# empty leading or middle field shifts every later value left by one, which
+# misnames the field in the report and lets a first-field guard pass on the
+# wrong value. ensure_links carries the same split inline with the full
+# account (0aa11d2). Six tabs are appended so a short row leaves its missing
+# fields empty. F is the caller's local; bash scopes it dynamically.
+split_tsv() {
+  local rest="$1"$'\t\t\t\t\t\t'
+  F=()
+  for _ in 1 2 3 4 5 6; do
+    F+=("${rest%%$'\t'*}")
+    rest="${rest#*$'\t'}"
+  done
+}
+
 ensure_clones() {
-  local name url sha dir have n=0
+  local name url sha dir have n=0 line F
   needs jq "the curated entries cannot be read, so no pinned clone is checked" || return
-  while IFS="$(printf '\t')" read -r name url _ sha _ _; do
-    [ -n "$name" ] || continue
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
     n=$((n + 1))
+    split_tsv "$line"
+    name="${F[0]}" url="${F[1]}" sha="${F[3]}"
+    if [ -z "$name" ] || [ -z "$url" ]; then
+      bad "a curated entry is malformed: name='$name' url='$url'"
+      continue
+    fi
     dir="$(clone_dir "$name")"
     if [ "${#sha}" -ne 40 ]; then
       bad "the $name entry carries no 40-character sha"
@@ -317,7 +340,7 @@ installed_version() {
 }
 
 ensure_claude() {
-  local want have installed_sd name
+  local want have installed_sd name line F
   if ! have claude; then
     skip "claude is not on PATH: the Claude half is unchecked"
     return
@@ -396,8 +419,14 @@ ensure_claude() {
   # software-dev` moved the parent from 0.6.0 to 0.7.0 and left its new
   # dependency uninstalled -- so a missing entry is installed by name. An
   # installed one at the wrong version only moves under `update`.
-  while IFS="$(printf '\t')" read -r name _ _ _ _ want; do
-    [ -n "$name" ] || continue
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    split_tsv "$line"
+    name="${F[0]}" want="${F[5]}"
+    if [ -z "$name" ] || [ -z "$want" ]; then
+      bad "a curated entry is malformed: name='$name' version='$want'"
+      continue
+    fi
     have="$(installed_version "$name")"
     if [ "$have" != "$want" ] && applying; then
       if [ -z "$have" ]; then
@@ -488,7 +517,7 @@ locked_ref() {
 }
 
 ensure_skills_sh() {
-  local repo ref name have lines
+  local repo ref name have lines line F
   needs jq "the declared skill set cannot be read, so no skills.sh install is checked" || return
 
   # Same reasoning as ensure_links: a non-zero jq exit means a source with no
@@ -498,8 +527,14 @@ ensure_skills_sh() {
     || { bad "the declared skill set could not be read from $SKILLS_JSON"; return; }
   [ -n "$lines" ] || { bad "no skill is declared in $SKILLS_JSON"; return; }
 
-  while IFS="$(printf '\t')" read -r repo ref name; do
-    [ -n "$name" ] || continue
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    split_tsv "$line"
+    repo="${F[0]}" ref="${F[1]}" name="${F[2]}"
+    if [ -z "$repo" ] || [ -z "$ref" ] || [ -z "$name" ]; then
+      bad "a declared skill line is malformed: repo='$repo' ref='$ref' name='$name'"
+      continue
+    fi
     have="$(locked_ref "$name")"
     if [ "$have" = "$ref" ]; then
       ok "skills.sh $name at $ref"
@@ -630,7 +665,7 @@ report_only() {
 # thing and is not reported here. Reported, never repaired.
 report_duplicates() {
   local -a claude_dirs=() codex_dirs=()
-  local root dir path mkt name version
+  local root dir path mkt name version line F
   local can_hash=1
   # Guarded once here, not inside report_pool: report_pool runs once per
   # harness, and a guard placed there would print this SKIP twice. The
@@ -667,8 +702,14 @@ report_duplicates() {
   # Codex loads an installed plugin from its cache, keyed by marketplace,
   # name and installed version; `codex plugin list --json` names all three.
   if [ -n "$CODEX_LIST" ]; then
-    while IFS="$(printf '\t')" read -r mkt name version; do
-      [ -n "$name" ] || continue
+    while IFS= read -r line; do
+      [ -n "$line" ] || continue
+      split_tsv "$line"
+      mkt="${F[0]}" name="${F[1]}" version="${F[2]}"
+      if [ -z "$mkt" ] || [ -z "$name" ] || [ -z "$version" ]; then
+        bad "a codex plugin list entry is malformed: marketplace='$mkt' name='$name' version='$version'"
+        continue
+      fi
       path="${CODEX_HOME:-$HOME/.codex}/plugins/cache/$mkt/$name/$version"
       while IFS= read -r dir; do codex_dirs+=("$dir"); done < <(plugin_skill_dirs "$path")
     done < <(printf '%s' "$CODEX_LIST" \
