@@ -9,6 +9,26 @@
 
 VALIDATOR="${CODEX_PLUGIN_VALIDATOR:-$HOME/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py}"
 [ -f "$VALIDATOR" ] || fail "Codex validator not found at $VALIDATOR (set CODEX_PLUGIN_VALIDATOR)"
+# One validator, two copies, both checked (#3). The local copy -- whatever
+# codex-cli installed, or the file CODEX_PLUGIN_VALIDATOR names -- must be
+# the bytes CI fetches from openai/codex at the pinned sha, for both files
+# the validator is made of. sha256, because sha256sum is the repository's
+# one hashing tool; recorded 2026-09-17 from raw.githubusercontent.com at
+# the sha below and byte-identical to the codex-cli 0.147.0 copies. The day
+# codex-cli moves the files, this fails and the message says what to do.
+PIN=f3f6922519fa38487c8250c2b8a670a39a2cf9ff
+VDIR="${VALIDATOR%/*}"
+for pair in \
+  'validate_plugin.py f4eeadb733b28b0c3e714de263a76d6542866a672f3e99bdffcf4dbcdf85e944' \
+  'identifier_validation.py a6d51ce4a9a7e8f85626ff5808a467a67574e7f8cdf1167ffb467c5f67e57223'; do
+  f="${pair%% *}"
+  want="${pair#* }"
+  [ -f "$VDIR/$f" ] || fail "$f is missing beside $VALIDATOR; the validator is two files"
+  got="$(sha256sum "$VDIR/$f")" || fail "could not hash $VDIR/$f"
+  got="${got%% *}"
+  [ "$got" = "$want" ] \
+    || fail "$f at $VDIR is not the copy CI pins (openai/codex@${PIN:0:7}); re-check the pin, or point CODEX_PLUGIN_VALIDATOR at a copy fetched by the recipe in .github/workflows/validate.yml"
+done
 
 found=0
 for p in "$REPO_ROOT"/plugins/*/; do
