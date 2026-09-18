@@ -11,7 +11,9 @@ sha="$(upstream_sha)"
 UP="$(fetch_upstream)"
 [ "$(git -C "$UP" rev-parse HEAD)" = "$sha" ] || fail "checkout HEAD != pinned sha"
 
-mapfile -t listed < <(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$MARKETPLACE" | sed 's#^\./##' | sort)
+listed=()
+while IFS= read -r s; do listed+=("$s"); done \
+  < <(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$MARKETPLACE" | sed 's#^\./##' | sort)
 [ "${#listed[@]}" -eq 13 ] || fail "expected 13 listed skills, got ${#listed[@]}"
 for s in "${listed[@]}"; do
   [ "$s" != "brainstorming" ] || fail "brainstorming must not be listed"
@@ -21,7 +23,7 @@ done
 # listed + brainstorming must be the whole upstream set, so a new upstream skill
 # is a visible decision at the next sha bump rather than a silent omission.
 diff <(printf '%s\n' "${listed[@]}" brainstorming | sort) \
-     <(find "$UP/skills" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort) \
+     <(for d in "$UP"/skills/*/; do d="${d%/}"; printf '%s\n' "${d##*/}"; done | sort) \
   || fail "listed skills + brainstorming != upstream skill directories"
 
 want_version="$(jq -r '.plugins[] | select(.name == "superpowers") | .version' "$MARKETPLACE")"

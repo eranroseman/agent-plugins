@@ -206,7 +206,7 @@ done
 bt='`'
 available="$(
   jq -r '[.sources[].skills[]] | .[]' "$REPO_ROOT/upstream/skills.json"
-  find "$REPO_ROOT/plugins" -mindepth 3 -maxdepth 3 -type d -path '*/skills/*' -printf '%f\n'
+  for d in "$REPO_ROOT"/plugins/*/skills/*/; do d="${d%/}"; printf '%s\n' "${d##*/}"; done
 )"
 named=0
 while IFS= read -r s; do
@@ -214,7 +214,7 @@ while IFS= read -r s; do
   named=$((named + 1))
   grep -qxF -- "$s" <<<"$available" \
     || fail "SKILL.md names \`$s\`, which is neither declared in upstream/skills.json nor vendored here"
-done < <(find "$U/.." -mindepth 1 -maxdepth 1 -type d -printf '%f\n')
+done < <(for d in "$U"/../*/; do d="${d%/}"; printf '%s\n' "${d##*/}"; done)
 [ "$named" -gt 0 ] || fail "SKILL.md names no upstream skill at all; the resolution check went vacuous"
 
 # The LICENSE's third provenance notice names the same ref and commit.
