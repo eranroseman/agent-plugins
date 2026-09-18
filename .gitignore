@@ -8,3 +8,8 @@
 # an exact file set against upstream.
 __pycache__/
 *.pyc
+
+# Written by every tests/run.sh run and cited by reports instead of pasted
+# output (spec §5.4). Ignored so the run's own output never marks the tree
+# dirty in the header line it writes.
+tests/results.tsv
