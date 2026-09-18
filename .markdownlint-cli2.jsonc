@@ -1,0 +1,15 @@
+{
+  // Read by tests/test-lint-markdown.sh and bin/format over the explicit
+  // list tests/lib.sh derives (spec §8.1): no globs here, no ignore file.
+  "config": {
+    // Line length: proseWrap is preserve, so a paragraph is one line.
+    "MD013": false,
+    // Inline HTML: the specs' <details> blocks and the skills' gates.
+    "MD033": false,
+    // First line a top-level heading: AGENTS.md opens at ## by the
+    // scaffolder's template shape, CLAUDE.md is an @AGENTS.md include, and
+    // every SKILL.md and agent file opens with a paragraph after its
+    // frontmatter.
+    "MD041": false
+  }
+}

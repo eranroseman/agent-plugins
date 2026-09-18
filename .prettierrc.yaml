@@ -1,0 +1,15 @@
+# Read by tests/test-format-prettier.sh and bin/format over the explicit file
+# lists tests/lib.sh derives (spec §8.1). No .prettierignore: the list is the
+# scope, and an ignore file would restate the vendored set a second time.
+
+# tests/test-vendored-scaffolder.sh holds two sections of AGENTS.md
+# byte-identical to a block inside the vendored setup-repository/SKILL.md,
+# which no formatter may touch; with `always` the formatter and that drift
+# test become mutually unsatisfiable (§8.4).
+proseWrap: preserve
+
+# Fenced blocks quote other files verbatim -- the AGENTS.md block in the
+# specs, the README recipes tests/test-setup-doctor.sh compares byte for byte
+# against `bin/setup --help` -- and quoted material must not be restyled by
+# the document quoting it. Quoted: a bare `off` is YAML for false.
+embeddedLanguageFormatting: "off"

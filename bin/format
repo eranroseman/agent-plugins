@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Rewrite what the format checks check (spec §8.3): shfmt over the shell
+# files, prettier over JSON, YAML and markdown, then markdownlint-cli2 --fix
+# over markdown, each over the list tests/lib.sh derives. No check mode of
+# its own: the tests are the check (tests/test-format-shell.sh,
+# tests/test-format-prettier.sh, tests/test-lint-markdown.sh). No pre-commit
+# hook: the suite is the gate. Versions are held in tests/tools.txt.
+set -euo pipefail
+. "$(dirname "$0")/../tests/lib.sh"
+
+for t in shfmt prettier markdownlint-cli2; do
+  command -v "$t" >/dev/null 2>&1 || fail "bin/format needs $t on PATH; the versions are in tests/tools.txt"
+done
+shell="$(checked_shell)"
+[ -n "$shell" ] || fail "checked_shell() listed nothing; the ownership derivation went vacuous"
+docs="$(checked '*.json' '*.yml' '*.yaml' '*.md')"
+[ -n "$docs" ] || fail "the prettier list is empty"
+md="$(checked '*.md')"
+[ -n "$md" ] || fail "the markdown list is empty"
+cd "$REPO_ROOT"
+# shellcheck disable=SC2086  # one path per word, asserted by tests/test-ownership.sh
+shfmt -w "${SHFMT_FLAGS[@]}" $shell
+# shellcheck disable=SC2086  # as above
+prettier --log-level warn --write $docs
+# --fix exits 1 while findings it cannot fix remain; those are the test's to
+# report, not this script's to hide.
+# shellcheck disable=SC2086  # as above
+markdownlint-cli2 --fix $md || true

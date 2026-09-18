@@ -101,3 +101,9 @@ checked_shell() {
     fi
   done < <(checked "$@")
 }
+
+# shfmt's flags, read by tests/test-format-shell.sh and bin/format (spec
+# §8.1): the set measured closest to the code as written, 17 files and 272
+# lines at aa8e78d; -sr was dropped because it restyled a further 140 lines.
+# shellcheck disable=SC2034  # read by the test and by bin/format
+SHFMT_FLAGS=(-i 2 -ci -bn)
