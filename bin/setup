@@ -715,7 +715,11 @@ report_duplicates() {
     done < <(printf '%s' "$CODEX_LIST" \
       | jq -r '.installed[]? | select(.enabled) | [.marketplaceName, .name, .version] | @tsv')
   fi
-  if [ "$can_hash" -eq 1 ] && have codex; then report_pool Codex "${codex_dirs[@]}"; fi
+  # Gated on the pool being complete, not on `have codex`: with codex present
+  # and `codex plugin list --json` failed, CODEX_LIST is empty, the FAIL line
+  # already stands above, and an all-clear here would speak for a pool
+  # missing its plugin half (#40).
+  if [ "$can_hash" -eq 1 ] && [ -n "$CODEX_LIST" ]; then report_pool Codex "${codex_dirs[@]}"; fi
 
   # A Claude plugin cache whose marketplace is not registered: residue of a
   # removal, and not this script's to delete.
@@ -733,13 +737,14 @@ report_duplicates() {
 # Hashing SKILL.md is the content identity: two paths with one hash are the
 # same skill, and a name with two hashes is the finding.
 report_pool() {
-  local harness="$1" dir name h found=0
+  local harness="$1" dir name h found=0 hashed=0
   local -A hashes=() places=()
   local -a distinct
   shift
   for dir in "$@"; do
     name="$(basename "$dir")"
     h="$(sha256sum "$dir/SKILL.md" 2>/dev/null)" || continue
+    hashed=$((hashed + 1))
     h="${h%% *}"
     case " ${hashes[$name]:-} " in
       *" $h "*) ;;
@@ -753,7 +758,7 @@ report_pool() {
     found=$((found + 1))
     note "$harness: skill $name resolves to ${#distinct[@]} different trees: ${places[$name]}"
   done
-  [ "$found" -eq 0 ] && note "$harness: no skill name resolves to more than one tree"
+  [ "$found" -eq 0 ] && note "$harness: $hashed skill tree(s) hashed; no name resolves to more than one tree"
 }
 
 main() {

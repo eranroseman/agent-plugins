@@ -74,4 +74,30 @@ printf '%s\n' "$out" | grep -q 'NOTE: Codex:' \
 printf '%s\n' "$out" | grep -q 'FAIL:.*resolves' \
   && fail "a duplicate finding was reported as FAIL:, not NOTE: -- report, never repair:"$'\n'"$out"
 
+# The all-clear says how many trees it hashed (#40): trees hashed, not
+# passed, so a SKILL.md sha256sum could not read lowers the count instead
+# of hiding inside it. A second HOME with two distinct skills and no
+# duplicate.
+H2="$(mktemp -d)" || fail "mktemp failed"
+trap 'rm -rf "$H" "$H2"' EXIT
+mkdir -p "$H2/.agents/skills" || fail "could not seed $H2"
+skill "$H2/.agents/skills/alpha" "alpha alone"
+skill "$H2/.agents/skills/beta" "beta alone"
+out="$(env HOME="$H2" CODEX_HOME="$H2/.codex" PATH="$BIN" /bin/bash "$DOCTOR" 2>&1 || true)"
+printf '%s\n' "$out" | grep -q 'NOTE: Claude: 2 skill tree(s) hashed; no name resolves to more than one tree' \
+  || fail "the Claude all-clear does not say how many trees it hashed:"$'\n'"$out"
+
+# The Codex all-clear is gated on the pool being complete, not on codex being
+# on PATH (#40): with codex present and `codex plugin list --json` failing,
+# the FAIL line stands and no all-clear is printed over a pool missing its
+# plugin half. A stub codex that exits 1 is that machine.
+printf '#!/usr/bin/env bash\nexit 1\n' > "$BIN/codex" || fail "could not write the codex stub"
+chmod +x "$BIN/codex" || fail "could not make the codex stub executable"
+out="$(env HOME="$H2" CODEX_HOME="$H2/.codex" PATH="$BIN" /bin/bash "$DOCTOR" 2>&1 || true)"
+printf '%s\n' "$out" | grep -q 'FAIL: codex plugin list failed' \
+  || fail "a failing codex plugin list was not reported:"$'\n'"$out"
+printf '%s\n' "$out" | grep -q 'NOTE: Codex:' \
+  && fail "the Codex pool was reported over a failed codex plugin list:"$'\n'"$out"
+rm -f "$BIN/codex"
+
 printf 'doctor-duplicates: one Claude duplicate and one residue reported; three false positives quiet\n'
