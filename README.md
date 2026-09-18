@@ -92,12 +92,19 @@ Claude Code loads the new versions at the next launch or after
 
 ## Checks
 
-`tests/run.sh` runs every static check: manifest schema on both harnesses, the
-upstream pin, the skills.sh pins, the curated writing entry, drift on the five
-vendored or forked skills, the invariants every plugin skill must hold, hook
-output, the engine's shape, the doctor's fault detection, and the doctor's
-duplicate detection. Ten of them touch the network: the three pin checks, the
-five drift checks, the hook payload check, and the engine's own test, whose
-upgrade-path assertion fetches the pinned upstream trees when `claude` is on
-`PATH`. CI runs the same script, plus an end-to-end `bin/setup` run against a
-scratch `HOME`.
+`tests/run.sh` runs every check under `tests/`. It needs `bash` 4 or later,
+`jq` and `git`, and refuses with the list otherwise. Some checks need a tool
+this machine may lack: each such check is skipped with a line naming the
+tool, and the run ends by summing what it did not verify. The versions those
+checks are held to are declared in `tests/tools.txt`; the three npm tools
+install with `npm install -g <tool>@<version>`, the three binaries from their
+release pages. The Codex manifest check needs `python3` with `pyyaml` and the
+validator `codex-cli` installs, or a copy fetched by the recipe in
+`.github/workflows/validate.yml` and named by `CODEX_PLUGIN_VALIDATOR`. The
+pin and drift checks fetch from GitHub; offline, they fail rather than skip.
+
+Every run writes `tests/results.tsv`, one row per check under a header naming
+the commit; a report cites that file rather than pasting output. `bin/format`
+rewrites what the format checks check. CI runs the same script with
+`--no-skip`, so nothing is skipped there, uploads the result file as an
+artifact, and runs `bin/setup` end to end against a scratch `HOME`.
