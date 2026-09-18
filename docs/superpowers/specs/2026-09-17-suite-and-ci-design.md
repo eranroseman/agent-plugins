@@ -440,10 +440,10 @@ Deviations from an answer, each with its veto line in place: the hermetic repair
 
 ## 14. Open items carried forward
 
-- **`.claude-plugin/marketplace.json`'s `$schema` URL is a 404** (D §5.3); one line pointing at SchemaStore would let editors validate. Not a gate; an issue to file.
+- **`.claude-plugin/marketplace.json`'s `$schema` URL is a 404** (D §5.3); one line pointing at SchemaStore would let editors validate. Not a gate; filed as [#58](https://github.com/eranroseman/agent-plugins/issues/58).
 - **`bin/setup` has no bash-4 probe of its own.** On bash 3.2, `local -A` in `report_pool` fails and the array degrades silently. Two lines in `require_tools` and one `needs`-style guard in `report_pool`; milestone 4, beside #17.
 - **A sha-pinned action goes stale the same way an upstream pin does.** The watch surface (milestone 4, the class #56 names) is where it belongs, not `dependabot.yml`.
-- **`tests/test-links-resolve.sh` is satisfied by documents with no links.** Widening it to `checked '*.md'` adds the authored skills; D §5.4's rewrite over backticked paths is not adopted here and has no issue. One to file if wanted.
+- **`tests/test-links-resolve.sh` is satisfied by documents with no links**, and widening it to `checked '*.md'` adds none: no authored markdown file carries a relative link, measured. D §5.4's rewrite over backticked paths, the form this repository's references actually take, is not adopted here; filed as [#59](https://github.com/eranroseman/agent-plugins/issues/59).
 - **`docs/agents/*.md` are byte-identical to the scaffolder's templates** and will diverge, since the template cannot be repaired and the copies are meant to be edited. Both sides have a mechanism; no rule (D §8).
 - **#21 may devendor `payload.md` or `setup-repository/SKILL.md`.** That edits `EXCLUDED` and nothing else.
 - **`CONTEXT.md`** is a placeholder in the checked set; #26 writes it.
