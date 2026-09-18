@@ -97,9 +97,11 @@ A new `tests/test-ownership.sh` keeps the exclusion honest: every vendored patte
 the test suite needs: bash 4 or later (found 3.2), jq, git
 ```
 
-`jq` because `lib.sh`'s `upstream_sha` reads the marketplace with it; `git` because `fetch_pinned` clones with it; `bash` 4 because `bin/setup`, the subject of five tests, declares an associative array in `report_pool`, and on bash 3.2 that `local -A` fails and the array degrades into an indexed one with no message. Once #5 lands the tests themselves need nothing past bash 3.2; the engine does.
+The line between hard and a need (§5.2): a tool is hard when the suite's shared substrate cannot run without it, so that absent it no test's verdict means anything; it is a need when one test's subject requires it, so that absent it that test cannot speak and the others still can. The hard list is three names in `run.sh`, and growing it is a visible edit.
 
-Everything on the previous hard list (`claude`, `node`, `npx`, `python3` with `pyyaml`, `sha256sum`, `cmp`) is either part of a base GNU/Linux install or becomes a declared need.
+`jq` because `lib.sh`'s `upstream_sha` reads the marketplace with it; `git` because `fetch_pinned` fetches every pin with it and `checked()` (§4) lists every file with it; `bash` 4 because `bin/setup`, the subject of five tests, declares an associative array in `report_pool`, and on bash 3.2 that `local -A` fails and the array degrades into an indexed one with no message. Once #5 lands the tests themselves need nothing past bash 3.2; the engine does.
+
+Everything on the previous hard list (`claude`, `node`, `npx`, `python3` with `pyyaml`, `sha256sum`, `cmp`) falls into one of two other buckets. Assumed: part of a base GNU/Linux install, not probed, and loud with `command not found` when absent. Or a declared need.
 
 ### 5.2 Needs
 
