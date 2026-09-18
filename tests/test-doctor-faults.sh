@@ -2,8 +2,8 @@
 # bin/doctor must report each seeded fault by name against a scratch HOME, and
 # bin/setup must repair it. The assertions check that the named lines appear,
 # not that they are the only ones. Needs no network and no CLI: every fault is
-# filesystem or git state, and every harness binary on the fixture PATH is a
-# stub that exits 1.
+# filesystem or git state, and the claude and npx on every fixture PATH are
+# stubs rather than the real binaries, so nothing can reach the network.
 . "$(dirname "$0")/lib.sh"
 
 DOCTOR="$REPO_ROOT/bin/doctor"
