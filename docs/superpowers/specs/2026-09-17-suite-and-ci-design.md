@@ -29,7 +29,7 @@ Sources: **G1** and **G2** are the first and second question rounds of 2026-09-1
 | #5, GNU-only constructs in tests | Make the tests portable | M |
 | #3, local and CI validators can disagree | Assert the hash of **both** validator files at the local default path; point at CI's fetch recipe from the README and from the failure message | M, G2 |
 | #8, `pull_request:` trigger | Keep it | G1 Q1 |
-| #8, path filter | `docs/**` excluded, and nothing else; amended in §9.3 for the one file under `docs/` that a test now reads | G2 Q8 |
+| #8, path filter | None. Every push runs CI, and `docs/` is checked like the rest; the first answer, `docs/**` ignored, was reversed after the Q11 collision on the cost measured in §9.3 | M, 2026-09-17, reversing G2 Q8 |
 | #41, rung 1 in scope? | Both rungs. A `REPORTED` counter bumped in the four reporting helpers, snapshotted around each check | G2 Q2 |
 | #41, a silent check's bucket | `FAIL:`, counted in "N check(s) failed"; exit 1 | G2 Q3 |
 | #38, the second-entry fixture | In the new silence test, beside the first-entry one | G1 Q3, G2 |
@@ -51,12 +51,13 @@ Sources: **G1** and **G2** are the first and second question rounds of 2026-09-1
 | Branch and gate | One branch `suite-and-ci`, milestone 1 then milestone 2, full suite green with the result file cited, then merge to `main` and push | G1 Q14 |
 | `shfmt` flags, prettier options, markdownlint rules | `-i 2 -ci -bn`; `proseWrap: preserve`, `embeddedLanguageFormatting: off`; MD013, MD033, MD041 off | D §3, §5.2 |
 | `cspell` over comments in shell and YAML | Yes, through an `overrides` entry, as D §3 ruled; veto drops that entry | D §3 |
+| `cspell` scope | The checked markdown outside the three record directories under `docs/` (`superpowers`, `research`, `archive`); `docs/agents/` stays in | D §3's scope, widened by two directories on the measurement in §8.1 |
 | `bin/format` as the apply script | Yes | G1 Q8 default |
 | A skip in CI | `tests/run.sh --no-skip` makes every unmet need a `FAIL`; CI runs with it, with the pinned binaries ahead of the image's on `PATH` | this spec, from G1 Q6's "CI installs everything, so CI never skips" |
 
 ## 4. Ownership: one derivation
 
-Every list of "the files we own" comes from one function in `tests/lib.sh`. There are two reasons a tracked file is not in it, and each is one pattern class with its own governor.
+Every list of "the files we own" comes from one function in `tests/lib.sh`. One class of tracked file is not in it, and a drift test governs every member.
 
 **Vendored.** An upstream pin constrains the bytes, and a drift test asserts them. Six patterns, taken from D §2, anchored at the start of the path:
 
@@ -71,18 +72,18 @@ plugins/software-dev/hooks/payload.md
 
 Twenty-three files match at `aa8e78d`. `payload.md` is rebuilt from the pinned clone by `bin/bump-superpowers --emit-payload` and diffed by `tests/test-hook.sh`, which is the same constraint. `adhd/agents/openai.yaml` is authored here but sits inside a vendored directory; the directory is excluded whole, because the drift test's file-set assertion governs the directory and `tests/test-plugin-skills.sh` already asserts the one policy line the file exists to carry. `finding-duplicate-functions` is a fork: only its two prompt templates are upstream's, so only they are excluded.
 
-**Records.** Everything under `docs/`: specs, plans, the archive, research notes, and the three agent-process copies under `docs/agents/`. Fourteen files. No test formats, lints or spell-checks them, for a reason that arrives in §9.3: CI does not run on a push that touches only `docs/`, so a check over `docs/` would be a check CI skips on exactly the pushes that could break it. This departs from D §2.1, which formatted specs and plans; §12 records the reversal.
+**Nothing else is excluded.** `docs/` is checked like the rest: its fifteen markdown files are formatted and linted, and spelling is scoped by directory in §8.1. The first draft of this spec carried `docs/` as a second class, to match a CI path filter that skipped docs-only pushes; the maintainer dropped the filter on 2026-09-17 (§9.3), and the class went with it. A plan is a record that freezes once executed (`a3c797f`), and formatting one changes whitespace and emphasis markers, never a sentence; §8.1 says what the one-time pass does to them.
 
-Everything else is checked. At `aa8e78d` that is 57 files: 26 shell (the first line is `#!/usr/bin/env bash`; five have no extension), 8 JSON, 5 YAML, 12 markdown, 2 Python, and 4 that no formatter parses (`.gitignore` and the three `LICENSE` files).
+Everything else is checked. At `aa8e78d`, with this spec added, that is 72 files: 26 shell (the first line is `#!/usr/bin/env bash`; five have no extension), 8 JSON, 5 YAML, 27 markdown, 2 Python, and 4 that no formatter parses (`.gitignore` and the three `LICENSE` files).
 
 ```sh
-EXCLUDED='^plugins/sensemaking/skills/adhd/|^plugins/software-dev/skills/(brainstorming|diagnosing-bugs|setup-repository)/|^plugins/software-dev/skills/finding-duplicate-functions/scripts/[a-z-]+-prompt\.md$|^plugins/software-dev/hooks/payload\.md$|^docs/'
+EXCLUDED='^plugins/sensemaking/skills/adhd/|^plugins/software-dev/skills/(brainstorming|diagnosing-bugs|setup-repository)/|^plugins/software-dev/skills/finding-duplicate-functions/scripts/[a-z-]+-prompt\.md$|^plugins/software-dev/hooks/payload\.md$'
 checked() { git -C "$REPO_ROOT" ls-files "$@" | grep -vE "$EXCLUDED"; }
 ```
 
 `git -C "$REPO_ROOT"`, never bare: `git ls-files` is cwd-relative and `lib.sh` never changes directory. The contract is *tracked files*: a new file joins when it is staged, which is also the moment anything else in the repository notices it. The stale worktree at `.kilo/worktrees/brass-settee` holds byte-identical copies of the tree; a `find` would see them and `ls-files` does not.
 
-Consumers, each filtering by type and each asserting a non-empty list (#27's vacuity guard; `prettier --check` on a file it cannot parse exits 0, D §5.2, so an empty or wrong list is a false green): the shellcheck list and the `shfmt` list (shell by shebang), the three prettier lists (`*.json`, `*.yml` and `*.yaml`, `*.md`), `markdownlint-cli2` and `cspell` (`*.md`; cspell also reads the shell and YAML lists for comments), `tests/test-json-wellformed.sh` (`*.json`, closing #27: eight files where the hardcoded `find` saw seven), `tests/test-links-resolve.sh` (`*.md`), and `bin/format`. The `*/skills/*` exclusion in the JSON check goes; no tracked JSON lives there, and the vendored patterns cover the case it guarded against.
+Consumers, each filtering by type and each asserting a non-empty list (#27's vacuity guard; `prettier --check` on a file it cannot parse exits 0, D §5.2, so an empty or wrong list is a false green): the shellcheck list and the `shfmt` list (shell by shebang), the three prettier lists (`*.json`, `*.yml` and `*.yaml`, `*.md`), `markdownlint-cli2` (`*.md`) and `cspell` (`*.md` within §8.1's scope, plus the shell and YAML lists for comments), `tests/test-json-wellformed.sh` (`*.json`, closing #27: eight files where the hardcoded `find` saw seven), `tests/test-links-resolve.sh` (`*.md`), and `bin/format`. The `*/skills/*` exclusion in the JSON check goes; no tracked JSON lives there, and the vendored patterns cover the case it guarded against.
 
 A new `tests/test-ownership.sh` keeps the exclusion honest: every vendored pattern matches at least one tracked file, and every pattern's path is named in a `tests/test-vendored-*.sh` or in `tests/test-hook.sh`, so nothing sits in the excluded set without a drift test behind it.
 
@@ -229,6 +230,10 @@ That spec is therefore maintained, not frozen. `a3c797f` already amended its §4
 
 `mapfile` at `tests/test-upstream-pin.sh:14` becomes a `while IFS= read -r` loop into the array; `find -printf '%f\n'` at `tests/test-upstream-pin.sh:24` and `tests/test-vendored-scaffolder.sh:209,217` becomes a glob loop printing `${d%/}` basenames. Three sites, mechanical, and no probe for GNU `find` joins the gate. `sha256sum` and `readlink -f` stay: they are the engine's, and the engine is not what #5 is about.
 
+### 7.7 The link check gains a subject
+
+Over `checked '*.md'`, `tests/test-links-resolve.sh` finds 23 relative markdown links where it found none: 20 resolve, and 3 are broken, all the same one. `docs/superpowers/plans/2026-09-04-session-start-hook.md` links its spec three times by bare filename, which resolves against `plans/`; the spec sits in `../specs/`. The commit that widens the scope fixes those three paths. A link path in a frozen plan is not its prose. The rewrite over backticked paths, the form this repository's references actually take, is [#59](https://github.com/eranroseman/agent-plugins/issues/59) and not this design.
+
 ## 8. Formatters, linters, spelling (#29)
 
 ### 8.1 What each type gets
@@ -238,20 +243,20 @@ That spec is therefore maintained, not frozen. `a3c797f` already amended its §4
 | shell | 26 | `shfmt -i 2 -ci -bn` | `shellcheck -e SC1091 -e SC2016` | `cspell`, `#` comments only |
 | JSON | 8 | `prettier` | the two validators, `test-json-wellformed.sh` | none |
 | YAML | 5 | `prettier` | `actionlint`, the two workflows | `cspell`, `#` comments only |
-| markdown | 12 | `prettier`, `proseWrap: preserve`, embedded code untouched | `markdownlint-cli2`, MD013/MD033/MD041 off | `cspell`, `en-US` |
+| markdown | 27 | `prettier`, `proseWrap: preserve`, embedded code untouched | `markdownlint-cli2`, MD013/MD033/MD041 off | `cspell`, `en-US`, outside the three record directories |
 | Python | 2 | none | none | none; `ast.parse` in the fork's drift test |
 | no parser | 4 | none | none | none |
 
-Measured at `aa8e78d` on 2026-09-17 with the candidate versions of §8.2:
+Measured at `aa8e78d`, plus this spec, on 2026-09-17 with the candidate versions of §8.2:
 
 - `shfmt -i 2 -ci -bn` rewrites 17 of the 26 shell files, 272 changed lines, none inside a heredoc body. On the reformatted tree `tests/test-setup-doctor.sh`, `tests/test-doctor-faults.sh` and `tests/test-doctor-duplicates.sh` pass and shellcheck is clean. The flag set is D's, chosen there by measurement as the closest to the existing code; `-sr` was dropped because it restyled a further 140 lines.
-- `prettier` with `proseWrap: preserve` and `embeddedLanguageFormatting: off` changes 8 of the 25 markdown, JSON and YAML files, 75 lines: five markdown files, three JSON (`upstream/skills.json` among them), no YAML. `AGENTS.md` and `hooks/payload-rules.md` are unchanged, which §8.4 depends on.
-- `markdownlint-cli2` with the three rules off reports 30 findings before prettier (20 MD049, 6 MD040, 4 MD060) and **6 after**, all MD040, a fence with no language. Formatter first, then linter: prettier retires the emphasis-style findings free.
-- `cspell` `en-US`, code ignored, over the twelve markdown files: 70 hits, 29 distinct words, not one a typo. Four are British spellings (`behaviour`, `organisational`, `recognises`, `summarise`); the rest are proper nouns (`eranroseman`, `Akhourii`, `mattpocock`, `obra`, `primeradiant`), domain terms (`sensemaking`, `scaffolder`, `wayfinder`, `worktrees`, `diffable`) and coinages (`custodied`, `relitigated`, `repointed`, `unrouted`). The dictionary is about twenty-five words. Comments in the 26 shell and 5 YAML files are read through an `overrides` entry with an `includeRegExpList` for `#` lines, D's ruling; D measured 62 hits and 27 words there, eight not already in the markdown list.
+- `prettier` with `proseWrap: preserve` and `embeddedLanguageFormatting: off` changes 20 of the 40 markdown, JSON and YAML files, 1,020 lines: 17 markdown files, 12 of them under `docs/`, where table padding and `*em*` becoming `_em_` account for 945 of the lines; three JSON (`upstream/skills.json` among them); no YAML. `AGENTS.md` and `hooks/payload-rules.md` are unchanged, which §8.4 depends on. In one plan, nine paragraphs followed by a bare `---` are setext headings to CommonMark and are rewritten as `##` headings, which is what the renderer already showed (D §2.1).
+- `markdownlint-cli2` with the three rules off reports 224 findings before prettier and **67 after**: 25 MD040 (a fence with no language), 14 MD038 (a space inside a code span), 8 MD003, 7 MD029, 7 MD026 (a heading ending in a full stop; the setext headings above, seven of which end that way), and six singletons. 61 of the 67 sit under `docs/`, 56 of them in four plans; the other 6 are fence languages in shipped files. Formatter first, then linter: prettier retires 157 findings free, every MD032, MD049, MD009 and MD022 among them. The 67 are fixed by hand once; a fence language, a code-span space or a heading's full stop in a plan is not its content. Veto: a per-directory `.markdownlint-cli2.jsonc` under `plans/` switching those rules off, at the cost of a second configuration file.
+- `cspell` `en-US`, code ignored, over the fifteen markdown files in scope (the twelve outside `docs/` and the three under `docs/agents/`): 77 hits, about 33 distinct words, not one a typo. Four are British spellings (`behaviour`, `organisational`, `recognises`, `summarise`); the rest are proper nouns (`eranroseman`, `Akhourii`, `mattpocock`, `obra`, `primeradiant`), domain terms (`sensemaking`, `scaffolder`, `wayfinder`, `worktrees`, `diffable`) and coinages (`custodied`, `relitigated`, `repointed`, `unrouted`). That is the dictionary. The scope is the case for itself: `docs/research/` alone adds 123 hits, 61 words and 15 British forms, and `docs/superpowers/` alone 693 hits and 127 words, a record's vocabulary being its author's and every new record growing the list with words no shipped file uses; `docs/archive/` adds two words and is out on the same principle. The scope is a pathspec handed to `checked`, `':(exclude)docs/superpowers' ':(exclude)docs/research' ':(exclude)docs/archive'`, an argument rather than an ignore file. Comments in the 26 shell and 5 YAML files are read through an `overrides` entry with an `includeRegExpList` for `#` lines, D's ruling; D measured 62 hits and 27 words there, eight not already in the markdown list.
 
 The locale is `en-US`. The prose is mixed today (`behavior` and `normalization` sit in the same skills as the four British spellings), which is the case for choosing, and everything this repository embeds is American. A spelling correction inside an authored skill is an edit to the skill and goes through `superpowers:writing-skills`, as any other skill edit does.
 
-Configuration lives in four files, each carrying the reason beside the setting: `.prettierrc.yaml` (`proseWrap: preserve` for §8.4; `embeddedLanguageFormatting: off` because fenced blocks quote other files verbatim, and the README recipes are compared byte for byte against `bin/setup --help`), `.markdownlint-cli2.jsonc` (three rules off, no globs), `cspell.json` (locale, words, the comment override), and the `shfmt` flags in one variable in `tests/lib.sh` read by the test and by `bin/format`. No per-tool ignore file: `.prettierignore`, `.markdownlintignore` and cspell's `ignorePaths` would each restate §4's list, which is #27's defect four times over. Every tool receives explicit paths from `checked`.
+Configuration lives in four files, each carrying the reason beside the setting: `.prettierrc.yaml` (`proseWrap: preserve` for §8.4; `embeddedLanguageFormatting: off` because fenced blocks quote other files verbatim, and the README recipes are compared byte for byte against `bin/setup --help`), `.markdownlint-cli2.jsonc` (three rules off, no globs), `cspell.json` (locale, words, the comment override; the scope lives at the call site, not here), and the `shfmt` flags in one variable in `tests/lib.sh` read by the test and by `bin/format`. No per-tool ignore file: `.prettierignore`, `.markdownlintignore` and cspell's `ignorePaths` would each restate §4's list, which is #27's defect four times over. Every tool receives explicit paths from `checked`.
 
 ### 8.2 The registry, and versions
 
@@ -286,14 +291,14 @@ Six test files, one tool each, so a contributor lacking one tool skips one file:
 
 `bin/format` applies what the first three check: `shfmt -w`, `prettier --write`, then `markdownlint-cli2 --fix`, over the same lists, sourcing `tests/lib.sh` for `checked`. No check mode of its own: the tests are the check. No pre-commit hook: the suite is the gate.
 
-The one-time reformat lands as its own commit, separate from the mechanism, verified by the full suite rather than by reading 350 changed lines. The hand corrections follow in a third commit: the six fence languages, the four spellings, the dictionary.
+The one-time reformat lands as its own commit, separate from the mechanism, verified by the full suite rather than by reading 1,300 changed lines. The hand corrections follow in a third commit: the 67 markdownlint findings, the four spellings, the dictionary, and the three link paths of §7.7.
 
 ### 8.4 Couplings
 
 Three byte-equalities cross a boundary, and each needs to be known rather than ruled on.
 
 - **`AGENTS.md` ↔ the vendored scaffolder.** `tests/test-vendored-scaffolder.sh:194-200` holds two sections of `AGENTS.md` byte-identical to a block inside `setup-repository/SKILL.md`, which is vendored and unformattable. Prettier leaves `AGENTS.md` unchanged today only because `proseWrap` is `preserve`; with `always` the formatter and the drift test become mutually unsatisfiable. The setting is pinned with that sentence beside it.
-- **`hooks/payload-rules.md` ↔ the hook spec's §4.2.** The file is formatted; the spec is a record (§4). Prettier changes the file by zero bytes today. If a future edit to the rule makes it differ, `tests/test-hook.sh` goes red and the spec's block is brought to the formatted text, which is the direction the rule already runs.
+- **`hooks/payload-rules.md` ↔ the hook spec's §4.2.** Both sides pass through the same prettier run, so the formatter cannot separate them; only a hand edit to one side can, and `tests/test-hook.sh` catches it. Prettier changes neither today.
 - **Lines tests pin byte for byte inside shipped files.** `tests/test-plugin-skills.sh:30-31` and `:64-66` grep exact lines of authored `SKILL.md` and `openai.yaml` files; `tests/test-hook.sh` reads `payload-rules.md` whole. Prettier's defaults satisfy every one of them today, measured. Recorded so that a version bump of a formatter that stops satisfying one is read as a coupling, not a mystery.
 
 ## 9. CI
@@ -312,29 +317,11 @@ FAIL: validate_plugin.py at <path> is not the copy CI pins (openai/codex@f3f6922
 
 An absent file is the gate's `SKIP` (§5.2), whose text names the same recipe, which closes #7's "the failure message does not say where to get the file" on both paths. CI keeps its fetch step and its `CODEX_PLUGIN_VALIDATOR` export, so CI and a local run assert the same two constants against their own copies: one source of truth, no network on a local run. The day `codex-cli` moves the local files, the local suite fails on that line and the message says what to do. **Deviation:** the ruling said md5; sha256 is used because `sha256sum` is already the repository's one hashing tool. Veto: md5 constants instead.
 
-### 9.3 Triggers, and the one file under `docs/` a test reads (#8)
+### 9.3 Triggers (#8)
 
-`push` stays unfiltered by branch, since it is the only coverage feature branches get, and `pull_request` stays for the contributor PR this public repository has not yet received. Both are path-filtered: two of the last four commits on `main` were docs-only and ran the full job.
+`push` stays unfiltered by branch, since it is the only coverage feature branches get, and `pull_request` stays for the contributor PR this public repository has not yet received. Neither gets a path filter.
 
-The answer was `paths-ignore: ['docs/**']`, given on the fact that no test reads anything under `docs/`. §7.4 changes that fact: `tests/test-hook.sh` now reads the hook spec. A push editing that spec's §4.2 would skip CI while the suite goes red on the next code push. GitHub's `paths-ignore` does not negate, and `paths` and `paths-ignore` cannot both be set for one event, but `paths` takes `!` and applies its patterns in order, a later positive match re-including a path. So:
-
-```yaml
-on:
-  push:
-    paths:
-      - "**"
-      - "!docs/**"
-      - "docs/superpowers/specs/2026-09-04-session-start-hook-design.md"
-  pull_request:
-    paths:
-      - "**"
-      - "!docs/**"
-      - "docs/superpowers/specs/2026-09-04-session-start-hook-design.md"
-```
-
-`tests/test-workflows.sh` holds the list honest: every `docs/…` path a test names (`grep -ohE 'docs/[A-Za-z0-9_./-]+\.md' tests/test-*.sh`) must appear in it. Over-inclusion is safe, so the scaffolder test's quoted sentinel mentioning `docs/agents/triage-labels.md` joins the list without harm; under-inclusion is the hazard, and it fails the suite.
-
-The consequence for §4 follows directly: with docs-only pushes outside CI, `docs/` must sit outside every check, or CI would skip exactly the pushes that could break `prettier --check`. **This is the one place two answers collided after the fact, and the resolution above is proposed, not ruled.** The alternative is no path filter at all, which costs the docs-only runs and lets `docs/` back into the checked set.
+The first answer was `paths-ignore: ['docs/**']`, given on the fact that no test read anything under `docs/`. §7.4 changed that fact: `tests/test-hook.sh` reads the hook spec, so a push editing its §4.2 would have skipped CI while the suite went red on the next code push. GitHub's `paths` filter can re-include one file after `!docs/**`, and a test could have held that list honest, but the filter's whole yield was measured the same day: a full run is 45 to 60 seconds across two jobs, 9 of the last 30 commits on `main` were docs-only, and runner minutes are free on a public repository. About a minute and a dozen upstream fetches per docs push, against a negated pattern list, a guard test, and fifteen files outside every check. The maintainer dropped the filter, and the `docs/` exclusion class the first draft of §4 carried went with it.
 
 ### 9.4 `tests/test-workflows.sh` (#28, #6)
 
@@ -342,8 +329,7 @@ The consequence for §4 follows directly: with docs-only pushes outside CI, `doc
 
 - every `uses:` line in `.github/workflows/*.yml` ends in `@` followed by forty hex characters;
 - every workflow has `permissions:` at the top level;
-- every `actions/checkout` step carries `persist-credentials: false`;
-- the `paths` lists of §9.3 contain every `docs/` path a test names.
+- every `actions/checkout` step carries `persist-credentials: false`.
 
 Proved by mutation: an unquoted expansion in a `run:` block fails naming the workflow and line; a `@v4` fails; a deleted `permissions:` fails.
 
@@ -381,12 +367,12 @@ Formatting a shipped file changes the shipped plugin, and `version` is the only 
 
 Branch `suite-and-ci` from `main`. Milestone 1 first, a gate, then milestone 2, a gate, one merge.
 
-1. **Ownership.** `checked()` and `EXCLUDED` in `tests/lib.sh`; `test-json-wellformed.sh`, `test-links-resolve.sh` and the shellcheck list adopt it; `test-ownership.sh`. Red first: the JSON check must report eight files where it reported seven.
+1. **Ownership.** `checked()` and `EXCLUDED` in `tests/lib.sh`; `test-json-wellformed.sh`, `test-links-resolve.sh` and the shellcheck list adopt it; `test-ownership.sh`. Red first: the JSON check must report eight files where it reported seven, and the link check must fail on the three plan links of §7.7.
 2. **The suite tells the truth.** The gate in `run.sh` with its probes and the result file; `# needs:` headers; the three splits (`test-setup-upgrade.sh`, `test-lint-shell.sh`, the hermetic repair fixture); #5's three sites; #16's guards and comments; #18's extractor; #1's assertions; #43's extraction and the spec amendments; #40's two comments.
 3. **The engine.** §6.5's `dirname`; the four loop splits; the two report-only messages; rung 1; `test-doctor-silence.sh` with its nine fixtures, taking the two blocks that move into it. Rung 2 lands before rung 1 and guards its edit to `main`.
 4. **Gate 1.** Full suite green locally with `tests/results.tsv` cited; CI green on the branch.
 5. **Tools.** The four configuration files, `tests/tools.txt`, `bin/format`, the five tool tests, the CI install step. Red on arrival. Then the reformat, one commit; then the hand corrections, one commit.
-6. **CI.** Pins, `permissions:`, `persist-credentials`, `pyyaml`, the `paths` lists, `test-workflows.sh`, the artifact upload.
+6. **CI.** Pins, `permissions:`, `persist-credentials`, `pyyaml`, `test-workflows.sh`, the artifact upload.
 7. **Checks section**, then the version bump.
 8. **Gate 2**, the same evidence as gate 1, then merge to `main` and push in the same motion.
 
@@ -400,8 +386,9 @@ Declines, each with its home here so the workspace can close:
 - **Hard fail on every absent tool** (D §5.1): superseded by one gate with declared needs.
 - **GNU/Linux declared and probed** (D §5.1, #5): superseded by making the three sites portable.
 - **The validator fetched by the test** (D §5.1, #3): superseded by the hash assertion at the local path, which needs no network.
-- **Specs and plans formatted** (D §2.1): superseded by §4 and §9.3; a record CI does not run on is not checked.
 - **Dropping `pull_request:`** (#8 option 1): kept.
+- **A path filter on the CI triggers** (#8 option 2, and the first answer to G2 Q8): dropped on the measurement in §9.3, and the `docs/` exclusion class the first draft of §4 carried went with it.
+- **Spell-checking the records under `docs/`**: `superpowers`, `research` and `archive` stay outside cspell's scope (§8.1); the dictionary would triple with words no shipped file uses.
 - **`zizmor` as a running tool** (Q10 b): its three actionable classes are two regexes and one hand edit.
 - **Per-tool ignore files**: one derivation instead.
 - **A `Note:` commit for `4b23edc`**: history is history; one more object to explain a count.
@@ -425,14 +412,15 @@ Deviations from an answer, each with its veto line in place: the hermetic repair
 | Under an empty `PATH`, `bin/setup` prints `<$0>: dirname: command not found` before its refusal; `$0` contains `.claude` in the deployment path | fact-finding, #16 |
 | `test-doctor-faults.sh` passes with `claude`, `node`, `npx` stubbed in the repair fixture | scratch copy, `/tmp/faults-stub-probe`, exit 0 |
 | The hook spec's §4.2 fence is the only ```` ```markdown ```` fence in the file; the block and `payload-rules.md` are 379 bytes and identical; §4.3's figures are stale by the rename's eight bytes | fact-finding, #43; `wc -c` |
-| `paths` accepts `!`; a later positive pattern re-includes; `paths` and `paths-ignore` cannot both be used for one event; `paths-ignore` is not documented as negating | GitHub Docs, *Workflow syntax for GitHub Actions*, `on.<push\|pull_request\|pull_request_target>.<paths\|paths-ignore>` |
+| A full CI run is 45 to 60 s across two jobs; 9 of the last 30 `main` commits were docs-only; the repository is public | `gh run view`, `git log --name-only`, `gh repo view` |
 | actionlint 1.7.12 runs shellcheck over `run:` blocks (SC2086 mutation surfaced), flags neither `permissions:` nor floating tags nor unresolvable `uses:` | fact-finding, #28, measured |
 | `prettier --check` on a file with no parser exits 0 | D §5.2, prettier 3.3.3 |
-| 94 tracked files; 23 vendored; 14 under `docs/`; 57 checked, 26 of them shell | `git ls-files` at `aa8e78d` |
+| 95 tracked files with this spec; 23 vendored; 72 checked, 26 of them shell and 27 markdown | `git ls-files` at `aa8e78d` plus this file |
 | `shfmt` v3.14.1 `-i 2 -ci -bn`: 17 of 26 files, 272 lines; three engine tests and shellcheck pass after | release binary in `/tmp`, scratch copy |
-| prettier 3.9.6: 8 of 25 files, 75 lines; `AGENTS.md`, `payload-rules.md` unchanged | `npx prettier@3.9.6 --list-different` |
-| markdownlint-cli2 0.23.2: 30 findings before prettier, 6 after | `npx markdownlint-cli2@0.23.2` on the tree and on a formatted scratch copy |
-| cspell 10.2.2 `en-US`: 70 hits, 29 words, four British | `npx cspell@10.2.2 --words-only` |
+| prettier 3.9.6: 20 of 40 files, 1,020 lines, 945 of them under `docs/`; `AGENTS.md`, `payload-rules.md` unchanged | `npx prettier@3.9.6 --list-different`, and `diff` per file |
+| markdownlint-cli2 0.23.2: 224 findings before prettier, 67 after, 61 of them under `docs/` | `npx markdownlint-cli2@0.23.2` on the tree and on a formatted scratch copy |
+| cspell 10.2.2 `en-US`: 77 hits and about 33 words over the 15 files in scope, four British; `docs/research/` alone 123 hits, 61 words, 15 British forms; `docs/superpowers/` alone 693 hits, 127 words | `npx cspell@10.2.2 --words-only`, per directory |
+| 23 relative markdown links in the 27 authored markdown files; 3 broken, all in one plan | each resolved by hand against its document's directory |
 | Newest releases: shfmt v3.14.1, actionlint v1.7.12, shellcheck v0.11.0; npm prettier 3.9.8, markdownlint-cli2 0.23.2, cspell 10.3.3; installed here: shellcheck 0.9.0, actionlint 1.7.12 | `gh api …/releases/latest`, `npm view`, `--version` |
 | The local `npx` cache holds prettier 3.9.6, markdownlint-cli2 0.23.2, cspell 10.2.2 | `~/.npm/_npx/*/package.json` |
 | Ten tests reach the network; three run `ls-remote` on every run | fact-finding, #7, per file |
@@ -443,7 +431,7 @@ Deviations from an answer, each with its veto line in place: the hermetic repair
 - **`.claude-plugin/marketplace.json`'s `$schema` URL is a 404** (D §5.3); one line pointing at SchemaStore would let editors validate. Not a gate; filed as [#58](https://github.com/eranroseman/agent-plugins/issues/58).
 - **`bin/setup` has no bash-4 probe of its own.** On bash 3.2, `local -A` in `report_pool` fails and the array degrades silently. Two lines in `require_tools` and one `needs`-style guard in `report_pool`; milestone 4, beside #17.
 - **A sha-pinned action goes stale the same way an upstream pin does.** The watch surface (milestone 4, the class #56 names) is where it belongs, not `dependabot.yml`.
-- **`tests/test-links-resolve.sh` is satisfied by documents with no links**, and widening it to `checked '*.md'` adds none: no authored markdown file carries a relative link, measured. D §5.4's rewrite over backticked paths, the form this repository's references actually take, is not adopted here; filed as [#59](https://github.com/eranroseman/agent-plugins/issues/59).
+- **`tests/test-links-resolve.sh` was satisfied by documents with no links.** Widened, it has 23 links and three day-one reds (§7.7). D §5.4's rewrite over backticked paths, the form this repository's references actually take, is not adopted here; filed as [#59](https://github.com/eranroseman/agent-plugins/issues/59) and corrected there the same day.
 - **`docs/agents/*.md` are byte-identical to the scaffolder's templates** and will diverge, since the template cannot be repaired and the copies are meant to be edited. Both sides have a mechanism; no rule (D §8).
 - **#21 may devendor `payload.md` or `setup-repository/SKILL.md`.** That edits `EXCLUDED` and nothing else.
 - **`CONTEXT.md`** is a placeholder in the checked set; #26 writes it.
