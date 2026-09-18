@@ -23,7 +23,9 @@ jobs:
   watch:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
       # exit 0 clean, 1 drift, 2 the watch itself failed. continue-on-error
       # makes `outcome` failure for both 1 and 2, so the code is recorded
