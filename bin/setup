@@ -466,7 +466,7 @@ ensure_codex() {
     return
   fi
   needs jq "the declared plugin versions cannot be read, so the Codex half is unchecked" || return
-  CODEX_LIST="$(codex plugin list --json 2>/dev/null)" || { bad "codex plugin list failed"; return; }
+  CODEX_LIST="$(codex plugin list --json 2>/dev/null)" || { CODEX_LIST=""; bad "codex plugin list failed"; return; }
 
   for p in software-dev sensemaking; do
     want="$(jq -r '.version' "$REPO_ROOT/plugins/$p/.codex-plugin/plugin.json")"

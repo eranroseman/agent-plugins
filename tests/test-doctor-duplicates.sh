@@ -90,8 +90,10 @@ printf '%s\n' "$out" | grep -q 'NOTE: Claude: 2 skill tree(s) hashed; no name re
 # The Codex all-clear is gated on the pool being complete, not on codex being
 # on PATH (#40): with codex present and `codex plugin list --json` failing,
 # the FAIL line stands and no all-clear is printed over a pool missing its
-# plugin half. A stub codex that exits 1 is that machine.
-printf '#!/usr/bin/env bash\nexit 1\n' > "$BIN/codex" || fail "could not write the codex stub"
+# plugin half. A stub codex that exits 1 is that machine. The stub prints
+# partial JSON before it fails, because a failed command's stdout is still
+# captured by $(...).
+printf '#!/usr/bin/env bash\nprintf '"'"'{"installed":[\\n'"'"'\nexit 1\n' > "$BIN/codex" || fail "could not write the codex stub"
 chmod +x "$BIN/codex" || fail "could not make the codex stub executable"
 out="$(env HOME="$H2" CODEX_HOME="$H2/.codex" PATH="$BIN" /bin/bash "$DOCTOR" 2>&1 || true)"
 printf '%s\n' "$out" | grep -q 'FAIL: codex plugin list failed' \
