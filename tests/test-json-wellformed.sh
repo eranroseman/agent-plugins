@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
-# Every marketplace manifest, plugin manifest, and hooks file must parse as JSON.
+# Every JSON file this repository owns parses. The list is derived, never
+# hardcoded (#27): a manifest in a new directory joins the moment it is
+# tracked, and the vendored set is excluded by the one derivation rather than
+# by a second `-not -path` that had to be kept in step with it.
 . "$(dirname "$0")/lib.sh"
 
 found=0
 while IFS= read -r f; do
-  jq empty "$f" || fail "not valid JSON: $f"
+  [ -n "$f" ] || continue
+  jq empty "$REPO_ROOT/$f" || fail "not valid JSON: $f"
   found=$((found + 1))
-done < <(find "$REPO_ROOT/.claude-plugin" "$REPO_ROOT/.agents" "$REPO_ROOT/plugins" \
-           -name '*.json' -not -path '*/skills/*' 2>/dev/null | sort)
+done < <(checked '*.json')
 
-[ "$found" -gt 0 ] || fail "no manifests found"
+[ "$found" -gt 0 ] || fail "checked '*.json' listed nothing; the ownership derivation went vacuous"
 printf 'json: %s files well-formed\n' "$found"
