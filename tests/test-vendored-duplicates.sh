@@ -36,7 +36,10 @@ for path in sys.argv[1:]:
     ast.parse(open(path).read(), path)' "$V/scripts/cluster.py" "$V/scripts/extract-functions.py" \
   || fail "a script does not parse"
 
-# Frontmatter untouched in shape; lines 5-10 are the provenance header, verbatim.
+# Frontmatter untouched in shape; the provenance header follows the closing
+# fence, verbatim. Located by its first line rather than by line number, so a
+# formatter's blank line after the frontmatter cannot move it out from under
+# the assertion.
 [ "$(sed -n 2p "$V/SKILL.md")" = "name: finding-duplicate-functions" ] || fail "name changed"
 [ "$(sed -n 4p "$V/SKILL.md")" = "---" ] || fail "line 4 is not the closing frontmatter fence"
 expected_header="$(printf '%s\n' \
@@ -46,7 +49,11 @@ expected_header="$(printf '%s\n' \
   "     scripts/find-duplicates-prompt.md are upstream's, byte for byte; everything else is authored here." \
   "     PROVENANCE.md records what changed and why. Edit this skill here; there is nothing to re-vendor." \
   "-->")"
-[ "$(sed -n 5,10p "$V/SKILL.md")" = "$expected_header" ] || fail "lines 5-10 are not the provenance header"
+start="$(grep -n '^<!-- Forked from ' "$V/SKILL.md" | cut -d: -f1)" || true
+[ "$(printf '%s\n' "$start" | grep -c .)" -eq 1 ] || fail "SKILL.md must carry exactly one provenance header"
+[ "$start" -le 6 ] || fail "the provenance header must directly follow the frontmatter, found at line $start"
+[ "$(sed -n "${start},$((start + 5))p" "$V/SKILL.md")" = "$expected_header" ] \
+  || fail "lines $start-$((start + 5)) are not the provenance header"
 
 # PROVENANCE.md and the LICENSE name the same commit.
 grep -q "$SHA" "$V/PROVENANCE.md" || fail "PROVENANCE.md does not name commit $SHA"
