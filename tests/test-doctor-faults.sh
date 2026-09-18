@@ -2,7 +2,8 @@
 # bin/doctor must report each seeded fault by name against a scratch HOME, and
 # bin/setup must repair it. The assertions check that the named lines appear,
 # not that they are the only ones. Needs no network and no CLI: every fault is
-# filesystem or git state.
+# filesystem or git state, and every harness binary on the fixture PATH is a
+# stub that exits 1.
 . "$(dirname "$0")/lib.sh"
 
 DOCTOR="$REPO_ROOT/bin/doctor"
@@ -203,17 +204,21 @@ done < <(jq -r '.sources[].skills[]' "$REPO_ROOT/upstream/skills.json")
 # wrong reason: with `mv` missing, the dangling link is never moved aside and
 # the test reports a surviving squatter rather than a missing tool.
 BIN="$H/bin"
-mkdir -p "$BIN"
-for t in bash git jq node npx claude sed awk grep find date readlink basename dirname \
+mkdir -p "$BIN" || fail "could not create $BIN"
+for t in bash git jq sed awk grep find date readlink basename dirname \
          rm mv ln mkdir cp cat sha256sum; do
   p="$(command -v "$t" 2>/dev/null)" || fail "the fixture needs $t on PATH"
-  ln -sf "$p" "$BIN/$t"
+  ln -sf "$p" "$BIN/$t" || fail "could not link $t into $BIN"
 done
-if [ ! -x "$BIN/claude" ]; then
-  printf 'SKIP: claude is not installed, so the repair half cannot run\n'
-  printf 'doctor-faults: seeded faults reported; the repair half was not exercised\n'
-  exit 0
-fi
+# claude, node and npx are stubs that exit 1, on PATH to satisfy require_tools
+# and nothing else: the seeded registry and the pinned lockfile mean no
+# Claude or skills.sh command ever runs, so a real binary would prove nothing
+# a stub does not, and an unexpected invocation becomes a visible FAIL line.
+# This is what makes the test hermetic on a machine without the CLI.
+for t in claude node npx; do
+  printf '#!/usr/bin/env bash\nexit 1\n' > "$BIN/$t" || fail "could not write the $t stub"
+  chmod +x "$BIN/$t" || fail "could not make the $t stub executable"
+done
 mkdir -p "$H/.claude/plugins"
 cat > "$H/.claude/plugins/installed_plugins.json" <<JSON
 {"version":2,"plugins":{
