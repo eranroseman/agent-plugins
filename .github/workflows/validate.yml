@@ -48,13 +48,64 @@ jobs:
           done
           echo "CODEX_PLUGIN_VALIDATOR=$RUNNER_TEMP/codex-validator/validate_plugin.py" >> "$GITHUB_ENV"
 
-      # ubuntu-latest ships shellcheck, but the lint assertion must not quietly
-      # skip if a future image drops it.
-      - name: Ensure shellcheck
-        run: command -v shellcheck || sudo apt-get install -y shellcheck
+      # The suite's optional tools at exactly the versions tests/tools.txt
+      # declares (spec §9.5): npm packages by version, release binaries by the
+      # sha256 of the linux-amd64 asset, verified before anything is placed on
+      # PATH. The directory goes ahead of the image's own tools, so the
+      # shellcheck ubuntu-latest ships cannot shadow the pinned one. The
+      # registry is read on fd 3: npm and curl would drain a loop's stdin.
+      - name: Install the pinned tools
+        run: |
+          set -euo pipefail
+          bin="$RUNNER_TEMP/tools"
+          mkdir -p "$bin"
+          while read -r tool version sha <&3; do
+            case "$tool" in '' | '#'*) continue ;; esac
+            case "$tool" in
+              prettier | markdownlint-cli2 | cspell)
+                npm install -g "$tool@$version"
+                ;;
+              shellcheck)
+                curl -sfL "https://github.com/koalaman/shellcheck/releases/download/v$version/shellcheck-v$version.linux.x86_64.tar.xz" \
+                  -o "$RUNNER_TEMP/shellcheck.tar.xz"
+                echo "$sha  $RUNNER_TEMP/shellcheck.tar.xz" | sha256sum -c -
+                tar -xJf "$RUNNER_TEMP/shellcheck.tar.xz" -C "$RUNNER_TEMP" "shellcheck-v$version/shellcheck"
+                mv "$RUNNER_TEMP/shellcheck-v$version/shellcheck" "$bin/shellcheck"
+                ;;
+              actionlint)
+                curl -sfL "https://github.com/rhysd/actionlint/releases/download/v$version/actionlint_${version}_linux_amd64.tar.gz" \
+                  -o "$RUNNER_TEMP/actionlint.tar.gz"
+                echo "$sha  $RUNNER_TEMP/actionlint.tar.gz" | sha256sum -c -
+                tar -xzf "$RUNNER_TEMP/actionlint.tar.gz" -C "$bin" actionlint
+                ;;
+              shfmt)
+                curl -sfL "https://github.com/mvdan/sh/releases/download/v$version/shfmt_v${version}_linux_amd64" \
+                  -o "$bin/shfmt"
+                echo "$sha  $bin/shfmt" | sha256sum -c -
+                chmod +x "$bin/shfmt"
+                ;;
+              *)
+                echo "tests/tools.txt names a tool this step cannot install: $tool" >&2
+                exit 1
+                ;;
+            esac
+          done 3< tests/tools.txt
+          echo "$bin" >> "$GITHUB_PATH"
 
+      # Every unmet need is a FAIL here (spec §5.2): a runner that was told to
+      # install everything and still lacks a tool has a broken installation,
+      # and a run that verified less than it claims cannot be green.
       - name: Run static checks
-        run: tests/run.sh
+        run: tests/run.sh --no-skip
+
+      # The result file the run wrote, so a CI claim is citable the way a
+      # local one is (spec §5.4, §9.6).
+      - name: Upload the result file
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: results
+          path: tests/results.tsv
 
   setup-e2e:
     runs-on: ubuntu-latest
