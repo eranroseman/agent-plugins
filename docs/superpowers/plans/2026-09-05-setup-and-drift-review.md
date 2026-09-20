@@ -20,66 +20,66 @@ FIX: Three edits, all inside Task 6.
 
 1. Task 6 Step 3 — split the apply branch by installed state, and report `did` from the re-read rather than from exit status (update exits 0 when it decides nothing needs moving, so exit 0 is not evidence the version changed):
 
-```bash
-  installed_sd="$(installed_version software-development)"
-  if [ "$installed_sd" != "$want" ] && applying; then
-    if [ -z "$installed_sd" ]; then
-      # Adding is a clean no-op on re-run, but only add when the marketplace is
-      # unknown: an existing entry may point at a different source than ours.
-      if ! jq -e '.eranroseman' "$KNOWN_MARKETPLACES" >/dev/null 2>&1; then
-        if claude plugin marketplace add "$MARKETPLACE_SOURCE" >/dev/null 2>&1; then
-          did "added the eranroseman marketplace from $MARKETPLACE_SOURCE"
-        else
-          bad "claude plugin marketplace add $MARKETPLACE_SOURCE failed"
-          return
-        fi
-      fi
-      # --scope user, never --scope project: project scope writes a checked-in
-      # .claude/settings.json carrying enabledPlugins and extraKnownMarketplaces.
-      if claude plugin install software-development@eranroseman -y --scope user >/dev/null 2>&1; then
-        did "installed software-development@eranroseman (with sensemaking and superpowers)"
-      else
-        bad "claude plugin install software-development@eranroseman failed"
-      fi
-    else
-      # install is a no-op on an already-installed plugin: it prints "already
-      # installed", exits 0, and leaves the old version on disk (measured
-      # 2026-09-05 on claude 2.1.261, both directory- and github-source
-      # marketplaces). update is the only verb that moves it, and it exits 0
-      # when it decides nothing needs moving, so the re-read below is what
-      # reports success.
-      claude plugin update software-development@eranroseman >/dev/null 2>&1 \
-        || bad "claude plugin update software-development@eranroseman failed"
-      if [ "$(installed_version software-development)" = "$want" ]; then
-        did "updated software-development@eranroseman from $installed_sd to $want"
-      fi
-    fi
-  fi
-```
+   ```bash
+     installed_sd="$(installed_version software-development)"
+     if [ "$installed_sd" != "$want" ] && applying; then
+       if [ -z "$installed_sd" ]; then
+         # Adding is a clean no-op on re-run, but only add when the marketplace is
+         # unknown: an existing entry may point at a different source than ours.
+         if ! jq -e '.eranroseman' "$KNOWN_MARKETPLACES" >/dev/null 2>&1; then
+           if claude plugin marketplace add "$MARKETPLACE_SOURCE" >/dev/null 2>&1; then
+             did "added the eranroseman marketplace from $MARKETPLACE_SOURCE"
+           else
+             bad "claude plugin marketplace add $MARKETPLACE_SOURCE failed"
+             return
+           fi
+         fi
+         # --scope user, never --scope project: project scope writes a checked-in
+         # .claude/settings.json carrying enabledPlugins and extraKnownMarketplaces.
+         if claude plugin install software-development@eranroseman -y --scope user >/dev/null 2>&1; then
+           did "installed software-development@eranroseman (with sensemaking and superpowers)"
+         else
+           bad "claude plugin install software-development@eranroseman failed"
+         fi
+       else
+         # install is a no-op on an already-installed plugin: it prints "already
+         # installed", exits 0, and leaves the old version on disk (measured
+         # 2026-09-05 on claude 2.1.261, both directory- and github-source
+         # marketplaces). update is the only verb that moves it, and it exits 0
+         # when it decides nothing needs moving, so the re-read below is what
+         # reports success.
+         claude plugin update software-development@eranroseman >/dev/null 2>&1 \
+           || bad "claude plugin update software-development@eranroseman failed"
+         if [ "$(installed_version software-development)" = "$want" ]; then
+           did "updated software-development@eranroseman from $installed_sd to $want"
+         fi
+       fi
+     fi
+   ```
 
-The existing re-read and `ok`/`bad` block below it stays as written and still delivers the verdict.
+   The existing re-read and `ok`/`bad` block below it stays as written and still delivers the verdict.
 
-1. Task 6 Step 3 — give the `superpowers` check the same repair, since `bin/bump-superpowers` moves its declared `version` and update does not cascade from the parent. Replace the tail of that check with:
+2. Task 6 Step 3 — give the `superpowers` check the same repair, since `bin/bump-superpowers` moves its declared `version` and update does not cascade from the parent. Replace the tail of that check with:
 
-```bash
-  have="$(installed_version superpowers)"
-  want="$(jq -r '.plugins[] | select(.name == "superpowers") | .version' "$MARKETPLACE")"
-  if [ "$have" != "$want" ] && applying; then
-    claude plugin update superpowers@eranroseman >/dev/null 2>&1 \
-      || bad "claude plugin update superpowers@eranroseman failed"
-    have="$(installed_version superpowers)"
-    [ "$have" = "$want" ] && did "updated superpowers@eranroseman to $want"
-  fi
-  if [ "$have" = "$want" ]; then
-    ok "superpowers@eranroseman $want installed"
-  else
-    bad "superpowers@eranroseman is ${have:-not installed}, declared $want"
-  fi
-```
+   ```bash
+     have="$(installed_version superpowers)"
+     want="$(jq -r '.plugins[] | select(.name == "superpowers") | .version' "$MARKETPLACE")"
+     if [ "$have" != "$want" ] && applying; then
+       claude plugin update superpowers@eranroseman >/dev/null 2>&1 \
+         || bad "claude plugin update superpowers@eranroseman failed"
+       have="$(installed_version superpowers)"
+       [ "$have" = "$want" ] && did "updated superpowers@eranroseman to $want"
+     fi
+     if [ "$have" = "$want" ]; then
+       ok "superpowers@eranroseman $want installed"
+     else
+       bad "superpowers@eranroseman is ${have:-not installed}, declared $want"
+     fi
+   ```
 
-Leave `sensemaking` alone: its check compares no version, so there is nothing to repair against, and adding one is new scope.
+   Leave `sensemaking` alone: its check compares no version, so there is nothing to repair against, and adding one is new scope.
 
-1. Task 6 Step 1 — add an upgrade-path assertion, because the empty-HOME CI job structurally cannot reach it. It must create a _genuine_ older install, not a hand-edited `version` field: seeding only that field leaves the CLI reading the real version from the install path, `update` answers "already at the latest version", and the test fails for the wrong reason (measured). The offline recipe, seconds not minutes: copy the repo into a temp dir, lower `plugins/software-development/.claude-plugin/plugin.json` to a fake older version, `claude plugin marketplace add "$TMP"` and `claude plugin install software-development@eranroseman -y --scope user` into `$H`, restore the declared version, `claude plugin marketplace update eranroseman`, then run `bin/setup` with `SD_MARKETPLACE_SOURCE="$TMP"` and assert `installed_plugins.json` now carries the declared version and setup exits 0. Gate it on `command -v claude` the way `tests/test-doctor-faults.sh` already gates its repair half.
+3. Task 6 Step 1 — add an upgrade-path assertion, because the empty-HOME CI job structurally cannot reach it. It must create a _genuine_ older install, not a hand-edited `version` field: seeding only that field leaves the CLI reading the real version from the install path, `update` answers "already at the latest version", and the test fails for the wrong reason (measured). The offline recipe, seconds not minutes: copy the repo into a temp dir, lower `plugins/software-development/.claude-plugin/plugin.json` to a fake older version, `claude plugin marketplace add "$TMP"` and `claude plugin install software-development@eranroseman -y --scope user` into `$H`, restore the declared version, `claude plugin marketplace update eranroseman`, then run `bin/setup` with `SD_MARKETPLACE_SOURCE="$TMP"` and assert `installed_plugins.json` now carries the declared version and setup exits 0. Gate it on `command -v claude` the way `tests/test-doctor-faults.sh` already gates its repair half.
 
 ### Also worth one clause in Task 13 Step 2 or the Global Constraints, so the reason survives the plan: install is the fresh-machine verb and update is the update verb, and the spec's "clean no-op on re-run" (§7.3) means install does no harm, not that it converges
 
@@ -168,40 +168,40 @@ FIX: Six edits, all in Task 2 plus one Global Constraints line.
 
 1. Line 269 — carry both objects:
 
-```sh
-REF="v1.2.3"
-SHA="6acc160e4e0cd062dbbbd7a1b26ae92855edf07e"      # the commit v1.2.3 peels to
-TAG_OBJ="835450ef244ab7335f75d95b83e7d979eae22a6d"  # v1.2.3 is annotated; ls-remote prints this
-```
+   ```sh
+   REF="v1.2.3"
+   SHA="6acc160e4e0cd062dbbbd7a1b26ae92855edf07e"      # the commit v1.2.3 peels to
+   TAG_OBJ="835450ef244ab7335f75d95b83e7d979eae22a6d"  # v1.2.3 is annotated; ls-remote prints this
+   ```
 
-Line 279 then passes unchanged. (Verified: fetching `6acc160e…` directly by sha works — `fetch_commit_status=0`, `HEAD=6acc160e…`.)
+   Line 279 then passes unchanged. (Verified: fetching `6acc160e…` directly by sha works — `fetch_commit_status=0`, `HEAD=6acc160e…`.)
 
-1. Lines 280-281 — grep the tag object, not the commit:
+2. Lines 280-281 — grep the tag object, not the commit:
 
-```sh
-git ls-remote --exit-code --tags https://github.com/mattpocock/skills.git \
-  "refs/tags/$REF" | grep -q "$TAG_OBJ" || fail "tag $REF no longer names $TAG_OBJ"
-```
+   ```sh
+   git ls-remote --exit-code --tags https://github.com/mattpocock/skills.git \
+     "refs/tags/$REF" | grep -q "$TAG_OBJ" || fail "tag $REF no longer names $TAG_OBJ"
+   ```
 
-(Alternative, if you prefer one variable: query `"refs/tags/$REF^{}"` and grep `$SHA` — verified it prints `6acc160e…  refs/tags/v1.2.3^{}` and exits 0. Then drop `TAG_OBJ`, but note nothing would then detect the tag being re-pointed to a different tag object over the same commit.)
+   (Alternative, if you prefer one variable: query `"refs/tags/$REF^{}"` and grep `$SHA` — verified it prints `6acc160e…  refs/tags/v1.2.3^{}` and exits 0. Then drop `TAG_OBJ`, but note nothing would then detect the tag being re-pointed to a different tag object over the same commit.)
 
-1. Line 373 (Step 3) — `git -C "$d" fetch -q --depth 1 origin 6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
+3. Line 373 (Step 3) — `git -C "$d" fetch -q --depth 1 origin 6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 
-2. Line 389 (Step 4 header) — `…at tag v1.2.3, commit 6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
+4. Line 389 (Step 4 header) — `…at tag v1.2.3, commit 6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 
-3. Lines 507-508 (Step 8 LICENSE) — fix the sha AND un-wrap so line 355's grep can match on one line:
+5. Lines 507-508 (Step 8 LICENSE) — fix the sha AND un-wrap so line 355's grep can match on one line:
 
-```text
-skills/setup-matt-pocock-skills/ is vendored from
-https://github.com/mattpocock/skills (directory
-skills/engineering/setup-matt-pocock-skills/,
-at tag v1.2.3, commit 6acc160e4e0cd062dbbbd7a1b26ae92855edf07e) and remains
-under its original license:
-```
+   ```text
+   skills/setup-matt-pocock-skills/ is vendored from
+   https://github.com/mattpocock/skills (directory
+   skills/engineering/setup-matt-pocock-skills/,
+   at tag v1.2.3, commit 6acc160e4e0cd062dbbbd7a1b26ae92855edf07e) and remains
+   under its original license:
+   ```
 
-(Or leave the wrap and relax line 355 to `grep -q "commit $SHA"` — but then nothing checks the tag name in the LICENSE.)
+   (Or leave the wrap and relax line 355 to `grep -q "commit $SHA"` — but then nothing checks the tag name in the LICENSE.)
 
-1. Line 18 (Global Constraints, "Declared pins") — `mattpocock/skills` at tag `v1.2.3` (tag object `835450ef…`, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`), `obra/superpowers-developing-for-claude-code` at tag `v0.3.1` (tag object `aa900d59…`, commit `74afe935da49efe782907e837a27ce618498099a`). Both are annotated tags; the shas previously given were tag objects.
+6. Line 18 (Global Constraints, "Declared pins") — `mattpocock/skills` at tag `v1.2.3` (tag object `835450ef…`, commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`), `obra/superpowers-developing-for-claude-code` at tag `v0.3.1` (tag object `aa900d59…`, commit `74afe935da49efe782907e837a27ce618498099a`). Both are annotated tags; the shas previously given were tag objects.
 
 ### Also correct line 41's "it passes" claim for the drift test, since that assertion is what would stop an executor from suspecting the plan. No change is needed in Task 1 (fetches `refs/tags/$ref`) or Task 11 (compares tag names) — both are correct on annotated tags
 
@@ -301,9 +301,10 @@ ISSUE: docs/superpowers/plans/2026-09-05-setup-and-drift.md:1265 (Task 5, Step 2
 
 FIX: Replace line 1265 of docs/superpowers/plans/2026-09-05-setup-and-drift.md:
 
+```diff
 - Expected: `FAIL: doctor did not report: dangling link`, exit 1. (The stub `ensure_clone` from Task 4 already reports a missing clone, but nothing looks at links.)
-
-- Expected: `FAIL: doctor exited 0 on a machine with four seeded faults`, exit 1. (The fixture creates the clone, so Task 4's skeleton `ensure_clone` reports `OK: pinned clone exists`; every other check is still a stub, so nothing is counted as a failure and the doctor exits 0 before any of the four faults is looked at.)
++ Expected: `FAIL: doctor exited 0 on a machine with four seeded faults`, exit 1. (The fixture creates the clone, so Task 4's skeleton `ensure_clone` reports `OK: pinned clone exists`; every other check is still a stub, so nothing is counted as a failure and the doctor exits 0 before any of the four faults is looked at.)
+```
 
 ### Nothing else changes: the fixture, the assertions and Step 3's implementation are all correct as written
 
