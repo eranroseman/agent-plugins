@@ -4,12 +4,19 @@
 .superpowers/
 
 # The vendored finding-duplicate-functions skill ships Python. A stray
-# __pycache__ under it breaks tests/test-vendored-duplicates.sh, which asserts
-# an exact file set against upstream.
+# __pycache__ or ruff cache under it breaks tests/test-vendored-duplicates.sh,
+# which asserts an exact file set against upstream.
 __pycache__/
 *.pyc
+.ruff_cache/
 
 # Written by every tests/run.sh run and cited by reports instead of pasted
 # output (spec §5.4). Ignored so the run's own output never marks the tree
 # dirty in the header line it writes.
 tests/results.tsv
+
+# Where EnterWorktree puts a feature branch's worktree. Claude Code also lists
+# it in .git/info/exclude, but that file is per machine; here it holds for a
+# fresh clone and a CI runner too, and keeps the main checkout's status quiet
+# while a branch is being executed alongside it.
+.claude/worktrees/
