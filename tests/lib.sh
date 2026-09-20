@@ -85,9 +85,10 @@ EXCLUDED="$(
 # checked '*.md' ':(exclude)docs/superpowers'. `git -C`, never bare: ls-files
 # is cwd-relative and this file never changes directory. Tracked, not
 # present: a new file joins when it is staged, which is also the moment
-# anything else in the repository notices it, and the stale worktree under
-# .kilo/ that a `find` would see is not listed. Every caller asserts the
-# list is non-empty: an empty list is a false green for most tools.
+# anything else in the repository notices it, and a branch's worktree under
+# .claude/worktrees/ that a `find` would see is not listed. Every caller
+# asserts the list is non-empty: an empty list is a false green for most
+# tools.
 checked() {
   git -C "$REPO_ROOT" ls-files "$@" | { grep -vE "$EXCLUDED" || true; }
 }
