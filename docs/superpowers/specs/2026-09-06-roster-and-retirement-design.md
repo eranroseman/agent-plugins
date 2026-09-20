@@ -300,7 +300,7 @@ Twenty-one tracked files.
 
 Nothing else versions them. `~/.claude/backups` holds rotations of `.claude.json`, a different file, and is empty. **The loss accepted is the restore path** — thirty commits of history, and any way back from a bad hand-edit. The live files themselves are untouched by deleting a repository that copies them.
 
-**One is archived**: `specs/2026-08-08-harness-update-design.md`, a design for a skill never written, whose own header records that all three baselines passed so `writing-skills` said not to author it.
+**One is archived**: `specs/2026-08-08-harness-update-design.md`, a design for a skill never written, whose own header records that all three baselines passed so `writing-skills` said not to author it. It lived at `docs/archive/2026-08-08-harness-update-design.md` from `7b8c09b` until 2026-09-20, when its two live remainders were folded into the tracker — the method note onto #47, the superseded-versions finding as #64 — and the file was deleted; it is recoverable as `7b8c09b:docs/archive/2026-08-08-harness-update-design.md`.
 
 ### 8.3 What `rm -rf` breaks beyond the file list
 

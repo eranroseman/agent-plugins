@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The owned prose is spelled in US English (spec §8.1): the markdown outside
-# the three record directories under docs/ (superpowers, research, archive),
-# whose vocabulary is each author's and would triple the dictionary, plus the
+# docs/superpowers, the record directory whose vocabulary is each author's and
+# would triple the dictionary, plus the
 # `#` comments of the shell and YAML files through cspell.config.yaml's
 # override. A typo is fixed; a term is added to the config's word list. A
 # spelling inside an authored SKILL.md is an edit to the skill and goes
@@ -9,7 +9,7 @@
 # needs: cspell
 . "$(dirname "$0")/lib.sh"
 
-md="$(checked '*.md' ':(exclude)docs/superpowers' ':(exclude)docs/research' ':(exclude)docs/archive')"
+md="$(checked '*.md' ':(exclude)docs/superpowers')"
 [ -n "$md" ] || fail "the markdown list in cspell's scope is empty"
 shell="$(checked_shell)"
 [ -n "$shell" ] || fail "checked_shell() listed nothing"
