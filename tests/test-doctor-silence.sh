@@ -14,16 +14,14 @@ trap 'rm -rf "$T"' EXIT
 # A restricted PATH: everything the engine runs in check mode, minus the
 # names given. Prints the directory.
 bin_without() {
-  local dir="$T/bin-without${1:+-$1}" t x skip p
-  mkdir -p "$dir" || fail "could not create $dir"
+  local dir="$T/bin-without${1:+-$1}" t x skip tools=()
   for t in bash git jq sed awk grep find date readlink basename dirname \
     mv ln mkdir cp cat sha256sum; do
     skip=0
     for x in "$@"; do [ "$t" != "$x" ] || skip=1; done
-    [ "$skip" -eq 0 ] || continue
-    p="$(command -v "$t" 2>/dev/null)" || fail "the fixture needs $t on PATH"
-    ln -sf "$p" "$dir/$t" || fail "could not link $t into $dir"
+    [ "$skip" -eq 1 ] || tools+=("$t")
   done
+  link_tools "$dir" "${tools[@]}"
   printf '%s\n' "$dir"
 }
 

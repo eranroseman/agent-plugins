@@ -191,10 +191,10 @@ aside_path() { printf '%s.aside.%s' "$1" "$(date +%Y%m%d%H%M%S)"; }
 # never by feeding `read` a tab IFS: a tab is IFS whitespace, so `read`
 # collapses a run of them and drops one at either end, and a row with an
 # empty leading or middle field shifts every later value left by one, which
-# misnames the field in the report and lets a first-field guard pass on the
-# wrong value. ensure_links carries the same split inline with the full
-# account (0aa11d2). Six tabs are appended so a short row leaves its missing
-# fields empty. F is the caller's local; bash scopes it dynamically.
+# misnames the field in the report and, when the shifted-in value looks
+# non-empty, hides a genuinely empty field from the guard that follows
+# (0aa11d2, in ensure_links). Six tabs are appended so a short row leaves its
+# missing fields empty. F is the caller's local; bash scopes it dynamically.
 split_tsv() {
   local rest="$1"$'\t\t\t\t\t\t'
   F=()
@@ -270,7 +270,7 @@ ensure_clones() {
 }
 
 ensure_links() {
-  local entry epath skill name target link actual aside lines line rest
+  local entry epath skill name target link actual aside lines line F
   if applying; then
     mkdir -p "$SKILL_ROOT" || {
       bad "could not create $SKILL_ROOT"
@@ -306,21 +306,10 @@ ensure_links() {
   # Every skill of every curated entry: the link target is the skill directory
   # inside that entry's pinned clone, under the entry's source.path, and the
   # link is named after the directory's basename.
-  #
-  # Split by parameter expansion, not by feeding `read` a tab IFS: a tab is
-  # IFS whitespace, so `read` collapses a run of them and drops one at either
-  # end of the line, and a malformed row with an empty leading or middle field
-  # shifts every value after it left by one -- which used to both misname the
-  # field in the report below and, when the shifted-in name looked non-empty,
-  # hide a genuinely empty name from the skip check that follows. Expansion
-  # keeps each field where it was, so the emptiness check and the report
-  # below both see the field that is actually empty.
   while IFS= read -r line; do
     [ -n "$line" ] || continue
-    entry="${line%%$'\t'*}"
-    rest="${line#*$'\t'}"
-    epath="${rest%%$'\t'*}"
-    skill="${rest#*$'\t'}"
+    split_tsv "$line"
+    entry="${F[0]}" epath="${F[1]}" skill="${F[2]}"
     if [ -z "$entry" ] || [ -z "$epath" ] || [ -z "$skill" ]; then
       bad "a curated skill line is malformed: entry='$entry' path='$epath' skill='$skill'"
       continue

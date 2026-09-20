@@ -117,12 +117,8 @@ JSON
 # No lockfile at all, so every declared skill is unpinned and the apply branch
 # runs for each. No codex on this PATH, so that half reports skipped.
 BIN2="$H2/bin"
-mkdir -p "$BIN2"
-for t in bash git jq node sed awk grep find date readlink basename dirname \
-  rm mv ln mkdir cp cat sha256sum; do
-  p="$(command -v "$t" 2>/dev/null)" || fail "the fixture needs $t on PATH"
-  ln -sf "$p" "$BIN2/$t"
-done
+link_tools "$BIN2" bash git jq node sed awk grep find date readlink basename dirname \
+  rm mv ln mkdir cp cat sha256sum
 cat >"$BIN2/npx" <<'STUB'
 #!/usr/bin/env bash
 # Drains stdin exactly as the real npx does -- that inheritance is the defect
@@ -166,12 +162,8 @@ done < <(jq -r '.sources[].skills[]' "$REPO_ROOT/upstream/skills.json")
 # wrong reason: with `mv` missing, the dangling link is never moved aside and
 # the test reports a surviving squatter rather than a missing tool.
 BIN="$H/bin"
-mkdir -p "$BIN" || fail "could not create $BIN"
-for t in bash git jq sed awk grep find date readlink basename dirname \
-  rm mv ln mkdir cp cat sha256sum; do
-  p="$(command -v "$t" 2>/dev/null)" || fail "the fixture needs $t on PATH"
-  ln -sf "$p" "$BIN/$t" || fail "could not link $t into $BIN"
-done
+link_tools "$BIN" bash git jq sed awk grep find date readlink basename dirname \
+  rm mv ln mkdir cp cat sha256sum
 # claude, node and npx are stubs that exit 1, on PATH to satisfy require_tools
 # and nothing else: the seeded registry and the pinned lockfile mean no
 # Claude or skills.sh command ever runs, so a real binary would prove nothing

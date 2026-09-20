@@ -54,12 +54,8 @@ mkdir -p "$H/.claude/plugins/cache/gone/old/1.0.0/skills/zeta"
 # No codex on this PATH: the Codex pool is not reported, and nothing is added
 # to a marketplace over the network.
 BIN="$H/bin"
-mkdir -p "$BIN"
-for t in bash git jq sed awk grep find date readlink basename dirname \
-  mv ln mkdir cp cat sha256sum; do
-  p="$(command -v "$t" 2>/dev/null)" || fail "the fixture needs $t on PATH"
-  ln -sf "$p" "$BIN/$t"
-done
+link_tools "$BIN" bash git jq sed awk grep find date readlink basename dirname \
+  mv ln mkdir cp cat sha256sum
 out="$(env HOME="$H" CODEX_HOME="$H/.codex" PATH="$BIN" /bin/bash "$DOCTOR" 2>&1 || true)"
 
 printf '%s\n' "$out" | grep -q 'NOTE: Claude: skill beta resolves to 2 different trees' \

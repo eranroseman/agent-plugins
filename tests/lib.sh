@@ -47,6 +47,20 @@ fetch_upstream() {
     "${UPSTREAM_DIR:-${TMPDIR:-/tmp}/software-dev-upstream-superpowers}"
 }
 
+# A fixture PATH: $1 is the directory, created if absent, and every later
+# argument a tool linked into it from wherever this shell resolves it, so the
+# script under test sees those names and nothing else. Callers write their
+# stubs -- a claude that exits 1, an npx that records -- beside the links.
+link_tools() {
+  local dir="$1" t p
+  shift
+  mkdir -p "$dir" || fail "could not create $dir"
+  for t in "$@"; do
+    p="$(command -v "$t" 2>/dev/null)" || fail "the fixture needs $t on PATH"
+    ln -sf "$p" "$dir/$t" || fail "could not link $t into $dir"
+  done
+}
+
 # ---- Ownership (spec §4) ----------------------------------------------------
 # Every list of "the files we own" comes from checked() below. One class of
 # tracked file is excluded: vendored, where an upstream pin constrains the

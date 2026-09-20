@@ -34,16 +34,11 @@ sha="$(git -C "$R" rev-parse --short HEAD)" || fail "could not read the scratch 
 # A PATH carrying what the runner uses and nothing it must not: no claude,
 # and a stub shfmt reporting a version the registry does not declare.
 BIN="$T/bin"
-mkdir -p "$BIN" || fail "could not create $BIN"
-for t in bash dirname rm git jq awk grep head tail tee tr date mktemp cat; do
-  p="$(command -v "$t" 2>/dev/null)" || fail "the fixture needs $t on PATH"
-  ln -sf "$p" "$BIN/$t" || fail "could not link $t into $BIN"
-done
+link_tools "$BIN" bash dirname rm git jq awk grep head tail tee tr date mktemp cat
 printf '#!/usr/bin/env bash\nprintf "v0.0.1\\n"\n' >"$BIN/shfmt" || fail "could not write the shfmt stub"
 chmod +x "$BIN/shfmt" || fail "could not make the shfmt stub executable"
 NOJQ="$T/bin-nojq"
-mkdir -p "$NOJQ" || fail "could not create $NOJQ"
-for t in bash dirname rm git; do ln -sf "$BIN/$t" "$NOJQ/$t" || fail "could not link $t into $NOJQ"; done
+link_tools "$NOJQ" bash dirname rm git
 
 # 1. The hard gate: without jq the run refuses with the list, exit 2, and
 # writes no result file.
