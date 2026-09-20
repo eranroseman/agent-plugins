@@ -10,6 +10,6 @@
 md="$(checked '*.md')"
 [ -n "$md" ] || fail "checked '*.md' listed nothing; the ownership derivation went vacuous"
 cd "$REPO_ROOT" || fail "could not cd to $REPO_ROOT"
-# shellcheck disable=SC2086  # one path per word, asserted by tests/test-ownership.sh
+# shellcheck disable=SC2086  # one path per word -- no whitespace, a glob character, or a quoted path, asserted by tests/test-ownership.sh
 markdownlint-cli2 $md || fail "markdownlint-cli2 reported the findings above"
 printf 'lint-markdown: %s markdown file(s) clean\n' "$(printf '%s\n' "$md" | grep -c .)"

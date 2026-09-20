@@ -18,7 +18,7 @@ docs="$(checked '*.json' '*.yml' '*.yaml' '*.md')"
 md="$(checked '*.md')"
 [ -n "$md" ] || fail "the markdown list is empty"
 cd "$REPO_ROOT"
-# shellcheck disable=SC2086  # one path per word, asserted by tests/test-ownership.sh
+# shellcheck disable=SC2086  # one path per word -- no whitespace, a glob character, or a quoted path, asserted by tests/test-ownership.sh
 shfmt -w "${SHFMT_FLAGS[@]}" $shell
 # shellcheck disable=SC2086  # as above
 prettier --log-level warn --write $docs

@@ -12,6 +12,6 @@
 files="$(checked_shell)"
 [ -n "$files" ] || fail "checked_shell() listed nothing; the ownership derivation went vacuous"
 cd "$REPO_ROOT" || fail "could not cd to $REPO_ROOT"
-# shellcheck disable=SC2086  # one path per word, asserted by tests/test-ownership.sh
+# shellcheck disable=SC2086  # one path per word -- no whitespace, a glob character, or a quoted path, asserted by tests/test-ownership.sh
 shellcheck -e SC1091 -e SC2016 $files || fail "shellcheck reported problems"
 printf 'lint-shell: %s shell file(s) clean\n' "$(printf '%s\n' "$files" | grep -c .)"

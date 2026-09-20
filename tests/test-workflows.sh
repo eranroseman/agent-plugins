@@ -14,7 +14,7 @@
 files="$(checked '.github/workflows/*.yml')"
 [ -n "$files" ] || fail "no workflow under .github/workflows; the list went vacuous"
 cd "$REPO_ROOT" || fail "could not cd to $REPO_ROOT"
-# shellcheck disable=SC2086  # one path per word, asserted by tests/test-ownership.sh
+# shellcheck disable=SC2086  # one path per word -- no whitespace, a glob character, or a quoted path, asserted by tests/test-ownership.sh
 actionlint $files || fail "actionlint reported problems"
 
 for f in $files; do

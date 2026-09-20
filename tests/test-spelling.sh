@@ -16,7 +16,7 @@ shell="$(checked_shell)"
 yaml="$(checked '*.yml' '*.yaml')"
 [ -n "$yaml" ] || fail "checked '*.yml' '*.yaml' listed nothing"
 cd "$REPO_ROOT" || fail "could not cd to $REPO_ROOT"
-# shellcheck disable=SC2086  # one path per word, asserted by tests/test-ownership.sh
+# shellcheck disable=SC2086  # one path per word -- no whitespace, a glob character, or a quoted path, asserted by tests/test-ownership.sh
 cspell --no-progress $md $shell $yaml \
   || fail "cspell reported the words above: fix a typo, or add a term to cspell.config.yaml"
 printf 'spelling: %s markdown, %s shell and %s YAML file(s) spelled\n' \
