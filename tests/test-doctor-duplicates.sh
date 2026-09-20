@@ -4,7 +4,10 @@
 # must stay quiet on the three false positives spec section 6.6 measured: the
 # same content under two paths, a superseded plugin version, and the same
 # name differing only across harnesses. Needs no network and no CLI: every
-# route is filesystem state plus the two registry files.
+# route is filesystem state plus the two registry files. The Codex half is
+# driven by two stub `codex plugin list --json` runs, one failing and one
+# succeeding; the succeeding one is the only place in the suite where the
+# Codex tab loop and its malformed-field guard execute an iteration.
 . "$(dirname "$0")/lib.sh"
 
 DOCTOR="$REPO_ROOT/bin/doctor"
@@ -104,4 +107,35 @@ printf '%s\n' "$out" | grep -q 'NOTE: Codex:' \
   && fail "the Codex pool was reported over a failed codex plugin list:"$'\n'"$out"
 rm -f "$BIN/codex"
 
-printf 'doctor-duplicates: one Claude duplicate and one residue reported; three false positives quiet\n'
+# The other half of that gate: a codex whose `plugin list --json` succeeds.
+# Without one nothing in the suite executes a single iteration of the Codex tab
+# loop, so nothing asserts its field indices or its malformed-field guard, and
+# the complete-pool gate is only ever seen shut. Two valid entries, each with a
+# skill under the cache path the loop builds from marketplace, name and
+# version, and a third with an empty version for the guard. The pool then holds
+# four trees -- the two under $HOME/.agents/skills, which Codex reads directly,
+# plus one from each valid entry's cache -- and the count is what says both
+# entries were iterated and the path was built from the right three fields.
+mkdir -p "$H2/.codex/plugins/cache" || fail "could not seed the codex plugin cache"
+skill "$H2/.codex/plugins/cache/mkt/theta/1.0.0/skills/gamma" "gamma as the theta plugin ships it"
+skill "$H2/.codex/plugins/cache/mkt/iota/2.0.0/skills/delta" "delta as the iota plugin ships it"
+cat >"$BIN/codex" <<'STUB' || fail "could not write the succeeding codex stub"
+#!/usr/bin/env bash
+# Check mode reaches `plugin list --json` and no other codex verb.
+cat <<'JSON'
+{"installed":[
+  {"pluginId":"theta@mkt","marketplaceName":"mkt","name":"theta","version":"1.0.0","enabled":true},
+  {"pluginId":"iota@mkt","marketplaceName":"mkt","name":"iota","version":"2.0.0","enabled":true},
+  {"pluginId":"kappa@mkt","marketplaceName":"mkt","name":"kappa","version":"","enabled":true}
+]}
+JSON
+STUB
+chmod +x "$BIN/codex" || fail "could not make the codex stub executable"
+out="$(env HOME="$H2" CODEX_HOME="$H2/.codex" PATH="$BIN" /bin/bash "$DOCTOR" 2>&1 || true)"
+printf '%s\n' "$out" | grep -qF "FAIL: a codex plugin list entry is malformed: marketplace='mkt' name='kappa' version=''" \
+  || fail "an entry with an empty version was not reported as malformed:"$'\n'"$out"
+printf '%s\n' "$out" | grep -qF 'NOTE: Codex: 4 skill tree(s) hashed; no name resolves to more than one tree' \
+  || fail "the Codex pool is not the two trees under .agents/skills plus one from each valid entry's cache:"$'\n'"$out"
+rm -f "$BIN/codex"
+
+printf 'doctor-duplicates: one Claude duplicate and one residue reported; three false positives quiet; a Codex pool of 4 over a succeeding codex plugin list\n'
