@@ -377,7 +377,7 @@ In `bin/bump-superpowers` (`scripts/bump-superpowers` after Task 4): line 5 beco
 grep -n -E 'payload' bin/bump-superpowers
 ```
 
-Expected: only lines 5, 13, 27 and 118, the word in prose, which Task 5 takes.
+Expected: only lines 5, 27 and 118, the word in prose, which Task 5 takes (line 13's word was the file name and is renamed above).
 
 - [ ] **Step 5: The watch's bump line and the plugin README**
 
@@ -1197,7 +1197,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>" -- README.md bin/setup
 
 Replace `tests/test-links-resolve.sh` with the file below. It is the scanner the counts in _What was verified_ were measured with; shellcheck, shfmt and cspell are clean on it.
 
-`````bash
+````bash
 #!/usr/bin/env bash
 # Every reference to a file in a document this repository owns resolves (#59).
 # Two forms: a relative markdown link, and the form this repository mostly
@@ -1485,7 +1485,7 @@ done
 [ -z "$failures" ] || fail "these references do not resolve:$failures"
 printf 'links-resolve: %s link(s) and %s backticked path(s) resolve across %s document(s); skipped %s URL(s), %s by shape, %s placeholder(s), %s slug(s), %s namespaced, %s ignored, %s declared absent, %s deleted in history, %s renamed beside the successor, %s command word(s)\n' \
   "$links" "$n_ok" "$scanned" "$n_url" "$n_shape" "$n_glob" "$n_slug" "$n_ns" "$n_ignored" "$n_declared" "$n_history" "$n_renamed" "$n_syntax"
-```
+````
 
 - [ ] **Step 2: Run it and read the residue**
 
@@ -1649,7 +1649,7 @@ docs/superpowers/  historical artifacts: specs and plans as executed; vocabulary
 CONTEXT.md         the vocabulary: contested terms with their retired forms, and the leading words
 AGENTS.md          the agents' instruction file; CLAUDE.md imports it
 ```
-`````
+````
 
 Plan B adds the `vendored.json` line when it creates the file (§14).
 
@@ -1774,7 +1774,7 @@ Pinned so they read identically in every file; each recruits a meaning the reade
 - "payload" meant the hook's output here and the hook's input everywhere else. Resolved: **additional context**, the CLI's own word.
 - "vendored" and "forked" were used as if defined. Resolved by the direction edits flow, above.
 - "curated" read as editorial praise for what is a subtraction. Resolved: **subset entry**.
-- `upstream/` read as a copy of an upstream repository and held this repository's own dependency manifest. Resolved: `skills.json` at the root.
+- The `upstream` directory read as a copy of an upstream repository and held this repository's own dependency manifest. Resolved: `skills.json` at the root.
 - "gate" was audited for divergent senses on 2026-09-23 and carries one, a precondition, in each of its uses.
 - "admission" and "tracer bullet" were candidates for the leading words and appear in no durable file; dropped.
 ```
