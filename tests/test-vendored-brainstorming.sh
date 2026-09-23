@@ -6,6 +6,7 @@
 
 V="$REPO_ROOT/plugins/software-dev/skills/brainstorming"
 [ -d "$V" ] || fail "missing $V"
+guards plugins/software-dev/skills/brainstorming/SKILL.md
 UP="$(fetch_upstream)" || fail "could not fetch upstream at $(upstream_sha)"
 U="$UP/skills/brainstorming"
 sha="$(upstream_sha)" || fail "could not read the pinned sha from $MARKETPLACE"

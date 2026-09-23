@@ -9,6 +9,7 @@
 
 V="$REPO_ROOT/plugins/sensemaking/skills/adhd"
 [ -d "$V" ] || fail "missing $V"
+guards plugins/sensemaking/skills/adhd/SKILL.md plugins/sensemaking/skills/adhd/agents/openai.yaml
 
 # The repository's HEAD on 2026-09-06. Its only tag, v0.1.4, dates from
 # 2026-05-30 and predates both this SKILL.md text and the plugin manifest,

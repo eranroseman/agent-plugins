@@ -1,38 +1,53 @@
 #!/usr/bin/env bash
-# The ownership derivation stays honest (spec §4). Every vendored pattern in
-# tests/lib.sh matches at least one tracked file and is paired with a drift
-# test that names what it excludes, so nothing sits in the excluded set
-# without a test behind it. The checked list is non-empty, and no checked
-# path carries whitespace, a glob character, or a quoted path, which is what
-# lets the tool tests expand `$(checked ...)` unquoted, one path per word.
+# The ownership derivation stays honest (spec §4; #61 M7). Every row of the
+# table in tests/lib.sh matches at least one tracked file and names a guard
+# that exists, no two rows name the same guard, and each guard's own
+# `guards` line -- read here, statically, so this holds without a network --
+# names paths the row's pattern matches, so a guard cannot be repointed at a
+# test that happens to mention the subject. The checked list is non-empty,
+# lists none of the excluded files, and no checked path carries whitespace,
+# a glob character, or a quoted path, which is what lets the tool tests
+# expand `$(checked ...)` unquoted, one path per word.
 . "$(dirname "$0")/lib.sh"
 
-[ "${#VENDORED_PATTERNS[@]}" -eq "${#VENDORED_GUARDS[@]}" ] \
-  || fail "VENDORED_PATTERNS and VENDORED_GUARDS differ in length; every pattern needs its guard"
-[ "${#VENDORED_PATTERNS[@]}" -gt 0 ] || fail "no vendored pattern is declared"
-
-i=0
-while [ "$i" -lt "${#VENDORED_PATTERNS[@]}" ]; do
-  pat="${VENDORED_PATTERNS[$i]}"
-  guard="${VENDORED_GUARDS[$i]}"
-  i=$((i + 1))
-  git -C "$REPO_ROOT" ls-files | grep -qE "$pat" \
-    || fail "pattern '$pat' matches no tracked file; drop it from tests/lib.sh or fix it"
-  [ -f "$REPO_ROOT/$guard" ] || fail "pattern '$pat' names a guard that does not exist: $guard"
-  # The subject: the fourth path segment with regex escapes removed --
-  # plugins/<plugin>/<skills|hooks>/<subject>. The guard must name it.
-  subject="${pat#^plugins/*/}"
-  subject="${subject#*/}"
-  subject="${subject%%/*}"
-  subject="${subject%\$}"
-  subject="${subject//\\/}"
-  [ -n "$subject" ] || fail "pattern '$pat' yields no subject; the guard check would match anything"
-  grep -qF -- "$subject" "$REPO_ROOT/$guard" \
-    || fail "$guard never names '$subject', so nothing asserts the bytes '$pat' excludes"
-done
+[ "${#GUARDED[@]}" -gt 0 ] || fail "no row is declared in tests/lib.sh's table"
 
 list="$(checked)"
 [ -n "$list" ] || fail "checked() listed nothing; the ownership derivation went vacuous"
+
+seen=""
+for row in "${GUARDED[@]}"; do
+  pat="${row%%$'\t'*}"
+  guard="${row#*$'\t'}"
+  if [ -z "$pat" ] || [ -z "$guard" ] || [ "$pat" = "$row" ]; then
+    fail "a row in tests/lib.sh's table is not pattern<TAB>guard: '$row'"
+  fi
+  matches="$(git -C "$REPO_ROOT" ls-files | grep -E "$pat" || true)"
+  [ -n "$matches" ] || fail "pattern '$pat' matches no tracked file; drop it from tests/lib.sh or fix it"
+  [ -f "$REPO_ROOT/$guard" ] || fail "pattern '$pat' names a guard that does not exist: $guard"
+  case " $seen " in
+    *" $guard "*) fail "two rows name $guard as their guard; a guard binds to one row" ;;
+  esac
+  seen="$seen $guard"
+  # The binding, read from the guard's one `guards` line.
+  calls="$(grep -E '^guards ' "$REPO_ROOT/$guard" || true)"
+  [ "$(printf '%s\n' "$calls" | grep -c .)" -eq 1 ] \
+    || fail "$guard must call guards exactly once at the start of a line; found $(printf '%s\n' "$calls" | grep -c .)"
+  read -ra words <<<"$calls"
+  [ "${#words[@]}" -gt 1 ] || fail "$guard calls guards with no path"
+  for p in "${words[@]:1}"; do
+    grep -qE "$pat" <<<"$p" \
+      || fail "$guard guards $p, which '$pat' does not match; the row and its guard disagree about what is excluded"
+    grep -qxF -- "$p" <<<"$matches" \
+      || fail "$guard guards $p, which is not a tracked file the pattern matches"
+  done
+  # The exclusion itself: the first file the row matches is not a checked file.
+  first="$(printf '%s\n' "$matches" | head -n 1)"
+  if grep -qxF -- "$first" <<<"$list"; then
+    fail "checked() lists $first, which the row '$pat' excludes; EXCLUDED is not built from the table"
+  fi
+done
+
 printf '%s\n' "$list" | grep -q '[[:space:]*?[\\"]' \
   && fail "a tracked path carries whitespace, a glob character, or a quoted path; the tool tests expand the list unquoted:"$'\n'"$(printf '%s\n' "$list" | grep '[[:space:]*?[\\"]')"
 shell="$(checked_shell)"
@@ -55,8 +70,6 @@ while IFS= read -r f; do
 done < <(printf '%s\n' "$list")
 [ -z "$missing" ] \
   || fail "these checked file(s) open with a bash shebang and checked_shell() does not list them:$missing"$'\n'"their first line must be exactly '#!/usr/bin/env bash', or they leave shellcheck, shfmt and cspell unnoticed"
-printf '%s\n' "$list" | grep -q '^plugins/software-dev/hooks/payload\.md$' \
-  && fail "checked() lists the vendored payload.md"
 
-printf 'ownership: %s vendored pattern(s) each guarded; %s checked file(s), %s of them shell\n' \
-  "${#VENDORED_PATTERNS[@]}" "$(printf '%s\n' "$list" | grep -c .)" "$(printf '%s\n' "$shell" | grep -c .)"
+printf 'ownership: %s row(s), each bound to its guard; %s checked file(s), %s of them shell\n' \
+  "${#GUARDED[@]}" "$(printf '%s\n' "$list" | grep -c .)" "$(printf '%s\n' "$shell" | grep -c .)"

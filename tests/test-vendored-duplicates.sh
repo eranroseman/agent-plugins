@@ -9,6 +9,7 @@
 
 V="$REPO_ROOT/plugins/software-dev/skills/finding-duplicate-functions"
 [ -d "$V" ] || fail "missing $V"
+guards plugins/software-dev/skills/finding-duplicate-functions/scripts/categorize-prompt.md plugins/software-dev/skills/finding-duplicate-functions/scripts/find-duplicates-prompt.md
 
 SHA="51111f74f24058117752d9aa917cb19859f8ec86"
 UP="$(fetch_pinned https://github.com/obra/superpowers-lab.git "$SHA" \

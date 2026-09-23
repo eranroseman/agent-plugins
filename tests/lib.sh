@@ -61,38 +61,61 @@ link_tools() {
   done
 }
 
-# ---- Ownership (spec §4) ----------------------------------------------------
+# ---- Ownership (spec §4; #61 M7) -------------------------------------------
 # Every list of "the files we own" comes from checked() below. One class of
-# tracked file is excluded: vendored, where an upstream pin constrains the
-# bytes and the paired drift test asserts them. Six patterns, anchored at the
-# start of the path, each beside the test that guards it;
-# tests/test-ownership.sh checks every pair. #21 may devendor payload.md or
-# setup-repository/SKILL.md: that edits these two arrays and nothing else.
-# adhd/agents/openai.yaml is authored here but sits inside a vendored
-# directory; the directory is excluded whole, because the drift test's
-# file-set assertion governs it and tests/test-plugin-skills.sh already
-# asserts the one policy line the file exists to carry.
-VENDORED_PATTERNS=(
-  '^plugins/sensemaking/skills/adhd/'
-  '^plugins/software-dev/skills/brainstorming/'
-  '^plugins/software-dev/skills/diagnosing-bugs/'
-  '^plugins/software-dev/skills/setup-repository/'
-  '^plugins/software-dev/skills/finding-duplicate-functions/scripts/[a-z-]+-prompt\.md$'
-  '^plugins/software-dev/hooks/payload\.md$'
-)
-# shellcheck disable=SC2034  # read by tests/test-ownership.sh
-VENDORED_GUARDS=(
-  tests/test-vendored-adhd.sh
-  tests/test-vendored-brainstorming.sh
-  tests/test-vendored-diagnosing-bugs.sh
-  tests/test-vendored-scaffolder.sh
-  tests/test-vendored-duplicates.sh
-  tests/test-hook.sh
+# tracked file is excluded: trees with a drift test, where an upstream pin
+# constrains the bytes and the paired test asserts them. One table, one row
+# per pattern: the pattern, anchored at the start of the path, a tab, then
+# the test that guards it. A guard binds itself to its row by calling
+# guards() on one line with the paths it holds to upstream, and
+# tests/test-ownership.sh reads that line, so a row cannot name a test that
+# checks something else. #21 may devendor a tree: that edits this table and
+# nothing else. adhd/agents/openai.yaml is first-party but sits inside a
+# vendored directory; the directory is excluded whole, because the drift
+# test's file-set assertion governs it and tests/test-plugin-skills.sh
+# already asserts the one policy line the file exists to carry.
+GUARDED=(
+  $'^plugins/sensemaking/skills/adhd/\ttests/test-vendored-adhd.sh'
+  $'^plugins/software-dev/skills/brainstorming/\ttests/test-vendored-brainstorming.sh'
+  $'^plugins/software-dev/skills/diagnosing-bugs/\ttests/test-vendored-diagnosing-bugs.sh'
+  $'^plugins/software-dev/skills/setup-repository/\ttests/test-vendored-scaffolder.sh'
+  $'^plugins/software-dev/skills/finding-duplicate-functions/scripts/[a-z-]+-prompt\\.md$\ttests/test-vendored-duplicates.sh'
+  $'^plugins/software-dev/hooks/payload\\.md$\ttests/test-hook.sh'
 )
 EXCLUDED="$(
   IFS='|'
-  printf '%s' "${VENDORED_PATTERNS[*]}"
+  set -- "${GUARDED[@]%%$'\t'*}"
+  printf '%s' "$*"
 )"
+
+# The pattern of the row whose guard is $1, a path relative to REPO_ROOT.
+# Prints it; fails unless exactly one row names that guard.
+guarded_pattern() {
+  local guard="$1" row n=0 pat=""
+  for row in "${GUARDED[@]}"; do
+    [ "${row#*$'\t'}" = "$guard" ] || continue
+    n=$((n + 1))
+    pat="${row%%$'\t'*}"
+  done
+  [ "$n" -eq 1 ] || fail "$n row(s) of the table in tests/lib.sh name $guard as their guard; exactly one must"
+  printf '%s\n' "$pat"
+}
+
+# Called by a drift test, on one line, with the repository-relative paths it
+# is about to hold to upstream. The test is bound to its row: exactly one row
+# names it, and every path given is tracked and matches that row's pattern.
+# Before any fetch, so a broken binding fails without a network.
+guards() {
+  local me="tests/${BASH_SOURCE[1]##*/}" pat p
+  pat="$(guarded_pattern "$me")" || exit 1
+  [ "$#" -gt 0 ] || fail "$me calls guards with no path"
+  for p in "$@"; do
+    printf '%s\n' "$p" | grep -qE "$pat" \
+      || fail "$me guards $p, which its row's pattern '$pat' does not match"
+    git -C "$REPO_ROOT" ls-files --error-unmatch -- "$p" >/dev/null 2>&1 \
+      || fail "$me guards $p, which is not a tracked file"
+  done
+}
 
 # Tracked files this repository owns, one path per line relative to
 # REPO_ROOT. Arguments are git pathspecs: checked '*.md', or

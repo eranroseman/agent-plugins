@@ -11,6 +11,7 @@
 
 V="$REPO_ROOT/plugins/software-dev/skills/setup-repository"
 [ -d "$V" ] || fail "missing $V"
+guards plugins/software-dev/skills/setup-repository/SKILL.md plugins/software-dev/skills/setup-repository/agents/openai.yaml
 
 REF="v1.2.3"
 SHA="6acc160e4e0cd062dbbbd7a1b26ae92855edf07e"     # the commit v1.2.3 peels to

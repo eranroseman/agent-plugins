@@ -9,6 +9,7 @@
 
 V="$REPO_ROOT/plugins/software-dev/skills/diagnosing-bugs"
 [ -d "$V" ] || fail "missing $V"
+guards plugins/software-dev/skills/diagnosing-bugs/SKILL.md plugins/software-dev/skills/diagnosing-bugs/agents/openai.yaml
 
 REF="v1.2.3"
 SHA="6acc160e4e0cd062dbbbd7a1b26ae92855edf07e" # the commit v1.2.3 peels to

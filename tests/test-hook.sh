@@ -23,6 +23,7 @@ H="$REPO_ROOT/plugins/software-dev/hooks"
 [ -f "$H/payload-rules.md" ] || fail "missing $H/payload-rules.md"
 [ -f "$H/claude-hooks.json" ] || fail "missing $H/claude-hooks.json"
 [ -x "$H/session-start" ] || fail "$H/session-start missing or not executable"
+guards plugins/software-dev/hooks/payload.md
 
 # (1) payload exactness. The frame is read from upstream's own hooks/session-start
 # rather than transcribed here, and the recipe lives in bin/bump-superpowers so a
