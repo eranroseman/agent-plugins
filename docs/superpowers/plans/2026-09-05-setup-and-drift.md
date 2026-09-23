@@ -689,9 +689,9 @@ EOF
 
 ### Task 3: Give the payload one build recipe, in `bin/bump-superpowers`
 
-Today the recipe that turns upstream's `using-superpowers` into `hooks/payload.md` exists only inside `tests/test-hook.sh`, and it transcribes upstream's `<EXTREMELY_IMPORTANT>` frame rather than reading it. A bump that changed the frame would leave the suite green while the injection diverged (§10). This task moves the recipe into the bump script and makes the test call it.
+Today the recipe that turns upstream's `using-superpowers` into `hooks/using-superpowers.md` exists only inside `tests/test-hook.sh`, and it transcribes upstream's `<EXTREMELY_IMPORTANT>` frame rather than reading it. A bump that changed the frame would leave the suite green while the injection diverged (§10). This task moves the recipe into the bump script and makes the test call it.
 
-The extraction was verified on 2026-09-05 against the current `payload.md`: upstream's `hooks/session-start` builds the frame on one line, `session_context="…${using_superpowers_escaped}…"`, and splitting that line on the placeholder reproduces `payload.md` byte-for-byte. Upstream reads the skill with `$(cat …)`, which strips the trailing newline, so the recipe must too — hence `printf '%s' "$(sed …)"` rather than plain `sed`.
+The extraction was verified on 2026-09-05 against the current `using-superpowers.md`: upstream's `hooks/session-start` builds the frame on one line, `session_context="…${using_superpowers_escaped}…"`, and splitting that line on the placeholder reproduces `using-superpowers.md` byte-for-byte. Upstream reads the skill with `$(cat …)`, which strips the trailing newline, so the recipe must too — hence `printf '%s' "$(sed …)"` rather than plain `sed`.
 
 **Files:**
 
@@ -701,7 +701,7 @@ The extraction was verified on 2026-09-05 against the current `payload.md`: upst
 **Interfaces:**
 
 - Consumes: `tests/lib.sh`'s `fetch_upstream` and `upstream_sha` (unchanged).
-- Produces: `bin/bump-superpowers --emit-payload <clone-dir>`, which prints the payload to stdout and is the only copy of the recipe. Task 4's `tests/test-setup-doctor.sh` shellchecks this file too.
+- Produces: `bin/bump-superpowers --emit-using-superpowers <clone-dir>`, which prints the payload to stdout and is the only copy of the recipe. Task 4's `tests/test-setup-doctor.sh` shellchecks this file too.
 
 - [ ] **Step 1: Write the failing assertion**
 
@@ -716,17 +716,17 @@ src="$UP/skills/using-superpowers/SKILL.md"
 [ "$(sed -n 30p "$src")" = '- "Let'"'"'s build X" → superpowers:brainstorming first, then implementation skills.' ] \
   || fail "upstream line 30 is not the expected superpowers:brainstorming line; re-audit the edit"
 expected="$(mktemp)"
-bash "$REPO_ROOT/bin/bump-superpowers" --emit-payload "$UP" > "$expected" \
-  || fail "bin/bump-superpowers --emit-payload failed"
-diff "$expected" "$H/payload.md" || fail "payload.md != the recipe's output for the pinned clone"
-[ "$(grep -c 'software-development:brainstorming' "$H/payload.md")" -eq 1 ] || fail "expected exactly one software-development:brainstorming"
-if grep -q 'superpowers:brainstorming' "$H/payload.md"; then fail "a superpowers:brainstorming reference survived"; fi
+bash "$REPO_ROOT/bin/bump-superpowers" --emit-using-superpowers "$UP" > "$expected" \
+  || fail "bin/bump-superpowers --emit-using-superpowers failed"
+diff "$expected" "$H/using-superpowers.md" || fail "using-superpowers.md != the recipe's output for the pinned clone"
+[ "$(grep -c 'software-development:brainstorming' "$H/using-superpowers.md")" -eq 1 ] || fail "expected exactly one software-development:brainstorming"
+if grep -q 'superpowers:brainstorming' "$H/using-superpowers.md"; then fail "a superpowers:brainstorming reference survived"; fi
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `bash tests/test-hook.sh`
-Expected: `FAIL: bin/bump-superpowers --emit-payload failed`, exit 1.
+Expected: `FAIL: bin/bump-superpowers --emit-using-superpowers failed`, exit 1.
 
 - [ ] **Step 3: Write `bin/bump-superpowers`**
 
@@ -735,15 +735,15 @@ Expected: `FAIL: bin/bump-superpowers --emit-payload failed`, exit 1.
 # Move the obra/superpowers pin to a new sha and leave the diff for review.
 #
 #   bin/bump-superpowers <sha>              apply the bump in this checkout
-#   bin/bump-superpowers --emit-payload DIR print the payload for a clone at DIR
+#   bin/bump-superpowers --emit-using-superpowers DIR print the payload for a clone at DIR
 #
 # A bump moves four coupled artifacts by three mechanisms:
 #   substituted   .claude-plugin/marketplace.json source.sha, LICENSE "at commit"
-#   regenerated   hooks/payload.md, skills/brainstorming/ (re-vendored)
+#   regenerated   hooks/using-superpowers.md, skills/brainstorming/ (re-vendored)
 #   read          the version field, copied from upstream's own plugin.json
 #
 # Two parts of the diff deserve reading rather than skimming: the vendored
-# brainstorming body, where upstream can change behaviour, and payload.md,
+# brainstorming body, where upstream can change behaviour, and using-superpowers.md,
 # which is injected into every Claude Code session.
 set -uo pipefail
 
@@ -760,7 +760,7 @@ die() { printf 'ERROR: %s\n' "$*" >&2; exit 2; }
 # so splitting on the placeholder yields the two halves. Upstream reads the
 # skill with $(cat ...), which strips the trailing newline; "$(sed ...)" does
 # the same, and the tail's leading \n puts it back.
-emit_payload() {
+emit_using_superpowers() {
   local up="$1" src line tmpl pre post
   src="$up/skills/using-superpowers/SKILL.md"
   [ -f "$src" ] || die "no using-superpowers/SKILL.md in $up"
@@ -791,13 +791,13 @@ fetch_at() {
 }
 
 case "${1:-}" in
-  --emit-payload)
-    [ -n "${2:-}" ] || die "--emit-payload needs a checkout directory"
-    emit_payload "$2"
+  --emit-using-superpowers)
+    [ -n "${2:-}" ] || die "--emit-using-superpowers needs a checkout directory"
+    emit_using_superpowers "$2"
     exit 0
     ;;
   -h|--help|"")
-    printf 'usage: bin/bump-superpowers <sha>\n       bin/bump-superpowers --emit-payload <clone-dir>\n'
+    printf 'usage: bin/bump-superpowers <sha>\n       bin/bump-superpowers --emit-using-superpowers <clone-dir>\n'
     [ -n "${1:-}" ] && exit 0 || exit 2
     ;;
 esac
@@ -836,7 +836,7 @@ else
 fi
 
 # 2. regenerated: the payload, then the vendored brainstorming tree
-emit_payload "$work" > "$PLUGIN/hooks/payload.md" || die "could not write payload.md"
+emit_using_superpowers "$work" > "$PLUGIN/hooks/using-superpowers.md" || die "could not write using-superpowers.md"
 
 # The narrowed description, verbatim. tests/test-vendored-brainstorming.sh
 # carries the same string; the two must stay identical.
@@ -871,7 +871,7 @@ revendor_brainstorming "$work" "$new_sha"
 
 printf '\nBumped %s -> %s, version %s. Review the diff:\n' "$old_sha" "$new_sha" "$new_version"
 printf '  git diff -- %s %s\n' \
-  "plugins/software-development/hooks/payload.md" \
+  "plugins/software-development/hooks/using-superpowers.md" \
   "plugins/software-development/skills/brainstorming"
 printf 'Then run: bash tests/run.sh\n'
 ```
@@ -894,12 +894,12 @@ Expected: the hook test's summary line, then ten `PASS` lines.
 - [ ] **Step 5: Prove the script's own output against the shipped payload**
 
 ```bash
-diff <(bash bin/bump-superpowers --emit-payload \
+diff <(bash bin/bump-superpowers --emit-using-superpowers \
         "$HOME/.local/share/software-development/upstream/superpowers") \
-     plugins/software-development/hooks/payload.md && echo "recipe reproduces payload.md"
+     plugins/software-development/hooks/using-superpowers.md && echo "recipe reproduces using-superpowers.md"
 ```
 
-Expected: `recipe reproduces payload.md`, exit 0. If the pinned clone is absent on this machine, use `UPSTREAM_DIR=/tmp/software-development-upstream-superpowers bash tests/test-hook.sh` instead, which fetches it.
+Expected: `recipe reproduces using-superpowers.md`, exit 0. If the pinned clone is absent on this machine, use `UPSTREAM_DIR=/tmp/software-development-upstream-superpowers bash tests/test-hook.sh` instead, which fetches it.
 
 Both regenerated artifacts were verified against the shipped files on 2026-09-05 before this plan was written, so a mismatch here means the script was mistyped, not that the recipe is wrong. Prove the second one the same way, by running the bump against the sha already pinned — the script refuses, so check the re-vendor by hand instead:
 
@@ -2435,7 +2435,7 @@ if [ "$head_sha" = "$sha" ]; then
 else
   report "- Pinned at \`$sha\`; main is \`$head_sha\`."
   report "- Bump with \`bin/bump-superpowers $head_sha\`, then read the diff to"
-  report "  \`hooks/payload.md\` and \`skills/brainstorming/\` before merging."
+  report "  \`hooks/using-superpowers.md\` and \`skills/brainstorming/\` before merging."
   DRIFT=1
 fi
 latest_tag="$(git ls-remote --tags --refs https://github.com/obra/superpowers.git \
@@ -2701,7 +2701,7 @@ EOF
 
 ### Task 13: Cut over, run the gates, and empty the two global files
 
-The global-file edits are last and are gated on **0.4.0 being installed on this machine**, not merely merged: the worktree-cleanup paragraph is deleted only because `hooks/payload-rules.md` carries it, and the installed plugin is the thing that injects that file (§4.1).
+The global-file edits are last and are gated on **0.4.0 being installed on this machine**, not merely merged: the worktree-cleanup paragraph is deleted only because `hooks/working-rules.md` carries it, and the installed plugin is the thing that injects that file (§4.1).
 
 **Files:**
 
@@ -2835,7 +2835,7 @@ After editing any of them, run the refresh block in that repo's README, then
 commit.
 ```
 
-Every other section is deleted, each for a recorded reason (§4.1): the intro self-negates once every repository has an `AGENTS.md`; worktree cleanup now ships in `hooks/payload-rules.md`; grilling is moot since the narrowed `brainstorming` description made the two disjoint; the skill-installs rule's evidence base is refuted; the code-review paragraph is redundant with the plugins' own descriptions and, for the `Skill(codex:rescue)` hang, with `codex@openai-codex`'s own `commands/rescue.md`; and task reports moved to each repository in Task 12.
+Every other section is deleted, each for a recorded reason (§4.1): the intro self-negates once every repository has an `AGENTS.md`; worktree cleanup now ships in `hooks/working-rules.md`; grilling is moot since the narrowed `brainstorming` description made the two disjoint; the skill-installs rule's evidence base is refuted; the code-review paragraph is redundant with the plugins' own descriptions and, for the `Skill(codex:rescue)` hang, with `codex@openai-codex`'s own `commands/rescue.md`; and task reports moved to each repository in Task 12.
 
 - [ ] **Step 9: Empty `~/.codex/AGENTS.md`**
 
@@ -2927,7 +2927,7 @@ Three spec sentences are deliberately not implemented as written, each recorded 
 
 **Placeholder scan.** Every code step carries the code. The four bracketed spans that remain are all in Task 13's gate-results table, where the value is the result of a run that has not happened yet, and in the vendored skill's block template, where upstream's own bracketed instructions are quoted verbatim.
 
-**Type consistency.** `ensure_clone`, `ensure_links`, `ensure_claude`, `ensure_codex`, `ensure_skills_sh` and `report_only` are stubbed in Task 4 and filled in Tasks 5 to 9 under exactly those names. `declared_sha` and `curated_skills` (Task 5) are reused in Tasks 9 and 11 and by `tests/test-doctor-faults.sh`. `emit_payload` is reached only through `bin/bump-superpowers --emit-payload`, which is the form `tests/test-hook.sh` calls; `revendor_brainstorming` and the `DESCRIPTION` literal beside it are internal to that script, and that literal must stay identical to the `want=` string in `tests/test-vendored-brainstorming.sh`. `locked_ref` reads `.skills.<name>.ref`, the key measured on 2026-09-05. `MARKETPLACE_SOURCE` (Claude, owner/repo form) and `CODEX_MARKETPLACE_SOURCE` (Codex, git URL form) are distinct on purpose: the two CLIs take different arguments.
+**Type consistency.** `ensure_clone`, `ensure_links`, `ensure_claude`, `ensure_codex`, `ensure_skills_sh` and `report_only` are stubbed in Task 4 and filled in Tasks 5 to 9 under exactly those names. `declared_sha` and `curated_skills` (Task 5) are reused in Tasks 9 and 11 and by `tests/test-doctor-faults.sh`. `emit_using_superpowers` is reached only through `bin/bump-superpowers --emit-using-superpowers`, which is the form `tests/test-hook.sh` calls; `revendor_brainstorming` and the `DESCRIPTION` literal beside it are internal to that script, and that literal must stay identical to the `want=` string in `tests/test-vendored-brainstorming.sh`. `locked_ref` reads `.skills.<name>.ref`, the key measured on 2026-09-05. `MARKETPLACE_SOURCE` (Claude, owner/repo form) and `CODEX_MARKETPLACE_SOURCE` (Codex, git URL form) are distinct on purpose: the two CLIs take different arguments.
 
 ---
 

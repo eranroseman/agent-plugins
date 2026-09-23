@@ -36,9 +36,9 @@ What it ships:
   changed; only its two prompt templates are upstream's, and the drift test
   holds them there.
 - `hooks/session-start`, Claude Code only: a SessionStart hook that injects
-  `hooks/payload.md`, upstream's `using-superpowers` text with its one
+  `hooks/using-superpowers.md`, upstream's `using-superpowers` text with its one
   `superpowers:brainstorming` reference repointed at
-  `software-dev:brainstorming`, followed by `hooks/payload-rules.md`,
+  `software-dev:brainstorming`, followed by `hooks/working-rules.md`,
   this plugin's own working rules. The Claude manifest declares the hook as
   `hooks/claude-hooks.json`.
 

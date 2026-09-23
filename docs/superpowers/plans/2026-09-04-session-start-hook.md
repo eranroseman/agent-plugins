@@ -4,7 +4,7 @@
 
 **Goal:** Append one authored rule to the Claude Code SessionStart injection, move the hook file to a Claude-declared path so Codex is offered no hook, and prove both on this machine.
 
-**Architecture:** `hooks/session-start` concatenates two files, upstream's `payload.md` (unchanged, drift-tested) and a new `payload-rules.md`, into the same JSON envelope. The hook registration moves from `hooks/hooks.json` to `hooks/claude-hooks.json`, declared in `.claude-plugin/plugin.json`; nothing remains at the path Codex's fallback reads. Every static claim is a bash assertion in `tests/test-hook.sh`, run by `tests/run.sh` locally and in CI.
+**Architecture:** `hooks/session-start` concatenates two files, upstream's `using-superpowers.md` (unchanged, drift-tested) and a new `working-rules.md`, into the same JSON envelope. The hook registration moves from `hooks/hooks.json` to `hooks/claude-hooks.json`, declared in `.claude-plugin/plugin.json`; nothing remains at the path Codex's fallback reads. Every static claim is a bash assertion in `tests/test-hook.sh`, run by `tests/run.sh` locally and in CI.
 
 **Tech Stack:** bash, jq, Claude Code CLI (`claude plugin validate --strict`), codex-cli 0.147.0's `validate_plugin.py`, GitHub Actions.
 
@@ -12,9 +12,9 @@
 
 ## Global Constraints
 
-- `hooks/payload.md` does not change by a single byte. Its drift test (upstream text inside upstream's frame with the one line-30 edit) stays as it is.
-- `hooks/payload-rules.md` content is exactly the §4.2 text, ending in exactly one newline.
-- Emitted `additionalContext` is `cat payload.md; printf '\n'; cat payload-rules.md` less its final newline (command substitution strips it). The test compares `jq -r` output with `diff` against that command's output, never `jq -j` with `cmp`.
+- `hooks/using-superpowers.md` does not change by a single byte. Its drift test (upstream text inside upstream's frame with the one line-30 edit) stays as it is.
+- `hooks/working-rules.md` content is exactly the §4.2 text, ending in exactly one newline.
+- Emitted `additionalContext` is `cat using-superpowers.md; printf '\n'; cat working-rules.md` less its final newline (command substitution strips it). The test compares `jq -r` output with `diff` against that command's output, never `jq -j` with `cmp`.
 - After Task 1 no file named `hooks/hooks.json` exists anywhere under `plugins/`. The Claude manifest declares `"hooks": "./hooks/claude-hooks.json"` with the leading `./`; `claude plugin validate --strict` rejects the path without it.
 - The Codex manifest never gains a `hooks` key in any form. Its `interface.capabilities` is `["Instructions"]`.
 - Matcher stays `startup|clear|compact`.
@@ -33,8 +33,8 @@ plugins/software-development/
 ├── .codex-plugin/plugin.json       Task 1: version 0.2.0, capabilities ["Instructions"]; Task 3: longDescription
 ├── hooks/claude-hooks.json         Task 1: renamed from hooks.json, content unchanged
 ├── hooks/session-start             Task 2: two-file read, header comment
-├── hooks/payload.md                unchanged
-├── hooks/payload-rules.md          Task 2: new, §4.2 text
+├── hooks/using-superpowers.md      unchanged
+├── hooks/working-rules.md          Task 2: new, §4.2 text
 └── README.md                       Task 3: hook and Codex paragraphs
 .claude-plugin/marketplace.json     Task 3: software-development description
 README.md                           Task 3: line 7
@@ -161,20 +161,20 @@ MSG
 **Files:**
 
 - Modify: `tests/test-hook.sh` (top-of-file checks, section "(1)" gains a rules block after it, section "(2) envelope round-trip", section "(4)" control characters)
-- Create: `plugins/software-development/hooks/payload-rules.md`
+- Create: `plugins/software-development/hooks/working-rules.md`
 - Modify: `plugins/software-development/hooks/session-start` (header comment and the `payload=` line only)
 
 **Interfaces:**
 
 - Consumes: the `tests/test-hook.sh` Task 1 left.
-- Produces: `hooks/payload-rules.md`; `session-start` emitting `payload.md` + blank line + `payload-rules.md`. Task 3 adds one loop to section "(3) wiring" of the same test.
+- Produces: `hooks/working-rules.md`; `session-start` emitting `using-superpowers.md` + blank line + `working-rules.md`. Task 3 adds one loop to section "(3) wiring" of the same test.
 
 - [ ] **Step 1: Write the failing assertions**
 
-Near the top of `tests/test-hook.sh`, after the `payload.md` existence check, add:
+Near the top of `tests/test-hook.sh`, after the `using-superpowers.md` existence check, add:
 
 ```bash
-[ -f "$H/payload-rules.md" ] || fail "missing $H/payload-rules.md"
+[ -f "$H/working-rules.md" ] || fail "missing $H/working-rules.md"
 ```
 
 Immediately after the `# (1) payload exactness` block (after the line that fails on `a superpowers:brainstorming reference survived`), add:
@@ -182,43 +182,43 @@ Immediately after the `# (1) payload exactness` block (after the line that fails
 ```bash
 # (1b) the authored rules file: non-empty, exactly one trailing newline, and
 # every qualified superpowers reference names a skill the curated entry lists.
-[ -s "$H/payload-rules.md" ] || fail "payload-rules.md is empty"
-[ "$(tail -c 1 "$H/payload-rules.md" | wc -l)" -eq 1 ] || fail "payload-rules.md must end with a newline"
-[ "$(tail -c 2 "$H/payload-rules.md" | wc -l)" -eq 1 ] || fail "payload-rules.md must end with exactly one newline"
-grep -q 'worktree' "$H/payload-rules.md" || fail "payload-rules.md does not carry the worktree rule"
-if grep -q 'superpowers:brainstorming' "$H/payload-rules.md"; then fail "payload-rules.md names superpowers:brainstorming"; fi
+[ -s "$H/working-rules.md" ] || fail "working-rules.md is empty"
+[ "$(tail -c 1 "$H/working-rules.md" | wc -l)" -eq 1 ] || fail "working-rules.md must end with a newline"
+[ "$(tail -c 2 "$H/working-rules.md" | wc -l)" -eq 1 ] || fail "working-rules.md must end with exactly one newline"
+grep -q 'worktree' "$H/working-rules.md" || fail "working-rules.md does not carry the worktree rule"
+if grep -q 'superpowers:brainstorming' "$H/working-rules.md"; then fail "working-rules.md names superpowers:brainstorming"; fi
 curated="$(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$MARKETPLACE" | sed 's#^\./##')"
 while IFS= read -r name; do
   [ -z "$name" ] && continue
   printf '%s\n' "$curated" | grep -qx "$name" \
-    || fail "payload-rules.md names superpowers:$name, which the curated entry does not list"
-done < <(grep -o 'superpowers:[a-z-]*' "$H/payload-rules.md" | sed 's/^superpowers://' | sort -u)
+    || fail "working-rules.md names superpowers:$name, which the curated entry does not list"
+done < <(grep -o 'superpowers:[a-z-]*' "$H/working-rules.md" | sed 's/^superpowers://' | sort -u)
 ```
 
-In the `# (2) envelope round-trip` block, replace the `diff` command (the one ending `|| fail "additionalContext does not round-trip to payload.md"`) with:
+In the `# (2) envelope round-trip` block, replace the `diff` command (the one ending `|| fail "additionalContext does not round-trip to using-superpowers.md"`) with:
 
 ```bash
 diff <(printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext') \
-     <(cat "$H/payload.md"; printf '\n'; cat "$H/payload-rules.md") \
-  || fail "additionalContext does not round-trip to payload.md + blank line + payload-rules.md"
+     <(cat "$H/using-superpowers.md"; printf '\n'; cat "$H/working-rules.md") \
+  || fail "additionalContext does not round-trip to using-superpowers.md + blank line + working-rules.md"
 len="$(printf '%s' "$out" | jq '.hookSpecificOutput.additionalContext | length')"
 [ "$len" -lt 8000 ] || fail "additionalContext is $len code points; the tripwire is 8000"
 ```
 
-In the `# (4)` control-character block, after the line `printf '%s' "$sample" > "$T/payload.md"`, add:
+In the `# (4)` control-character block, after the line `printf '%s' "$sample" > "$T/using-superpowers.md"`, add:
 
 ```bash
-: > "$T/payload-rules.md"   # the script now reads it; empty keeps the expectation the sample alone
+: > "$T/working-rules.md"   # the script now reads it; empty keeps the expectation the sample alone
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `bash tests/test-hook.sh`
-Expected: `FAIL: missing /home/eranr/agent-plugins/plugins/software-development/hooks/payload-rules.md`, exit 1.
+Expected: `FAIL: missing /home/eranr/agent-plugins/plugins/software-development/hooks/working-rules.md`, exit 1.
 
 - [ ] **Step 3: Create the rules file**
 
-Write `plugins/software-development/hooks/payload-rules.md` with exactly this content (three lines of text, one blank line between heading and paragraph, one trailing newline):
+Write `plugins/software-development/hooks/working-rules.md` with exactly this content (three lines of text, one blank line between heading and paragraph, one trailing newline):
 
 ```markdown
 # software-development: working rules
@@ -226,7 +226,7 @@ Write `plugins/software-development/hooks/payload-rules.md` with exactly this co
 **Worktree cleanup.** `EnterWorktree` places worktrees under `.claude/worktrees/`. `superpowers:finishing-a-development-branch` recognises only `.worktrees/` and `worktrees/` as its own and declines to remove anything else. Once the branch is merged or abandoned, run `git worktree remove <path>` from the main checkout, then `git worktree prune`.
 ```
 
-Check: `tail -c 2 plugins/software-development/hooks/payload-rules.md | wc -l` prints `1`.
+Check: `tail -c 2 plugins/software-development/hooks/working-rules.md | wc -l` prints `1`.
 
 - [ ] **Step 4: Make the script read both files**
 
@@ -235,7 +235,7 @@ In `plugins/software-development/hooks/session-start`, replace the header commen
 ```bash
 # SessionStart hook for the software-development plugin, Claude Code only.
 #
-# Reads hooks/payload.md and hooks/payload-rules.md (next to this script),
+# Reads hooks/using-superpowers.md and hooks/working-rules.md (next to this script),
 # joins them with one blank line, and prints the result as the
 # additionalContext of a SessionStart envelope, the shape Claude Code
 # documents. Command substitution strips the final newline; the test
@@ -245,13 +245,13 @@ In `plugins/software-development/hooks/session-start`, replace the header commen
 and replace the line
 
 ```bash
-payload="$(cat "${SCRIPT_DIR}/payload.md")"
+payload="$(cat "${SCRIPT_DIR}/using-superpowers.md")"
 ```
 
 with
 
 ```bash
-payload="$(cat "${SCRIPT_DIR}/payload.md"; printf '\n'; cat "${SCRIPT_DIR}/payload-rules.md")"
+payload="$(cat "${SCRIPT_DIR}/using-superpowers.md"; printf '\n'; cat "${SCRIPT_DIR}/working-rules.md")"
 ```
 
 Nothing else in the script changes.
@@ -270,8 +270,8 @@ git add tests/test-hook.sh plugins/software-development/hooks
 git commit -m "$(cat <<'MSG'
 Append the plugin's working rules to the SessionStart payload
 
-payload.md stays upstream's text, unchanged and drift-tested. A second
-file, payload-rules.md, follows it after one blank line and carries the
+using-superpowers.md stays upstream's text, unchanged and drift-tested. A second
+file, working-rules.md, follows it after one blank line and carries the
 one rule with evidence behind it, worktree cleanup, moved out of the
 author's user file.
 
@@ -344,9 +344,9 @@ What it ships:
   provenance header at the top of `SKILL.md` names the commit. Do not
   hand-edit the skill; re-vendor from upstream to update it.
 - `hooks/session-start`, Claude Code only: a SessionStart hook that injects
-  `hooks/payload.md`, upstream's `using-superpowers` text with its one
+  `hooks/using-superpowers.md`, upstream's `using-superpowers` text with its one
   `superpowers:brainstorming` reference repointed at
-  `software-development:brainstorming`, followed by `hooks/payload-rules.md`,
+  `software-development:brainstorming`, followed by `hooks/working-rules.md`,
   this plugin's own working rules. The Claude manifest declares the hook as
   `hooks/claude-hooks.json`.
 
@@ -538,7 +538,7 @@ A count of `1` without the paragraph means the old cache is still loaded: check 
 
 - **Startup:** count `1`, under `<EXTREMELY_IMPORTANT>` in the SessionStart hook block. The worktree paragraph appeared twice, once from `~/.claude/CLAUDE.md` and once from "software-development: working rules". That second occurrence is the discriminating evidence, because 0.1.0 shipped no rules file at all.
 - **After `/clear`:** the question was asked without the trailing period, so the literal answer was `0`, and the session volunteered the near-miss itself: "`You have superpowers.` (trailing period) in SessionStart hook block". The injection was present; the zero was a wording artifact.
-- **After `/compact`:** asked as two counts, `# software-development: working rules` and `You have superpowers.` including the period. Answer `1 and 1`. Before compaction it was `2 and 1`, the extra heading being a `cat` of `payload-rules.md` in that session's history, which compaction dropped.
+- **After `/compact`:** asked as two counts, `# software-development: working rules` and `You have superpowers.` including the period. Answer `1 and 1`. Before compaction it was `2 and 1`, the extra heading being a `cat` of `working-rules.md` in that session's history, which compaction dropped.
 
 **One limit worth recording rather than glossing.** A count of `1` after `/compact` cannot by itself distinguish a fresh injection from an old one surviving compaction, and unlike the tracer there is no payload difference to discriminate with, since both would be 0.3.0. The reading rests on two things: compaction replaces history with a summary, and the session reported that the summary's own mentions of both strings "sit inline in backticks, not standalone lines", so the single standalone occurrence is a live injection rather than preserved text. That is the same inline-versus-standalone trap the tracer hit, handled correctly here.
 
@@ -588,7 +588,7 @@ ls ~/.codex/plugins/cache/eranroseman/software-development/
 ls ~/.codex/plugins/cache/eranroseman/software-development/0.3.0/hooks/
 ```
 
-Expected: the cache directory `0.3.0` exists; its `hooks/` listing shows `claude-hooks.json`, `payload.md`, `payload-rules.md`, `session-start`, and no `hooks.json`. No trust prompt appears on `add`.
+Expected: the cache directory `0.3.0` exists; its `hooks/` listing shows `claude-hooks.json`, `using-superpowers.md`, `working-rules.md`, `session-start`, and no `hooks.json`. No trust prompt appears on `add`.
 
 - [x] **Step 2: G6** — PASS, 2026-09-05
 
@@ -606,16 +606,16 @@ Note for the record whether the session showed any injection from this plugin (e
 Observed, real machine, codex-cli 0.147.0:
 
 - `codex plugin marketplace upgrade` moved the snapshot from `1ea3f72` to `84b0b75`. `remove` then `add` reported success; **no trust prompt appeared**.
-- Cache holds `0.3.0` only. Its `hooks/` listing is `claude-hooks.json`, `payload-rules.md`, `payload.md`, `session-start`. **No `hooks.json` anywhere under the plugin cache.**
+- Cache holds `0.3.0` only. Its `hooks/` listing is `claude-hooks.json`, `working-rules.md`, `using-superpowers.md`, `session-start`. **No `hooks.json` anywhere under the plugin cache.**
 - `[hooks.state]` holds four entries, all `ponytail@ponytail`; none for `software-development@eranroseman`.
 - `config.toml` diff against a pre-run snapshot: only `last_updated` and `last_revision` for the marketplace, plus the two `[plugins.*]` tables swapping order because `remove` then `add` re-appends. Nothing else.
 - `sensemaking@eranroseman` still installed at `0.1.0`, one config entry.
 - All 13 superpowers symlinks resolve; none dangling.
-- The Codex copy of `payload-rules.md` carries the worktree rule and nothing else, matching the shipped 0.3.0.
+- The Codex copy of `working-rules.md` carries the worktree rule and nothing else, matching the shipped 0.3.0.
 
 - `/hooks` in a Codex session, run by the user: **"Enabled hooks: ponytail SessionStart, ponytail UserPromptSubmit, ponytail SubagentStart. All three are trusted."** No entry for `software-development@eranroseman`, consistent with the three `[hooks.state]` entries in `config.toml`.
 
-**G6 PASSES on every leg.** The plugin ships `claude-hooks.json`, `payload.md`, `payload-rules.md` and `session-start` into the Codex cache, and Codex registers nothing, which is the design's central claim about that harness.
+**G6 PASSES on every leg.** The plugin ships `claude-hooks.json`, `using-superpowers.md`, `working-rules.md` and `session-start` into the Codex cache, and Codex registers nothing, which is the design's central claim about that harness.
 
 ---
 

@@ -18,7 +18,7 @@ Every count and exit status below was measured in this checkout or in a scratch 
 
 - **Files.** `git ls-files` lists 96 paths in the main checkout's index: the 95 at `aa8e78d` plus this spec, plus a staged, uncommitted `docs/Professional-Editorial-Standards-2024.md` that is not this plan's (see Global Constraints). The six vendored patterns match 23. Of the 72 checked files (73 with the staged one): 26 shell by shebang (`#!/usr/bin/env bash`; `bin/*` and `hooks/session-start` have no extension), 8 JSON, 5 YAML, 27 markdown, 2 Python, 4 with no parser (`.gitignore`, three `LICENSE`).
 - **shfmt 3.14.1 `-i 2 -ci -bn`** rewrites 17 of the 26 shell files, 272 changed lines. shellcheck 0.9.0 with `-e SC1091 -e SC2016` is clean before and after. On the reformatted scratch tree `test-doctor-faults.sh`, `test-doctor-duplicates.sh`, `test-json-wellformed.sh`, `test-references-resolve.sh`, `test-codex-marketplace.sh` and `test-plugin-skills.sh` pass.
-- **prettier 3.9.6** with `proseWrap: preserve` and `embeddedLanguageFormatting: "off"` changes 20 of the 40 JSON, YAML and markdown files, 1,018 lines; `AGENTS.md`, `hooks/payload-rules.md` and `docs/agents/*.md` are unchanged, which §8.4 and §14 depend on. `prettier --check` on a file it has no parser for (`bin/setup`) exits **2** — D §5.2 measured 0 on 3.3.3, which is stale — but on an **empty file list** it exits **0** with only a stderr complaint. The non-empty guard at every call site exists for the second case.
+- **prettier 3.9.6** with `proseWrap: preserve` and `embeddedLanguageFormatting: "off"` changes 20 of the 40 JSON, YAML and markdown files, 1,018 lines; `AGENTS.md`, `hooks/working-rules.md` and `docs/agents/*.md` are unchanged, which §8.4 and §14 depend on. `prettier --check` on a file it has no parser for (`bin/setup`) exits **2** — D §5.2 measured 0 on 3.3.3, which is stale — but on an **empty file list** it exits **0** with only a stderr complaint. The non-empty guard at every call site exists for the second case.
 - **markdownlint-cli2 0.23.2** with MD013, MD033 and MD041 off: 67 findings after prettier (25 MD040, 14 MD038, 8 MD003, 7 MD029, 7 MD026, 2 MD034, 1 each MD046, MD028, MD004, MD001), 61 of them under `docs/`. `--fix` retires 31 and leaves 36: 25 MD040, 8 MD003, MD046, MD028, MD001, listed by file in Task 20. MD041 without the override fires on `AGENTS.md` (opens at `##`, the scaffolder's template shape), `CLAUDE.md` (`@AGENTS.md`), `CONTEXT.md`, the archived design, and every `SKILL.md` and agent file that opens with a paragraph after its frontmatter.
 - **cspell 10.2.2 `en-US`** over the 15 markdown files in scope: 77 hits, 31 distinct words, four British (`behaviour`, `organisational`, `recognises`, `summarise`), the rest proper nouns, domain terms and coinages. Over the 26 shell and 5 YAML files through a `#`-comment override: 58 hits, 27 words, four British (`behaviour`, `canonicalises`, `Serialised`, `synthesise`). A config file placed **outside** the repository silently checked whole files, because `overrides.filename` globs resolve relative to the config's directory; the config therefore lives at the repository root and every tool test runs from `REPO_ROOT`.
 - **actionlint 1.7.12** reports zero findings on both workflows.
@@ -29,7 +29,7 @@ Every count and exit status below was measured in this checkout or in a scratch 
 - **Tool version output.** `shellcheck --version` → `version: 0.9.0`; `actionlint -version` → `1.7.12`; `shfmt --version` → `v3.14.1`; `prettier --version` → `3.9.6`; `markdownlint-cli2 --version` → `markdownlint-cli2 v0.23.2 (markdownlint v0.41.1)`; `cspell --version` → `10.2.2`. The first dotted triple is the version in every case.
 - **Pins**, recorded in Global Constraints: the four action tag shas from `git ls-remote --tags` (`v4` and `v5` are lightweight tags on the newest patch of each major); the three release-asset sha256s from downloads, actionlint's verified against `actionlint_1.7.12_checksums.txt`, mvdan/sh v3.14.1 and shellcheck v0.9.0 publishing none; both validator sha256s from `raw.githubusercontent.com` at the pinned sha, byte-identical to the local codex-cli copies (and the md5 `validate.yml` records matches); pyyaml 6.0.3, the newest on PyPI and the version installed here.
 - **History has no merge commits**: branches land fast-forward. Commit messages carry no type prefix and end with the `Co-Authored-By` trailer.
-- **The plan's code was run before the plan was handed over.** Every fenced block was extracted and syntax-checked; the full files were shellchecked; and the tasks were applied in order to scratch copies of `55f1bcc` and their tests run: milestone 1 end to end (Tasks 1–15, 20, and the #5, #1 and #43 edits — `tests/run.sh` on the result reports `23 passed, 0 failed, 0 skipped`), and milestone 2's mechanism (Task 17 red on arrival, Task 18's `bin/format` leaving `AGENTS.md` and `payload-rules.md` untouched and every engine and drift test green, the workflow hardening and install step passing `tests/test-workflows.sh` and `prettier --check`, and Task 22's dry run of the install step downloading and verifying all three binaries). Task 6's `tests/test-setup-upgrade.sh` ran against the real `claude` with `node` real and `npx` a stub, and passed in 9 seconds. Two findings from those runs shaped the plan: shellcheck's SC2317 against §6.1's wrapper (Deviation P8), and an unused loop variable in `split_tsv`.
+- **The plan's code was run before the plan was handed over.** Every fenced block was extracted and syntax-checked; the full files were shellchecked; and the tasks were applied in order to scratch copies of `55f1bcc` and their tests run: milestone 1 end to end (Tasks 1–15, 20, and the #5, #1 and #43 edits — `tests/run.sh` on the result reports `23 passed, 0 failed, 0 skipped`), and milestone 2's mechanism (Task 17 red on arrival, Task 18's `bin/format` leaving `AGENTS.md` and `working-rules.md` untouched and every engine and drift test green, the workflow hardening and install step passing `tests/test-workflows.sh` and `prettier --check`, and Task 22's dry run of the install step downloading and verifying all three binaries). Task 6's `tests/test-setup-upgrade.sh` ran against the real `claude` with `node` real and `npx` a stub, and passed in 9 seconds. Two findings from those runs shaped the plan: shellcheck's SC2317 against §6.1's wrapper (Deviation P8), and an unused loop variable in `split_tsv`.
 
 ## Deviations decided while planning
 
@@ -166,8 +166,8 @@ printf '%s\n' "$list" | grep -q '[[:space:]*?[]' \
 shell="$(checked_shell)"
 [ -n "$shell" ] || fail "checked_shell() listed nothing"
 printf '%s\n' "$shell" | grep -qx 'bin/setup' || fail "checked_shell() does not list bin/setup, a shell file with no extension"
-printf '%s\n' "$list" | grep -q '^plugins/software-dev/hooks/payload\.md$' \
-  && fail "checked() lists the vendored payload.md"
+printf '%s\n' "$list" | grep -q '^plugins/software-dev/hooks/using-superpowers\.md$' \
+  && fail "checked() lists the vendored using-superpowers.md"
 
 printf 'ownership: %s vendored pattern(s) each guarded; %s checked file(s), %s of them shell\n' \
   "${#VENDORED_PATTERNS[@]}" "$(printf '%s\n' "$list" | grep -c .)" "$(printf '%s\n' "$shell" | grep -c .)"
@@ -189,7 +189,7 @@ Append after `fetch_upstream` (after line 48):
 # tracked file is excluded: vendored, where an upstream pin constrains the
 # bytes and the paired drift test asserts them. Six patterns, anchored at the
 # start of the path, each beside the test that guards it;
-# tests/test-ownership.sh checks every pair. #21 may devendor payload.md or
+# tests/test-ownership.sh checks every pair. #21 may devendor using-superpowers.md or
 # setup-repository/SKILL.md: that edits these two arrays and nothing else.
 # adhd/agents/openai.yaml is authored here but sits inside a vendored
 # directory; the directory is excluded whole, because the drift test's
@@ -201,7 +201,7 @@ VENDORED_PATTERNS=(
   '^plugins/software-dev/skills/diagnosing-bugs/'
   '^plugins/software-dev/skills/setup-repository/'
   '^plugins/software-dev/skills/finding-duplicate-functions/scripts/[a-z-]+-prompt\.md$'
-  '^plugins/software-dev/hooks/payload\.md$'
+  '^plugins/software-dev/hooks/using-superpowers\.md$'
 )
 # shellcheck disable=SC2034  # read by tests/test-ownership.sh
 VENDORED_GUARDS=(
@@ -1605,7 +1605,7 @@ git commit -m "Hold each plugin's two manifests to the same shared fields" -m "n
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
 
-### Task 12: `payload-rules.md` against its spec (#43, §7.4)
+### Task 12: `working-rules.md` against its spec (#43, §7.4)
 
 **Files:**
 
@@ -1643,9 +1643,9 @@ extract_42() {
   ' "$SPEC"
 }
 block="$(extract_42)" || fail "no closed fenced block follows the hook design's §4.2 heading"
-[ -s "$H/payload-rules.md" ] || fail "payload-rules.md is empty"
-diff <(printf '%s\n' "$block") "$H/payload-rules.md" \
-  || fail "payload-rules.md differs from the block in the hook design's §4.2; specs move when the tree moves, so amend §4.2 in the same change"
+[ -s "$H/working-rules.md" ] || fail "working-rules.md is empty"
+diff <(printf '%s\n' "$block") "$H/working-rules.md" \
+  || fail "working-rules.md differs from the block in the hook design's §4.2; specs move when the tree moves, so amend §4.2 in the same change"
 ````
 
 The block's lines are printed without the fences; `printf '%s\n'` restores the one trailing newline the old pair of `tail -c` checks asserted, so the diff also asserts it.
@@ -1659,7 +1659,7 @@ Replace the header's items so it reads (lines 2–7):
 # JSON parser recovers the payload byte-for-byte, (3) be wired by
 # claude-hooks.json, (4) escape every C0 control character, not just the
 # common five, and (5) fail rather than emit a rules-only envelope when
-# payload.md is missing. Needs network access for (1).
+# using-superpowers.md is missing. Needs network access for (1).
 ```
 
 - [ ] **Step 2: Run it to verify it passes today, then prove it red**
@@ -1667,8 +1667,8 @@ Replace the header's items so it reads (lines 2–7):
 Run: `bash tests/test-hook.sh`
 Expected: the success line — the block and the file are already 379 identical bytes.
 
-Run: `printf 'x\n' >> plugins/software-dev/hooks/payload-rules.md && bash tests/test-hook.sh; git checkout -- plugins/software-dev/hooks/payload-rules.md`
-Expected: a one-line diff (`> x`) then `FAIL: payload-rules.md differs from the block in the hook design's §4.2; …`.
+Run: `printf 'x\n' >> plugins/software-dev/hooks/working-rules.md && bash tests/test-hook.sh; git checkout -- plugins/software-dev/hooks/working-rules.md`
+Expected: a one-line diff (`> x`) then `FAIL: working-rules.md differs from the block in the hook design's §4.2; …`.
 
 Run: `sed -i 's/^### 4\.2 /### 4.2x /' docs/superpowers/specs/2026-09-04-session-start-hook-design.md && bash tests/test-hook.sh; git checkout -- docs/superpowers/specs/2026-09-04-session-start-hook-design.md`
 Expected: `FAIL: the hook design must carry exactly one '### 4.2' heading` — the vanished-heading case cannot pass on two empty strings.
@@ -1681,7 +1681,7 @@ Line 61: `\`payload.md\` is 3,343 bytes and the appendix 387, so the emitted str
 
 Line 181: `| Current \`hooks/payload.md\` is 3,343 bytes and equals …`→`3,335 bytes`.
 
-Line 3, append one sentence to the Status line: `§4.2 is read by \`tests/test-hook.sh\`, which diffs its fenced block against \`hooks/payload-rules.md\` byte for byte, so the two move together.`
+Line 3, append one sentence to the Status line: `§4.2 is read by \`tests/test-hook.sh\`, which diffs its fenced block against \`hooks/working-rules.md\` byte for byte, so the two move together.`
 
 Run: `grep -c '3,343\|3,730\|3,718\|appendix 387' docs/superpowers/specs/2026-09-04-session-start-hook-design.md`
 Expected: `0`.
@@ -1695,7 +1695,7 @@ Expected: three success lines.
 
 ```bash
 git add tests/test-hook.sh docs/superpowers/specs/2026-09-04-session-start-hook-design.md
-git commit -m "Diff payload-rules.md against the hook design's §4.2, and correct the design's byte counts" -m "The fenced block under '### 4.2' is extracted at test time, guarded the way require_once guards a sentinel, and compared byte for byte with hooks/payload-rules.md (#43, spec §7.4). Three shape checks it subsumes go. The design is therefore maintained, as a3c797f already treated it: its §4.3 and §12 figures were stale by the rename's eight bytes on each side and now read 3,335, 379, 3,714 and 3,702, and its Status line says a test reads §4.2.
+git commit -m "Diff working-rules.md against the hook design's §4.2, and correct the design's byte counts" -m "The fenced block under '### 4.2' is extracted at test time, guarded the way require_once guards a sentinel, and compared byte for byte with hooks/working-rules.md (#43, spec §7.4). Three shape checks it subsumes go. The design is therefore maintained, as a3c797f already treated it: its §4.3 and §12 figures were stale by the rename's eight bytes on each side and now read 3,335, 379, 3,714 and 3,702, and its Status line says a test reads §4.2.
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
@@ -2391,7 +2391,7 @@ Expected: about 37 files changed, roughly 1,300 lines. The markdownlint findings
 
 - [ ] **Step 2: Check the couplings §8.4 names**
 
-Run: `git diff --quiet -- AGENTS.md plugins/software-dev/hooks/payload-rules.md && echo "couplings untouched"`
+Run: `git diff --quiet -- AGENTS.md plugins/software-dev/hooks/working-rules.md && echo "couplings untouched"`
 Expected: `couplings untouched`. If either changed, stop: prettier's behaviour moved from what was measured, and Task 17's `.prettierrc.yaml` needs re-measuring before anything is committed.
 
 - [ ] **Step 3: Run the full suite on the reformatted tree**
@@ -2403,7 +2403,7 @@ Expected: `exit=1` with exactly two `FAIL` rows, `tests/test-lint-markdown.sh` a
 
 ```bash
 git add -u
-git commit -m "Reformat every owned file with the pinned formatters" -m "bin/format at the versions tests/tools.txt declares: shfmt -i 2 -ci -bn over the shell files, prettier with proseWrap preserve and embedded formatting off over JSON, YAML and markdown, markdownlint-cli2 --fix over markdown (spec §8.3). Mechanical, and verified by the suite rather than by reading the diff: every test passes on this tree except the two lint tests the hand corrections satisfy next. AGENTS.md and hooks/payload-rules.md are byte-identical to before, which the scaffolder drift test and the hook test require.
+git commit -m "Reformat every owned file with the pinned formatters" -m "bin/format at the versions tests/tools.txt declares: shfmt -i 2 -ci -bn over the shell files, prettier with proseWrap preserve and embedded formatting off over JSON, YAML and markdown, markdownlint-cli2 --fix over markdown (spec §8.3). Mechanical, and verified by the suite rather than by reading the diff: every test passes on this tree except the two lint tests the hand corrections satisfy next. AGENTS.md and hooks/working-rules.md are byte-identical to before, which the scaffolder drift test and the hook test require.
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
@@ -2436,7 +2436,7 @@ Four in the markdown scope, four in comments:
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `plugins/software-dev/README.md:117`                                                                                                                                              | `network-behaviour decision` → `network-behavior decision`                                                                                |
 | `plugins/sensemaking/README.md:12`                                                                                                                                                | `organisational` → `organizational`                                                                                                       |
-| `plugins/software-dev/hooks/payload-rules.md:3` **and** the same line inside the fenced block under `### 4.2` of `docs/superpowers/specs/2026-09-04-session-start-hook-design.md` | `recognises` → `recognizes` (same byte length, so §4.3's figures hold; `tests/test-hook.sh` fails unless both move)                       |
+| `plugins/software-dev/hooks/working-rules.md:3` **and** the same line inside the fenced block under `### 4.2` of `docs/superpowers/specs/2026-09-04-session-start-hook-design.md` | `recognises` → `recognizes` (same byte length, so §4.3's figures hold; `tests/test-hook.sh` fails unless both move)                       |
 | `plugins/software-dev/skills/consistency-audit/SKILL.md:123`                                                                                                                      | `will summarise instead` → `will summarize instead`, made through `superpowers:writing-skills` because it is an edit to an authored skill |
 | `bin/bump-superpowers:13`                                                                                                                                                         | `change behaviour` → `change behavior`                                                                                                    |
 | `bin/setup:256` and `:266`                                                                                                                                                        | `canonicalises` → `canonicalizes`                                                                                                         |
@@ -2468,7 +2468,7 @@ Expected: `exit=0`, no `FAIL` row, and no `SKIP` row on this machine now that al
 
 ```bash
 git add -u
-git commit -m "Fix what the formatters could not: fence languages, heading styles, eight spellings, the dictionary" -m "The 36 markdownlint findings --fix leaves (a fence with no language, a setext heading, an indented block, a blank line in a blockquote, a heading increment), none of them content; the eight British spellings in scope become US English, the hook design's §4.2 moving with payload-rules.md and the consistency-audit skill edited through writing-skills; and cspell.config.yaml's word list holds every proper noun, term and coinage the owned prose uses, not one of them a typo (spec §8.1). The suite is green on this tree.
+git commit -m "Fix what the formatters could not: fence languages, heading styles, eight spellings, the dictionary" -m "The 36 markdownlint findings --fix leaves (a fence with no language, a setext heading, an indented block, a blank line in a blockquote, a heading increment), none of them content; the eight British spellings in scope become US English, the hook design's §4.2 moving with working-rules.md and the consistency-audit skill edited through writing-skills; and cspell.config.yaml's word list holds every proper noun, term and coinage the owned prose uses, not one of them a typo (spec §8.1). The suite is green on this tree.
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
@@ -2961,7 +2961,7 @@ close 29 "Landed on main at $M ($S §8): shfmt, prettier, markdownlint-cli2 and 
 close 38 "Landed on main at $M ($S §6.2): the first-entry fixture moved into tests/test-doctor-silence.sh with its comment corrected, beside a second-entry fixture for the shape only the exit status can catch."
 close 41 "Landed on main at $M ($S §6.1): ok, bad, skip and note count what they print, and every check is bracketed by a snapshot of that count and a reported() call that fails a check which printed nothing. Both rungs; the class, not the instances."
 close 42 "The repository half landed on main at $M ($S §5.4): every tests/run.sh run writes tests/results.tsv, CI uploads it, and a report cites the path. The template half -- editing or prompting the SDD skill to cite artifacts -- is declined: no skill edit and no prose rule (§12)."
-close 43 "Landed on main at $M ($S §7.4): tests/test-hook.sh extracts the fenced block under the hook design's §4.2 and diffs it against hooks/payload-rules.md byte for byte; the design's stale byte counts are corrected and its Status line says a test reads §4.2."
+close 43 "Landed on main at $M ($S §7.4): tests/test-hook.sh extracts the fenced block under the hook design's §4.2 and diffs it against hooks/working-rules.md byte for byte; the design's stale byte counts are corrected and its Status line says a test reads §4.2."
 close 40 "Landed on main at $M ($S §6.3, §6.4, §7.5): the four remaining tab-IFS read loops are split by parameter expansion and an empty field is reported as malformed, with fixtures for the all-empty-names and empty-entry-name shapes; the duplicate all-clear says how many trees it hashed and the Codex note is gated on a complete pool; the two comments in test-codex-validate.sh are corrected. The registry entry whose install directory is gone stays declined, as recorded here."
 close 18 "Landed on main at $M ($S §7.3, §12), item by item: the README extractor closes its scope on an h1 or an h2 and keeps an h3 inside its parent, proved on a synthetic README. The test-codex-validate.sh header was already corrected. The LICENSE:55 comma is declined as moot: the line is this repository's own attribution prose, not upstream license text, three of the four attribution blocks use the comma form, and a drift test greps one of them, so 're-wrap' was the wrong word for it. A Note: commit for 4b23edc is declined: history is history. The task-10 report no longer exists. The plugin README's 'on Codex too' sentence is milestone 7's, tracked by #37 and #57."
 gh issue comment 6 --body "Item 1 landed on main at $M ($S §9.1): validate.yml declares permissions: contents: read at workflow level, every uses: in both workflows is sha-pinned, and every checkout sets persist-credentials: false. The other items are untouched and this issue stays open for them."

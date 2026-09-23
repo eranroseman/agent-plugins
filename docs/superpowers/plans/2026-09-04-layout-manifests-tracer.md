@@ -50,8 +50,8 @@ plugins/software-development/
   README.md                                     install, env var, what is vendored (Task 4)
   skills/brainstorming/                         8 files vendored from upstream (Task 5)
   hooks/hooks.json                              SessionStart wiring (Task 6)
-  hooks/session-start                           bash: payload.md -> JSON envelope (Task 6)
-  hooks/payload.md                              upstream using-superpowers + frame + one edit (Task 6)
+  hooks/session-start                           bash: using-superpowers.md -> JSON envelope (Task 6)
+  hooks/using-superpowers.md                    upstream using-superpowers + frame + one edit (Task 6)
 tests/run.sh                                    runs tests/test-*.sh, exit 1 on any failure (Task 1)
 tests/lib.sh                                    REPO_ROOT, fail(), upstream_sha(), fetch_upstream() (Task 1)
 tests/test-json-wellformed.sh                   every manifest and hooks.json parses (Task 1)
@@ -747,7 +747,7 @@ What it ships:
   fires on build requests and no longer competes with `grilling`. The
   provenance header at the top of `SKILL.md` names the commit. Do not
   hand-edit the skill; re-vendor from upstream to update it.
-- `hooks/session-start`: a SessionStart hook that injects `hooks/payload.md`,
+- `hooks/session-start`: a SessionStart hook that injects `hooks/using-superpowers.md`,
   upstream's `using-superpowers` text with its one `superpowers:brainstorming`
   reference repointed at `software-development:brainstorming`.
 
@@ -1036,13 +1036,13 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 - Create: `plugins/software-development/hooks/hooks.json`
 - Create: `plugins/software-development/hooks/session-start` (mode 755)
-- Create: `plugins/software-development/hooks/payload.md`
+- Create: `plugins/software-development/hooks/using-superpowers.md`
 - Create: `tests/test-hook.sh`
 
 **Interfaces:**
 
 - Consumes: `tests/lib.sh` (`fetch_upstream`, `fail`); upstream `skills/using-superpowers/SKILL.md` at the pinned sha.
-- Produces: an executable `hooks/session-start` that takes no arguments, reads `hooks/payload.md` next to itself, and prints one JSON object on stdout: `{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"<payload>"}}`. Every C0 control character in the payload is escaped, not only the common five, so a future payload cannot silently break the envelope. `hooks/hooks.json` wires it for `startup|clear|compact`. Sub-project 3 replaces only `payload.md`.
+- Produces: an executable `hooks/session-start` that takes no arguments, reads `hooks/using-superpowers.md` next to itself, and prints one JSON object on stdout: `{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"<payload>"}}`. Every C0 control character in the payload is escaped, not only the common five, so a future payload cannot silently break the envelope. `hooks/hooks.json` wires it for `startup|clear|compact`. Sub-project 3 replaces only `using-superpowers.md`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1058,7 +1058,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 . "$(dirname "$0")/lib.sh"
 
 H="$REPO_ROOT/plugins/software-development/hooks"
-[ -f "$H/payload.md" ] || fail "missing $H/payload.md"
+[ -f "$H/using-superpowers.md" ] || fail "missing $H/using-superpowers.md"
 [ -f "$H/hooks.json" ] || fail "missing $H/hooks.json"
 [ -x "$H/session-start" ] || fail "$H/session-start missing or not executable"
 
@@ -1075,18 +1075,18 @@ expected="$(mktemp)"
   sed '30s/superpowers:brainstorming/software-development:brainstorming/' "$src"
   printf '</EXTREMELY_IMPORTANT>\n'
 } > "$expected"
-diff "$expected" "$H/payload.md" || fail "payload.md != upstream using-superpowers inside upstream's frame with one edit"
+diff "$expected" "$H/using-superpowers.md" || fail "using-superpowers.md != upstream using-superpowers inside upstream's frame with one edit"
 rm -f "$expected"
-[ "$(grep -c 'software-development:brainstorming' "$H/payload.md")" -eq 1 ] || fail "expected exactly one software-development:brainstorming"
-if grep -q 'superpowers:brainstorming' "$H/payload.md"; then fail "a superpowers:brainstorming reference survived"; fi
+[ "$(grep -c 'software-development:brainstorming' "$H/using-superpowers.md")" -eq 1 ] || fail "expected exactly one software-development:brainstorming"
+if grep -q 'superpowers:brainstorming' "$H/using-superpowers.md"; then fail "a superpowers:brainstorming reference survived"; fi
 
 # (2) envelope round-trip
 out="$(CLAUDE_PLUGIN_ROOT="$REPO_ROOT/plugins/software-development" "$H/session-start")"
 printf '%s' "$out" | jq -e '.hookSpecificOutput.hookEventName == "SessionStart"' >/dev/null \
   || fail "output is not the SessionStart envelope: $out"
 [ "$(printf '%s' "$out" | jq 'keys | length')" -eq 1 ] || fail "envelope has extra top-level keys"
-diff <(printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext') "$H/payload.md" \
-  || fail "additionalContext does not round-trip to payload.md"
+diff <(printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext') "$H/using-superpowers.md" \
+  || fail "additionalContext does not round-trip to using-superpowers.md"
 
 # (3) wiring
 [ "$(jq -r '.hooks.SessionStart[0].matcher' "$H/hooks.json")" = 'startup|clear|compact' ] || fail "matcher"
@@ -1098,7 +1098,7 @@ diff <(printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext') "$H/p
 T="$(mktemp -d)"
 cp "$H/session-start" "$T/session-start"
 sample=$'x\x01\x0c\x1b\x1fy "q" \\ end'
-printf '%s' "$sample" > "$T/payload.md"
+printf '%s' "$sample" > "$T/using-superpowers.md"
 out="$("$T/session-start")"
 printf '%s' "$out" | jq -e . >/dev/null || fail "control characters produced invalid JSON"
 [ "$(printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext')" = "$sample" ] \
@@ -1111,9 +1111,9 @@ echo "hook: payload exact, envelope round-trips, wiring correct, control charact
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `bash tests/test-hook.sh`
-Expected: `FAIL: missing /…/plugins/software-development/hooks/payload.md`, exit 1.
+Expected: `FAIL: missing /…/plugins/software-development/hooks/using-superpowers.md`, exit 1.
 
-- [ ] **Step 3: Generate payload.md from the pinned checkout**
+- [ ] **Step 3: Generate using-superpowers.md from the pinned checkout**
 
 ```bash
 UP="$(bash -c '. tests/lib.sh; fetch_upstream')"
@@ -1124,8 +1124,8 @@ mkdir -p plugins/software-development/hooks
     "'superpowers:using-superpowers'" "'Skill'"
   sed '30s/superpowers:brainstorming/software-development:brainstorming/' "$UP/skills/using-superpowers/SKILL.md"
   printf '</EXTREMELY_IMPORTANT>\n'
-} > plugins/software-development/hooks/payload.md
-grep -n 'brainstorming' plugins/software-development/hooks/payload.md
+} > plugins/software-development/hooks/using-superpowers.md
+grep -n 'brainstorming' plugins/software-development/hooks/using-superpowers.md
 ```
 
 Expected:
@@ -1168,13 +1168,13 @@ Expected:
 #!/usr/bin/env bash
 # SessionStart hook for the software-development plugin.
 #
-# Reads hooks/payload.md (next to this script) and prints it as the
+# Reads hooks/using-superpowers.md (next to this script) and prints it as the
 # additionalContext of a SessionStart envelope. Claude Code documents this
 # envelope and Codex requires it, so one output serves both harnesses.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-payload="$(cat "${SCRIPT_DIR}/payload.md")"
+payload="$(cat "${SCRIPT_DIR}/using-superpowers.md")"
 
 # JSON-escape with bash parameter substitution: one pass per character class.
 # Backslash first, so later passes do not double-escape it.

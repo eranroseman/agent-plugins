@@ -2,15 +2,15 @@
 # Move the obra/superpowers pin to a new sha and leave the diff for review.
 #
 #   bin/bump-superpowers <sha>              apply the bump in this checkout
-#   bin/bump-superpowers --emit-payload DIR print the payload for a clone at DIR
+#   bin/bump-superpowers --emit-using-superpowers DIR print the payload for a clone at DIR
 #
 # A bump moves four coupled artifacts by three mechanisms:
 #   substituted   .claude-plugin/marketplace.json source.sha, LICENSE "at commit"
-#   regenerated   hooks/payload.md, skills/brainstorming/ (re-vendored)
+#   regenerated   hooks/using-superpowers.md, skills/brainstorming/ (re-vendored)
 #   read          the version field, copied from upstream's own plugin.json
 #
 # Two parts of the diff deserve reading rather than skimming: the vendored
-# brainstorming body, where upstream can change behavior, and payload.md,
+# brainstorming body, where upstream can change behavior, and using-superpowers.md,
 # which is injected into every Claude Code session.
 set -uo pipefail
 
@@ -30,7 +30,7 @@ die() {
 # so splitting on the placeholder yields the two halves. Upstream reads the
 # skill with $(cat ...), which strips the trailing newline; "$(sed ...)" does
 # the same, and the tail's leading \n puts it back.
-emit_payload() {
+emit_using_superpowers() {
   local up="$1" src line tmpl pre post
   src="$up/skills/using-superpowers/SKILL.md"
   [ -f "$src" ] || die "no using-superpowers/SKILL.md in $up"
@@ -61,13 +61,13 @@ fetch_at() {
 }
 
 case "${1:-}" in
-  --emit-payload)
-    [ -n "${2:-}" ] || die "--emit-payload needs a checkout directory"
-    emit_payload "$2"
+  --emit-using-superpowers)
+    [ -n "${2:-}" ] || die "--emit-using-superpowers needs a checkout directory"
+    emit_using_superpowers "$2"
     exit 0
     ;;
   -h | --help | "")
-    printf 'usage: bin/bump-superpowers <sha>\n       bin/bump-superpowers --emit-payload <clone-dir>\n'
+    printf 'usage: bin/bump-superpowers <sha>\n       bin/bump-superpowers --emit-using-superpowers <clone-dir>\n'
     [ -n "${1:-}" ] && exit 0 || exit 2
     ;;
 esac
@@ -79,11 +79,11 @@ old_sha="$(jq -r '.plugins[] | select(.name == "superpowers") | .source.sha' "$M
 [ "$new_sha" != "$old_sha" ] || die "already pinned at $new_sha"
 
 work="$(mktemp -d)"
-payload_tmp=""
+using_superpowers_tmp=""
 license_tmp=""
 cleanup() {
   rm -rf "$work"
-  [ -n "$payload_tmp" ] && rm -f "$payload_tmp"
+  [ -n "$using_superpowers_tmp" ] && rm -f "$using_superpowers_tmp"
   [ -n "$license_tmp" ] && rm -f "$license_tmp"
 }
 trap cleanup EXIT
@@ -116,14 +116,14 @@ else
 fi
 
 # 2. regenerated: the payload, then the vendored brainstorming tree. Written
-# through a temporary beside the destination so a die inside emit_payload
-# cannot truncate the shipped payload.md.
-payload_tmp="$(mktemp "$PLUGIN/hooks/payload.md.XXXXXX")"
-if emit_payload "$work" >"$payload_tmp"; then
-  mv "$payload_tmp" "$PLUGIN/hooks/payload.md" || die "could not replace payload.md"
-  payload_tmp=""
+# through a temporary beside the destination so a die inside emit_using_superpowers
+# cannot truncate the shipped using-superpowers.md.
+using_superpowers_tmp="$(mktemp "$PLUGIN/hooks/using-superpowers.md.XXXXXX")"
+if emit_using_superpowers "$work" >"$using_superpowers_tmp"; then
+  mv "$using_superpowers_tmp" "$PLUGIN/hooks/using-superpowers.md" || die "could not replace using-superpowers.md"
+  using_superpowers_tmp=""
 else
-  die "could not write payload.md"
+  die "could not write using-superpowers.md"
 fi
 
 # The narrowed description, verbatim. tests/test-vendored-brainstorming.sh
@@ -159,6 +159,6 @@ revendor_brainstorming "$work" "$new_sha"
 
 printf '\nBumped %s -> %s, version %s. Review the diff:\n' "$old_sha" "$new_sha" "$new_version"
 printf '  git diff -- %s %s\n' \
-  "plugins/software-dev/hooks/payload.md" \
+  "plugins/software-dev/hooks/using-superpowers.md" \
   "plugins/software-dev/skills/brainstorming"
 printf 'Then run: bash tests/run.sh\n'

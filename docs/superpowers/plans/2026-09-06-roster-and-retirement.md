@@ -1250,7 +1250,7 @@ while IFS="$(printf '\t')" read -r name url ref sha; do
     report "- Pinned at \`$sha\`; $ref is \`$head_sha\`."
     if [ "$name" = superpowers ]; then
       report "- Bump with \`bin/bump-superpowers $head_sha\`, then read the diff to"
-      report "  \`hooks/payload.md\` and \`skills/brainstorming/\` before merging."
+      report "  \`hooks/using-superpowers.md\` and \`skills/brainstorming/\` before merging."
     else
       report "- Bump by editing \`.claude-plugin/marketplace.json\`: move \`sha\` and \`version\` together, then update the pinned pair in \`tests/test-curated-$name.sh\`."
     fi

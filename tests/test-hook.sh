@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # The SessionStart hook must (1) carry upstream's using-superpowers text inside
-# upstream's frame with exactly one edit, (1b) carry the rules block the hook
-# design's §4.2 shows, (2) emit both as the documented JSON envelope so that a
-# JSON parser recovers the payload byte-for-byte, (3) be wired by
-# claude-hooks.json, (4) escape every C0 control character, not just the
-# common five, and (5) fail rather than emit a rules-only envelope when
-# payload.md is missing. Needs network access for (1).
+# upstream's frame with exactly one edit, (1b) name only skills the superpowers
+# subset entry lists in its working-rules file, (2) emit both files as the
+# documented JSON envelope so that a JSON parser recovers the additional
+# context byte-for-byte, (3) be wired by claude-hooks.json, (4) escape every
+# C0 control character, not just the common five, and (5) fail rather than
+# emit a rules-only envelope when using-superpowers.md is missing. Needs
+# network access for (1).
 . "$(dirname "$0")/lib.sh"
 
 # fail() exits immediately, so temporaries have to be freed from a trap or a
@@ -19,73 +20,55 @@ cleanup() {
 trap cleanup EXIT
 
 H="$REPO_ROOT/plugins/software-dev/hooks"
-[ -f "$H/payload.md" ] || fail "missing $H/payload.md"
-[ -f "$H/payload-rules.md" ] || fail "missing $H/payload-rules.md"
+[ -f "$H/using-superpowers.md" ] || fail "missing $H/using-superpowers.md"
+[ -f "$H/working-rules.md" ] || fail "missing $H/working-rules.md"
 [ -f "$H/claude-hooks.json" ] || fail "missing $H/claude-hooks.json"
 [ -x "$H/session-start" ] || fail "$H/session-start missing or not executable"
-guards plugins/software-dev/hooks/payload.md
+guards plugins/software-dev/hooks/using-superpowers.md
 
-# (1) payload exactness. The frame is read from upstream's own hooks/session-start
-# rather than transcribed here, and the recipe lives in bin/bump-superpowers so a
-# bump and this test cannot diverge.
+# (1) using-superpowers.md is the recipe's output, exactly. The frame is read
+# from upstream's own hooks/session-start rather than transcribed here, and
+# the recipe lives in bin/bump-superpowers so a bump and this test cannot
+# diverge.
 UP="$(fetch_upstream)"
 src="$UP/skills/using-superpowers/SKILL.md"
 [ "$(sed -n 30p "$src")" = '- "Let'"'"'s build X" → superpowers:brainstorming first, then implementation skills.' ] \
   || fail "upstream line 30 is not the expected superpowers:brainstorming line; re-audit the edit"
 expected="$(mktemp)"
-bash "$REPO_ROOT/bin/bump-superpowers" --emit-payload "$UP" >"$expected" \
-  || fail "bin/bump-superpowers --emit-payload failed"
-diff "$expected" "$H/payload.md" || fail "payload.md != the recipe's output for the pinned clone"
-[ "$(grep -c 'software-dev:brainstorming' "$H/payload.md")" -eq 1 ] || fail "expected exactly one software-dev:brainstorming"
-if grep -q 'superpowers:brainstorming' "$H/payload.md"; then fail "a superpowers:brainstorming reference survived"; fi
+bash "$REPO_ROOT/bin/bump-superpowers" --emit-using-superpowers "$UP" >"$expected" \
+  || fail "bin/bump-superpowers --emit-using-superpowers failed"
+diff "$expected" "$H/using-superpowers.md" || fail "using-superpowers.md != the recipe's output for the pinned clone"
+[ "$(grep -c 'software-dev:brainstorming' "$H/using-superpowers.md")" -eq 1 ] || fail "expected exactly one software-dev:brainstorming"
+if grep -q 'superpowers:brainstorming' "$H/using-superpowers.md"; then fail "a superpowers:brainstorming reference survived"; fi
 
-# (1b) the authored rules file is the block the hook design's §4.2 shows,
-# byte for byte (#43). The heading must match exactly once and a closed fence
-# pair must follow it, so a vanished heading cannot pass on two empty
-# strings; the rule is `require_once`'s. That spec is maintained, not
-# frozen: a3c797f amended §4.2 with the plugin rename, and an edit to either
-# side lands with its twin or fails here. The three shape checks this
-# subsumes -- one trailing newline, the worktree rule, no
-# superpowers:brainstorming -- are gone; the curated-list loop below stays,
-# because it cross-checks the marketplace, which the spec cannot.
-SPEC="$REPO_ROOT/docs/superpowers/specs/2026-09-04-session-start-hook-design.md"
-[ "$(grep -c '^### 4\.2 ' "$SPEC")" -eq 1 ] || fail "the hook design must carry exactly one '### 4.2' heading"
-extract_42() {
-  awk '
-    /^### 4\.2 / { s = 1; next }
-    s && /^```/ { if (f) { closed = 1; exit } f = 1; next }
-    s && f { print; next }
-    s && /^#/ { exit }
-    END { if (!closed) exit 1 }
-  ' "$SPEC"
-}
-block="$(extract_42)" || fail "no closed fenced block follows the hook design's §4.2 heading"
-[ -s "$H/payload-rules.md" ] || fail "payload-rules.md is empty"
-diff <(printf '%s\n' "$block") "$H/payload-rules.md" \
-  || fail "payload-rules.md differs from the block in the hook design's §4.2; specs move when the tree moves, so amend §4.2 in the same change"
+# (1b) the first-party rules file names only skills the subset entry lists:
+# a working rule that points at a skill the marketplace does not ship is a
+# dangling name in every session. Cross-checked against the marketplace,
+# which no copy of the file could do.
+[ -s "$H/working-rules.md" ] || fail "working-rules.md is empty"
 curated="$(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$MARKETPLACE" | sed 's#^\./##')"
 while IFS= read -r name; do
   [ -z "$name" ] && continue
   printf '%s\n' "$curated" | grep -qxF -- "$name" \
-    || fail "payload-rules.md names superpowers:$name, which the curated entry does not list"
-done < <(grep -o 'superpowers:[a-z-]*' "$H/payload-rules.md" | sed 's/^superpowers://' | sort -u)
+    || fail "working-rules.md names superpowers:$name, which the curated entry does not list"
+done < <(grep -o 'superpowers:[a-z-]*' "$H/working-rules.md" | sed 's/^superpowers://' | sort -u)
 
 # (2) envelope round-trip
 # CLAUDE_PLUGIN_ROOT mirrors how claude-hooks.json invokes the script; session-start
-# itself resolves payload.md via dirname "$0" and never reads the variable, so
-# the ${CLAUDE_PLUGIN_ROOT} expansion asserted in section 3 is checked as a
-# string and not exercised as an expansion.
+# itself resolves using-superpowers.md via dirname "$0" and never reads the
+# variable, so the ${CLAUDE_PLUGIN_ROOT} expansion asserted in section 3 is
+# checked as a string and not exercised as an expansion.
 out="$(CLAUDE_PLUGIN_ROOT="$REPO_ROOT/plugins/software-dev" "$H/session-start")"
 printf '%s' "$out" | jq -e '.hookSpecificOutput.hookEventName == "SessionStart"' >/dev/null \
   || fail "output is not the SessionStart envelope: $out"
 [ "$(printf '%s' "$out" | jq 'keys | length')" -eq 1 ] || fail "envelope has extra top-level keys"
 diff <(printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext') \
   <(
-    cat "$H/payload.md"
+    cat "$H/using-superpowers.md"
     printf '\n'
-    cat "$H/payload-rules.md"
+    cat "$H/working-rules.md"
   ) \
-  || fail "additionalContext does not round-trip to payload.md + blank line + payload-rules.md"
+  || fail "additionalContext does not round-trip to using-superpowers.md + blank line + working-rules.md"
 len="$(printf '%s' "$out" | jq '.hookSpecificOutput.additionalContext | length')"
 [ "$len" -lt 8000 ] || fail "additionalContext is $len code points; the tripwire is 8000"
 
@@ -117,22 +100,22 @@ done
 T="$(mktemp -d)"
 cp "$H/session-start" "$T/session-start"
 sample=$'x\x01\x0c\x1b\x1fy "q" \\ end'
-printf '%s' "$sample" >"$T/payload.md"
-: >"$T/payload-rules.md" # the script now reads it; empty keeps the expectation the sample alone
+printf '%s' "$sample" >"$T/using-superpowers.md"
+: >"$T/working-rules.md" # the script reads it; empty keeps the expectation the sample alone
 out="$("$T/session-start")"
 printf '%s' "$out" | jq -e . >/dev/null || fail "control characters produced invalid JSON"
 [ "$(printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext')" = "$sample" ] \
   || fail "control characters did not round-trip"
 
-# (5) a missing payload.md must fail loudly: $(...) does not inherit -e, so
-# `cat payload.md; printf '\n'; cat payload-rules.md` would let a present
-# payload-rules.md's zero exit mask the missing file and silently emit a
-# rules-only envelope. Assert the fixed `&&`-joined form fails instead.
+# (5) a missing using-superpowers.md must fail loudly: $(...) does not inherit
+# -e, so `cat using-superpowers.md; printf '\n'; cat working-rules.md` would
+# let a present working-rules.md's zero exit mask the missing file and
+# silently emit a rules-only envelope. Assert the `&&`-joined form fails.
 T2="$(mktemp -d)"
 cp "$H/session-start" "$T2/session-start"
-printf 'some rules\n' >"$T2/payload-rules.md"
+printf 'some rules\n' >"$T2/working-rules.md"
 if "$T2/session-start" >/dev/null 2>&1; then
-  fail "session-start must exit non-zero when payload.md is missing"
+  fail "session-start must exit non-zero when using-superpowers.md is missing"
 fi
 
-echo "hook: payload exact, envelope round-trips, wiring correct, control characters escaped"
+echo "hook: using-superpowers exact, envelope round-trips, wiring correct, control characters escaped"

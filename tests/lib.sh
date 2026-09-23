@@ -80,7 +80,7 @@ GUARDED=(
   $'^plugins/software-dev/skills/diagnosing-bugs/\ttests/test-vendored-diagnosing-bugs.sh'
   $'^plugins/software-dev/skills/setup-repository/\ttests/test-vendored-scaffolder.sh'
   $'^plugins/software-dev/skills/finding-duplicate-functions/scripts/[a-z-]+-prompt\\.md$\ttests/test-vendored-duplicates.sh'
-  $'^plugins/software-dev/hooks/payload\\.md$\ttests/test-hook.sh'
+  $'^plugins/software-dev/hooks/using-superpowers\\.md$\ttests/test-hook.sh'
 )
 EXCLUDED="$(
   IFS='|'
