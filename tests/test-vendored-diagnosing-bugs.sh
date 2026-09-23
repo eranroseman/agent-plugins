@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # The vendored diagnosing-bugs skill must equal mattpocock/skills at the ref
-# upstream/skills.json declares, in every byte and file mode, except: a
+# skills.json declares, in every byte and file mode, except: a
 # provenance header right after the frontmatter, and line 3, the description,
 # rewritten so Codex shows it whole and it shares no trigger word with
 # systematic-debugging (spec section 6.1). It must not be gated, and it must
@@ -16,9 +16,9 @@ SHA="6acc160e4e0cd062dbbbd7a1b26ae92855edf07e" # the commit v1.2.3 peels to
 # One upstream state for the whole mattpocock set: the vendored copy and the
 # skills.sh install must come from the same tag, or a bump moves one without
 # the other.
-declared="$(jq -r '.sources[] | select(.repo == "mattpocock/skills") | .ref' "$REPO_ROOT/upstream/skills.json")"
+declared="$(jq -r '.sources[] | select(.repo == "mattpocock/skills") | .ref' "$REPO_ROOT/skills.json")"
 [ "$declared" = "$REF" ] \
-  || fail "upstream/skills.json pins mattpocock/skills at $declared and this test at $REF; move them together"
+  || fail "skills.json pins mattpocock/skills at $declared and this test at $REF; move them together"
 git ls-remote --tags https://github.com/mattpocock/skills.git "refs/tags/$REF^{}" | grep -q "^$SHA" \
   || fail "tag $REF no longer peels to $SHA"
 
@@ -69,8 +69,8 @@ if grep -q 'disable-model-invocation' "$V/SKILL.md"; then fail "diagnosing-bugs 
 if grep -q 'allow_implicit_invocation: false' "$V/agents/openai.yaml"; then fail "diagnosing-bugs must not be gated on Codex"; fi
 
 # Vendored means not also installed bare, or the unadapted copy sits beside it.
-if jq -e '[.sources[].skills[]] | index("diagnosing-bugs")' "$REPO_ROOT/upstream/skills.json" >/dev/null 2>&1; then
-  fail "diagnosing-bugs is vendored here and must not also be declared in upstream/skills.json"
+if jq -e '[.sources[].skills[]] | index("diagnosing-bugs")' "$REPO_ROOT/skills.json" >/dev/null 2>&1; then
+  fail "diagnosing-bugs is vendored here and must not also be declared in skills.json"
 fi
 
 # The LICENSE's provenance notice names the same tag and commit.

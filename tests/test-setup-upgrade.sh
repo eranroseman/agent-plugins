@@ -73,7 +73,7 @@ jq '{version: 3,
      skills: (reduce (.sources[] as $s | $s.skills[] |
        {key: ., value: {source: $s.repo, ref: $s.ref}}) as $e ({}; . + {($e.key): $e.value})),
      dismissed: {}}' \
-  "$REPO_ROOT/upstream/skills.json" >"$W/home/.agents/.skill-lock.json" \
+  "$REPO_ROOT/skills.json" >"$W/home/.agents/.skill-lock.json" \
   || fail "could not synthesize a pinned lockfile"
 
 want="$(jq -r .version "$REPO_ROOT/$PJ")" || fail "could not read the declared version"

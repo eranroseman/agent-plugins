@@ -18,7 +18,7 @@ configuration from `docs/agents/`; `setup-repository` declares a
 repository's conventions. Both are about software and both live in
 `software-dev`, whatever a "reading versus building" split would suggest.
 
-The rule is applied in advance to every skill `upstream/skills.json`
+The rule is applied in advance to every skill `skills.json`
 declares, so the day one of them needs a change its placement is already
 settled and is not relitigated under deadline. Nothing moves on this table
 until a skill must change; a skill is copied into a plugin only then.

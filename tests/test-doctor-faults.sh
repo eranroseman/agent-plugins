@@ -138,7 +138,7 @@ chmod +x "$BIN2/npx" "$BIN2/claude" || fail "could not make the stubs executable
 NPX_LOG="$H2/npx.log"
 if out="$(env HOME="$H2" CODEX_HOME="$H2/.codex" PATH="$BIN2" NPX_LOG="$NPX_LOG" \
   /bin/bash "$SETUP" 2>&1)"; then status=0; else status=$?; fi
-declared="$(jq '[.sources[].skills[]] | length' "$REPO_ROOT/upstream/skills.json")"
+declared="$(jq '[.sources[].skills[]] | length' "$REPO_ROOT/skills.json")"
 attempted="$(grep -c 'skills add' "$NPX_LOG" 2>/dev/null || true)"
 [ "${attempted:-0}" -eq "$declared" ] \
   || fail "the install loop attempted ${attempted:-0} of $declared declared skills:"$'\n'"$out"
@@ -146,7 +146,7 @@ while IFS= read -r name; do
   [ -n "$name" ] || continue
   grep -q -- "--skill $name -g" "$NPX_LOG" \
     || fail "the install loop never attempted $name"
-done < <(jq -r '.sources[].skills[]' "$REPO_ROOT/upstream/skills.json")
+done < <(jq -r '.sources[].skills[]' "$REPO_ROOT/skills.json")
 
 # Repair. Three things keep this run local, because a test in tests/run.sh must
 # not clone a marketplace or install nineteen skills over the network:
@@ -185,7 +185,7 @@ jq '{version: 3,
      skills: (reduce (.sources[] as $s | $s.skills[] |
        {key: ., value: {source: $s.repo, ref: $s.ref}}) as $e ({}; . + {($e.key): $e.value})),
      dismissed: {}}' \
-  "$REPO_ROOT/upstream/skills.json" >"$H/.agents/.skill-lock.json" \
+  "$REPO_ROOT/skills.json" >"$H/.agents/.skill-lock.json" \
   || fail "could not synthesize a pinned lockfile"
 
 if out="$(env HOME="$H" CODEX_HOME="$H/.codex" PATH="$BIN" /bin/bash "$SETUP" 2>&1)"; then status=0; else status=$?; fi

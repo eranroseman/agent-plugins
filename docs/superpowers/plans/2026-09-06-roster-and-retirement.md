@@ -4,7 +4,7 @@
 
 **Goal:** Give the four authored assets a plugin home, adopt three skills by the route each earns, curate one, drop one duplicated route, teach `bin/doctor` to see one skill name reaching two different skills, prove all of it on this machine, then delete `eranroseman/harness-backup` and `eranroseman/rethink` and empty both global instruction files.
 
-**Architecture:** Nothing new is invented; every change lands in a mechanism sub-project 2 already ships. Skills that must change are vendored into a plugin with a provenance header, a drift test and a LICENSE notice, exactly as `brainstorming` and `setup-repository` are. A skill that needs no change is declared in `upstream/skills.json` (`archify`) or curated as a second `git-subdir` marketplace entry (`writing-clearly-and-concisely`), and `bin/setup` stops being superpowers-specific: it iterates every curated entry for its pinned clone, its symlinks, and its installed version. `bin/doctor` gains one derived, report-only check that hashes every route a harness loads a skill by. The machine is converged by the same `bin/setup`, proved by the same `bin/doctor`, and only then are the two repositories deleted, which is what makes the last paragraph of both global files false and lets them empty.
+**Architecture:** Nothing new is invented; every change lands in a mechanism sub-project 2 already ships. Skills that must change are vendored into a plugin with a provenance header, a drift test and a LICENSE notice, exactly as `brainstorming` and `setup-repository` are. A skill that needs no change is declared in `skills.json` (`archify`) or curated as a second `git-subdir` marketplace entry (`writing-clearly-and-concisely`), and `bin/setup` stops being superpowers-specific: it iterates every curated entry for its pinned clone, its symlinks, and its installed version. `bin/doctor` gains one derived, report-only check that hashes every route a harness loads a skill by. The machine is converged by the same `bin/setup`, proved by the same `bin/doctor`, and only then are the two repositories deleted, which is what makes the last paragraph of both global files false and lets them empty.
 
 **Tech Stack:** bash (no `set -e` in the engine), jq, git, `sha256sum`, Claude Code CLI 2.1.263, codex-cli 0.147.0, `npx skills` (skills.sh), shellcheck, `gh`, GitHub Actions.
 
@@ -21,7 +21,7 @@ Verbatim from the spec unless marked. Every task's requirements implicitly inclu
 - **Descriptions.** `diagnosing-bugs`: `Use when a bug resists reproduction, or for a performance regression.` — 69 characters, verbatim from §6.1. `adhd`: `Parallel divergent ideation under five isolated cognitive frames, scored, clustered, deepened. Costs 5 to 10x one answer.` — 121 characters (Deviation D12). Codex truncates at 122 (§6.5); every vendored description is asserted under that by its drift test.
 - **Paths.** Pinned clones live under `$HOME/.local/share/software-dev/upstream/<entry name>`: `superpowers` (unchanged) and `writing-clearly-and-concisely` (new). The symlink root is `$HOME/.agents/skills`; a curated skill's link target is `<clone>/<source.path>/<skill>`, so `…/upstream/superpowers/skills/writing-plans` and `…/upstream/writing-clearly-and-concisely/dist/plugins/writing-clearly-and-concisely/skills/writing-clearly-and-concisely`.
 - **Which plugin holds a skill** (§4.1): `sensemaking` when the skill is shared by more than one product or is not about software development; `software-dev` only when both are false.
-- **How a skill is adopted** (§5): skills.sh, then a curated entry, then vendoring; a skill is vendored **only when this marketplace must change it**, and a vendored skill is dropped from `upstream/skills.json` or it installs twice. `test-skills-pin.sh` asserts the negative for every vendored mattpocock skill.
+- **How a skill is adopted** (§5): skills.sh, then a curated entry, then vendoring; a skill is vendored **only when this marketplace must change it**, and a vendored skill is dropped from `skills.json` or it installs twice. `test-skills-pin.sh` asserts the negative for every vendored mattpocock skill.
 - **When a skill is gated** (§5): when the decision to invoke is inherently the human's; never to paper over a routing failure. `adhd` and `consistency-audit` are gated; `diagnosing-bugs` and `finding-duplicate-functions` are not. A gated skill carries **both** gates: `disable-model-invocation: true` in `SKILL.md` for Claude and `policy.allow_implicit_invocation: false` in `agents/openai.yaml` for Codex (sub-project 2 plan, Deviation D7). `tests/test-plugin-skills.sh` asserts the pair on every plugin skill.
 - **Report, never repair** (§6.6). Duplicates and residue are `NOTE:` lines, not `FAIL:` (Deviation D6). Removing another marketplace's plugin is not the script's business.
 - **Engine rules inherited from sub-project 2**, all still binding: never `--scope project` (§7.4); never re-run `codex plugin marketplace add` (§7.3); never delete a squatting file or link, move it aside (§7.4); setup never hand-edits a configuration file (§7.6), which is why `ARCHIFY_UPDATE_CHECK_DISABLED` is documented and not set (§6.3, Deviation D1); never chain `git clone … && git checkout …`; never compare `HEAD` against `origin/main`.
@@ -68,7 +68,7 @@ Visible choices, not silent ones. Each names what changes if it is vetoed.
 - **D10. The `setup-matt-pocock-skills` note in `report_only` stays.** §6.6 reads as if the derived check replaces it; it cannot, because that case is a rename and a by-name check never sees it.
 - **D11. `harness-backup`'s historical spec is archived to `docs/archive/2026-08-08-harness-update-design.md` in this repository**, with a two-line provenance note, because this repository holds the mechanisms that replaced the detector it designed. §8.2 says "archived" and names no destination. Veto: research-vault's `docs/`.
 - **D12. `adhd`'s description is rewritten here.** §6.2 gates it and §6.5 says the truncation is "fixed incidentally" for skills adapted anyway. The text in Global Constraints describes and never triggers: it drops "brainstorm/ideate intents", "open-ended design, architecture" and "fuzzy-debugging decisions", the three claims that collide with `software-dev:brainstorming` and `systematic-debugging`.
-- **D13. `diagnosing-bugs`' pin is tied to `upstream/skills.json`'s mattpocock ref by test.** Both come from `mattpocock/skills`; `tests/test-vendored-diagnosing-bugs.sh` fails if the two refs differ, so a bump moves the vendored copy and the installed set together.
+- **D13. `diagnosing-bugs`' pin is tied to `skills.json`'s mattpocock ref by test.** Both come from `mattpocock/skills`; `tests/test-vendored-diagnosing-bugs.sh` fails if the two refs differ, so a bump moves the vendored copy and the installed set together.
 - **D14. `tests/lib.sh` gains `fetch_pinned <url> <sha> <dir>`**, and `fetch_upstream` becomes its superpowers caller. Four new tests and one fixture need a shallow fetch of a second, third and fourth repository at a sha; one guarded implementation replaces four copies.
 
 ---
@@ -93,7 +93,7 @@ plugins/software-dev/
 ├── skills/finding-duplicate-functions/      Task 4: the fork, six files, header added
 └── skills/diagnosing-bugs/                  Task 6: vendored, three files, description rewritten
 .claude-plugin/marketplace.json              Tasks 8, 11: the curated writing entry; descriptions
-upstream/skills.json                         Task 7: a third source, archify
+skills.json                                  Task 7: a third source, archify
 bin/setup                                    Tasks 9, 10: curated-entry loops; the duplicate check
 bin/upstream-watch                           Task 7: the stable-tag filter; every curated entry
 README.md                                    Task 11: four entries, the Checks list
@@ -163,7 +163,7 @@ configuration from `docs/agents/`; `setup-repository` declares a
 repository's conventions. Both are about software and both live in
 `software-dev`, whatever a "reading versus building" split would suggest.
 
-The rule is applied in advance to every skill `upstream/skills.json`
+The rule is applied in advance to every skill `skills.json`
 declares, so the day one of them needs a change its placement is already
 settled and is not relitigated under deadline. Nothing moves on this table
 until a skill must change; a skill is copied into a plugin only then.
@@ -208,7 +208,7 @@ In `docs/superpowers/specs/2026-09-06-roster-and-retirement-design.md`, the line
 `ARCHIFY_UPDATE_CHECK_DISABLED` documented in the plugin README and not set by `bin/setup` (§6.3)
 ```
 
-so the step reads `…;`archify`declared in`upstream/skills.json`at`v2.16.0`;`ARCHIFY_UPDATE_CHECK_DISABLED`documented in the plugin README and not set by`bin/setup`(§6.3);`test-skills-pin.sh`count to 19; …`.
+so the step reads `…;`archify`declared in`skills.json`at`v2.16.0`;`ARCHIFY_UPDATE_CHECK_DISABLED`documented in the plugin README and not set by`bin/setup`(§6.3);`test-skills-pin.sh`count to 19; …`.
 
 - [ ] **Step 4: Verify**
 
@@ -969,7 +969,7 @@ Create `tests/test-vendored-diagnosing-bugs.sh`:
 ```bash
 #!/usr/bin/env bash
 # The vendored diagnosing-bugs skill must equal mattpocock/skills at the ref
-# upstream/skills.json declares, in every byte and file mode, except: a
+# skills.json declares, in every byte and file mode, except: a
 # provenance header right after the frontmatter, and line 3, the description,
 # rewritten so Codex shows it whole and it shares no trigger word with
 # systematic-debugging (spec section 6.1). It must not be gated, and it must
@@ -984,9 +984,9 @@ SHA="6acc160e4e0cd062dbbbd7a1b26ae92855edf07e"   # the commit v1.2.3 peels to
 # One upstream state for the whole mattpocock set: the vendored copy and the
 # skills.sh install must come from the same tag, or a bump moves one without
 # the other.
-declared="$(jq -r '.sources[] | select(.repo == "mattpocock/skills") | .ref' "$REPO_ROOT/upstream/skills.json")"
+declared="$(jq -r '.sources[] | select(.repo == "mattpocock/skills") | .ref' "$REPO_ROOT/skills.json")"
 [ "$declared" = "$REF" ] \
-  || fail "upstream/skills.json pins mattpocock/skills at $declared and this test at $REF; move them together"
+  || fail "skills.json pins mattpocock/skills at $declared and this test at $REF; move them together"
 git ls-remote --tags https://github.com/mattpocock/skills.git "refs/tags/$REF^{}" | grep -q "^$SHA" \
   || fail "tag $REF no longer peels to $SHA"
 
@@ -1037,8 +1037,8 @@ if grep -q 'disable-model-invocation' "$V/SKILL.md"; then fail "diagnosing-bugs 
 if grep -q 'allow_implicit_invocation: false' "$V/agents/openai.yaml"; then fail "diagnosing-bugs must not be gated on Codex"; fi
 
 # Vendored means not also installed bare, or the unadapted copy sits beside it.
-if jq -e '[.sources[].skills[]] | index("diagnosing-bugs")' "$REPO_ROOT/upstream/skills.json" >/dev/null 2>&1; then
-  fail "diagnosing-bugs is vendored here and must not also be declared in upstream/skills.json"
+if jq -e '[.sources[].skills[]] | index("diagnosing-bugs")' "$REPO_ROOT/skills.json" >/dev/null 2>&1; then
+  fail "diagnosing-bugs is vendored here and must not also be declared in skills.json"
 fi
 
 # The LICENSE's provenance notice names the same tag and commit.
@@ -1143,7 +1143,7 @@ EOF
 
 **Files:**
 
-- Modify: `upstream/skills.json` (a third source)
+- Modify: `skills.json` (a third source)
 - Modify: `tests/test-skills-pin.sh` (18 → 19)
 - Modify: `bin/upstream-watch` (the stable-tag filter, the `--newest-stable-tag` mode, every curated entry)
 - Modify: `tests/test-setup-doctor.sh` (the filter assertion)
@@ -1173,7 +1173,7 @@ Expected: `FAIL: expected 19 declared skills, got 18`, exit 1.
 
 - [ ] **Step 2: Declare the source**
 
-In `upstream/skills.json`, after the `obra/superpowers-developing-for-claude-code` object, add a third source so the array reads:
+In `skills.json`, after the `obra/superpowers-developing-for-claude-code` object, add a third source so the array reads:
 
 ```json
     {
@@ -1313,13 +1313,13 @@ Expected: passes as before.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add upstream/skills.json tests/test-skills-pin.sh bin/upstream-watch tests/test-setup-doctor.sh plugins/software-dev/README.md
+git add skills.json tests/test-skills-pin.sh bin/upstream-watch tests/test-setup-doctor.sh plugins/software-dev/README.md
 git commit -m "$(cat <<'EOF'
 Adopt archify through skills.sh, pinned at v2.16.0
 
 The ticket that called it unpinnable reasoned from the wrong sigil: # is the
 ref selector, and bin/setup has used it since 2026-09-05. So it is an
-ordinary third source in upstream/skills.json, and the trilemma of a moving
+ordinary third source in skills.json, and the trilemma of a moving
 branch, a release zip or a fork dissolves.
 
 Its tag series would have broken the watch: it publishes -dev.N tags and a
@@ -2657,7 +2657,7 @@ gh issue close 82 -R eranroseman/research-vault --comment "Closed as stale on al
 
 gh issue close 84 -R eranroseman/research-vault --comment "Closed against agent-plugins#20, which carries this question ($SPEC §6.7). Nothing is built: sub-project 3's admission standard needs evidence that the problem exists and dependence on nothing beyond the plugin, and this mechanism fails both. #20 lists what would reopen it."
 
-gh issue close 110 -R eranroseman/research-vault --comment "Closed, title premise refuted ($SPEC §6.3): archify is pinnable by the route this repository already uses, \`npx skills add tt-a1i/archify#v2.16.0 --skill archify -g -y\` — \`#\` is the ref selector, \`@\` is not, and bin/setup:441 has used it since 2026-09-05. Declared in upstream/skills.json at v2.16.0. The moving-branch, release-zip and fork trilemma dissolves. The generalisation posted here about the whole installed set is retracted: the lockfile holds nineteen entries and none without a ref. The update check is documented with ARCHIFY_UPDATE_CHECK_DISABLED in the software-dev README; setup does not set it."
+gh issue close 110 -R eranroseman/research-vault --comment "Closed, title premise refuted ($SPEC §6.3): archify is pinnable by the route this repository already uses, \`npx skills add tt-a1i/archify#v2.16.0 --skill archify -g -y\` — \`#\` is the ref selector, \`@\` is not, and bin/setup:441 has used it since 2026-09-05. Declared in skills.json at v2.16.0. The moving-branch, release-zip and fork trilemma dissolves. The generalisation posted here about the whole installed set is retracted: the lockfile holds nineteen entries and none without a ref. The update check is documented with ARCHIFY_UPDATE_CHECK_DISABLED in the software-dev README; setup does not set it."
 
 gh issue close 111 -R eranroseman/research-vault --comment "Closed ($SPEC §6.2): adhd is vendored into sensemaking 0.2.0, gated on both harnesses (disable-model-invocation: true, and an authored agents/openai.yaml with allow_implicit_invocation: false), with its description shortened to 121 characters. Gating dissolves both collisions, with brainstorming and with systematic-debugging, without a second rewrite. Rung 2, forking, is not adopted: it buys merge flow for one skill file at the price of a repository and permanent merge duty. The claim here that the skills.sh route is closed was wrong — upstream prescribes npx skills add — but the route is foreclosed by the decision to gate. Pinned at commit 16dc239; tag v0.1.4 predates the text and the manifest."
 

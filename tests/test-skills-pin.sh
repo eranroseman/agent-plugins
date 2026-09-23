@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# upstream/skills.json must be well-formed, every declared ref must exist as a
+# skills.json must be well-formed, every declared ref must exist as a
 # tag on its repo, and every listed skill name must resolve to exactly one
 # SKILL.md at that ref, the way `skills add --skill <name>` resolves it. The
 # three declared sources use different layouts -- mattpocock/skills nests a
@@ -8,7 +8,7 @@
 # Needs network.
 . "$(dirname "$0")/lib.sh"
 
-S="$REPO_ROOT/upstream/skills.json"
+S="$REPO_ROOT/skills.json"
 [ -f "$S" ] || fail "missing $S"
 jq -e . "$S" >/dev/null 2>&1 || fail "$S is not well-formed JSON"
 

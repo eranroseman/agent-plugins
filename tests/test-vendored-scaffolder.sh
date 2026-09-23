@@ -201,12 +201,12 @@ for h in '### Design discipline' '### Task reports'; do
 done
 
 # Every upstream engineering skill this file names in backticks must be one an
-# install actually gets: declared in upstream/skills.json, or vendored by this
+# install actually gets: declared in skills.json, or vendored by this
 # plugin. Upstream prose names its own siblings freely; when the roster drops
 # one, the reference goes stale silently, and a re-vendor can introduce more.
 bt='`'
 available="$(
-  jq -r '[.sources[].skills[]] | .[]' "$REPO_ROOT/upstream/skills.json"
+  jq -r '[.sources[].skills[]] | .[]' "$REPO_ROOT/skills.json"
   for d in "$REPO_ROOT"/plugins/*/skills/*/; do
     d="${d%/}"
     printf '%s\n' "${d##*/}"
@@ -217,7 +217,7 @@ while IFS= read -r s; do
   grep -qF -- "$bt$s$bt" "$V/SKILL.md" || continue
   named=$((named + 1))
   grep -qxF -- "$s" <<<"$available" \
-    || fail "SKILL.md names \`$s\`, which is neither declared in upstream/skills.json nor vendored here"
+    || fail "SKILL.md names \`$s\`, which is neither declared in skills.json nor vendored here"
 done < <(for d in "$U"/../*/; do
   d="${d%/}"
   printf '%s\n' "${d##*/}"

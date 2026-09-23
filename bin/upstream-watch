@@ -11,7 +11,7 @@ set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 MARKETPLACE="$REPO_ROOT/.claude-plugin/marketplace.json"
-SKILLS_JSON="$REPO_ROOT/upstream/skills.json"
+SKILLS_JSON="$REPO_ROOT/skills.json"
 
 die() {
   printf 'ERROR: %s\n' "$*" >&2
@@ -87,7 +87,7 @@ while IFS="$(printf '\t')" read -r repo ref; do
   if [ "$newest" = "$ref" ]; then
     report "- \`$repo\` pinned at \`$ref\`, the newest tag."
   else
-    report "- \`$repo\` pinned at \`$ref\`; newest tag is \`$newest\`. Bump by editing \`upstream/skills.json\`."
+    report "- \`$repo\` pinned at \`$ref\`; newest tag is \`$newest\`. Bump by editing \`skills.json\`."
     DRIFT=1
   fi
 done < <(jq -r '.sources[] | [.repo, .ref] | @tsv' "$SKILLS_JSON")

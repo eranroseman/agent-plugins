@@ -30,10 +30,10 @@ bin_without() {
 # for the case to corrupt. Prints its path.
 scratch_repo() {
   local r="$T/$1"
-  mkdir -p "$r/bin" "$r/.claude-plugin" "$r/upstream" || fail "could not seed $r"
+  mkdir -p "$r/bin" "$r/.claude-plugin" || fail "could not seed $r"
   ln -s "$REPO_ROOT/bin/setup" "$r/bin/setup" || fail "could not link bin/setup into $r"
   cp "$MARKETPLACE" "$r/.claude-plugin/marketplace.json" || fail "could not copy the marketplace into $r"
-  cp "$REPO_ROOT/upstream/skills.json" "$r/upstream/skills.json" || fail "could not copy skills.json into $r"
+  cp "$REPO_ROOT/skills.json" "$r/skills.json" || fail "could not copy skills.json into $r"
   printf '%s\n' "$r"
 }
 
@@ -139,15 +139,15 @@ run_case "empty HOME" "$R" "$T/home-7" "$BIN"
 saw 'FAIL:' || fail "empty HOME: no FAIL line at all:"$'\n'"$OUT"
 saw 'the skill root is missing' || fail "empty HOME: the skill root was not reported:"$'\n'"$OUT"
 
-# 8. upstream/skills.json whose declared skill names are all empty strings:
+# 8. skills.json whose declared skill names are all empty strings:
 # it passes the exit-status guard (jq exits 0) and the non-empty guard (each
 # row is repo<TAB>ref<TAB>), and before the loop split every iteration hit
 # `[ -n "$name" ] || continue` and the check printed nothing at all -- the
 # seventh shape (spec §6.1). An empty field is reported as malformed, never
 # skipped.
 R="$(scratch_repo empty-skill-names)"
-jq '.sources |= map(.skills |= map(""))' "$REPO_ROOT/upstream/skills.json" \
-  >"$R/upstream/skills.json" || fail "could not blank the skill names"
+jq '.sources |= map(.skills |= map(""))' "$REPO_ROOT/skills.json" \
+  >"$R/skills.json" || fail "could not blank the skill names"
 run_case "all-empty skill names" "$R" "$(seeded_home 8)" "$BIN"
 saw 'a declared skill line is malformed' \
   || fail "all-empty skill names: ensure_skills_sh did not report the malformed rows:"$'\n'"$OUT"

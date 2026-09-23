@@ -23,7 +23,7 @@ Every count and exit status below was measured in this checkout or in a scratch 
 - **cspell 10.2.2 `en-US`** over the 15 markdown files in scope: 77 hits, 31 distinct words, four British (`behaviour`, `organisational`, `recognises`, `summarise`), the rest proper nouns, domain terms and coinages. Over the 26 shell and 5 YAML files through a `#`-comment override: 58 hits, 27 words, four British (`behaviour`, `canonicalises`, `Serialised`, `synthesise`). A config file placed **outside** the repository silently checked whole files, because `overrides.filename` globs resolve relative to the config's directory; the config therefore lives at the repository root and every tool test runs from `REPO_ROOT`.
 - **actionlint 1.7.12** reports zero findings on both workflows.
 - **`bin/setup` under an empty `PATH`** prints `bin/setup: line 21: dirname: command not found` before `ERROR: bin/setup needs these on PATH: git jq node npx claude`, exit 2. `bin/doctor` there prints the same `dirname` line and then `bin/doctor: line 4: /setup: No such file or directory`, exit 127. `$BASH` is `/bin/bash` when the script is invoked as `/bin/bash <script>`; a six-line doctor built on `${0%/*}` and `exec "$BASH"` is shfmt-stable and runs under `env -i PATH=/nowhere`.
-- **jq shapes.** `.skills` deleted from the first git-subdir entry: exit 5, 0 rows. From the second: exit 5, 13 rows. `upstream/skills.json` with every skill name empty: exit 0, rows of the form `mattpocock/skills<TAB>v1.2.3<TAB>`. A git-subdir entry with `name: ""` fed to today's tab-IFS `read` in `ensure_clones` yields `name='https://…/superpowers.git' url='main' sha='skills'`: the shift §6.3 describes.
+- **jq shapes.** `.skills` deleted from the first git-subdir entry: exit 5, 0 rows. From the second: exit 5, 13 rows. `skills.json` with every skill name empty: exit 0, rows of the form `mattpocock/skills<TAB>v1.2.3<TAB>`. A git-subdir entry with `name: ""` fed to today's tab-IFS `read` in `ensure_clones` yields `name='https://…/superpowers.git' url='main' sha='skills'`: the shift §6.3 describes.
 - **The hook payload.** `payload.md` is 3,335 bytes, `payload-rules.md` 379, the emitted string 3,714 bytes and 3,702 code points: exactly the corrections §7.4 makes to the hook design's §4.3. `payload-rules.md:3` carries `recognises`; `recognizes` is the same length, so those figures survive the spelling fix.
 - **`claude` is an ELF binary here** (`~/.local/bin/claude`) but a `#!/usr/bin/env node` script wherever it is installed with `npm install -g`, which is what `validate.yml` does. Deviation P1 follows from this.
 - **Tool version output.** `shellcheck --version` → `version: 0.9.0`; `actionlint -version` → `1.7.12`; `shfmt --version` → `v3.14.1`; `prettier --version` → `3.9.6`; `markdownlint-cli2 --version` → `markdownlint-cli2 v0.23.2 (markdownlint v0.41.1)`; `cspell --version` → `10.2.2`. The first dotted triple is the version in every case.
@@ -269,7 +269,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - [ ] **Step 1: Record the count the hardcoded list reports**
 
 Run: `bash tests/test-json-wellformed.sh`
-Expected: `json: 7 files well-formed`. The eighth owned JSON file, `upstream/skills.json`, sits outside the three hardcoded directories.
+Expected: `json: 7 files well-formed`. The eighth owned JSON file, `skills.json`, sits outside the three hardcoded directories.
 
 - [ ] **Step 2: Replace the file**
 
@@ -295,18 +295,18 @@ printf 'json: %s files well-formed\n' "$found"
 - [ ] **Step 3: Run it to verify the count moved**
 
 Run: `bash tests/test-json-wellformed.sh`
-Expected: `json: 8 files well-formed` — the seven plus `upstream/skills.json`.
+Expected: `json: 8 files well-formed` — the seven plus `skills.json`.
 
 - [ ] **Step 4: Prove the guard with a mutation**
 
-Run: `printf '{' > /tmp/bad.json && cp /tmp/bad.json upstream/skills.json && bash tests/test-json-wellformed.sh; git checkout -- upstream/skills.json`
-Expected: `FAIL: not valid JSON: upstream/skills.json` (the jq error above it), then the checkout restores the file. Run `git status --short upstream/` and expect nothing.
+Run: `printf '{' > /tmp/bad.json && cp /tmp/bad.json skills.json && bash tests/test-json-wellformed.sh; git checkout -- skills.json`
+Expected: `FAIL: not valid JSON: skills.json` (the jq error above it), then the checkout restores the file. Run `git status --short skills.json` and expect nothing.
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add tests/test-json-wellformed.sh
-git commit -m "Check every owned JSON file, derived rather than listed" -m "The hardcoded find saw seven files; checked '*.json' sees the eight, upstream/skills.json among them (#27). The */skills/* exclusion goes: no tracked JSON lives there, and the vendored patterns cover the case it guarded against.
+git commit -m "Check every owned JSON file, derived rather than listed" -m "The hardcoded find saw seven files; checked '*.json' sees the eight, skills.json among them (#27). The */skills/* exclusion goes: no tracked JSON lives there, and the vendored patterns cover the case it guarded against.
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
@@ -926,7 +926,7 @@ jq '{version: 3,
      skills: (reduce (.sources[] as $s | $s.skills[] |
        {key: ., value: {source: $s.repo, ref: $s.ref}}) as $e ({}; . + {($e.key): $e.value})),
      dismissed: {}}' \
-  "$REPO_ROOT/upstream/skills.json" > "$W/home/.agents/.skill-lock.json" \
+  "$REPO_ROOT/skills.json" > "$W/home/.agents/.skill-lock.json" \
   || fail "could not synthesize a pinned lockfile"
 
 want="$(jq -r .version "$REPO_ROOT/$PJ")" || fail "could not read the declared version"
@@ -1075,10 +1075,10 @@ bin_without() {
 # for the case to corrupt. Prints its path.
 scratch_repo() {
   local r="$T/$1"
-  mkdir -p "$r/bin" "$r/.claude-plugin" "$r/upstream" || fail "could not seed $r"
+  mkdir -p "$r/bin" "$r/.claude-plugin" || fail "could not seed $r"
   ln -s "$REPO_ROOT/bin/setup" "$r/bin/setup" || fail "could not link bin/setup into $r"
   cp "$MARKETPLACE" "$r/.claude-plugin/marketplace.json" || fail "could not copy the marketplace into $r"
-  cp "$REPO_ROOT/upstream/skills.json" "$r/upstream/skills.json" || fail "could not copy skills.json into $r"
+  cp "$REPO_ROOT/skills.json" "$r/skills.json" || fail "could not copy skills.json into $r"
   printf '%s\n' "$r"
 }
 
@@ -1716,15 +1716,15 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 Insert before `printf 'doctor-silence: …'`:
 
 ```bash
-# 8. upstream/skills.json whose declared skill names are all empty strings:
+# 8. skills.json whose declared skill names are all empty strings:
 # it passes the exit-status guard (jq exits 0) and the non-empty guard (each
 # row is repo<TAB>ref<TAB>), and before the loop split every iteration hit
 # `[ -n "$name" ] || continue` and the check printed nothing at all -- the
 # seventh shape (spec §6.1). An empty field is reported as malformed, never
 # skipped.
 R="$(scratch_repo empty-skill-names)"
-jq '.sources |= map(.skills |= map(""))' "$REPO_ROOT/upstream/skills.json" \
-  > "$R/upstream/skills.json" || fail "could not blank the skill names"
+jq '.sources |= map(.skills |= map(""))' "$REPO_ROOT/skills.json" \
+  > "$R/skills.json" || fail "could not blank the skill names"
 run_case "all-empty skill names" "$R" "$(seeded_home 8)" "$BIN"
 saw 'a declared skill line is malformed' \
   || fail "all-empty skill names: ensure_skills_sh did not report the malformed rows:"$'\n'"$OUT"

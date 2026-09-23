@@ -50,7 +50,7 @@ That distinction is load-bearing, and this design records it because getting it 
 
 ### 4.2 The standing classification
 
-Applying the rule to the eighteen skills `upstream/skills.json` declares:
+Applying the rule to the eighteen skills `skills.json` declares:
 
 | Plugin           | Skills                                                                                                                                                                                                                        |
 | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -67,9 +67,9 @@ It also prices `sensemaking` honestly. Eight of the eighteen would land there, s
 
 Three routes, in ascending cost:
 
-1. **skills.sh** — declared in `upstream/skills.json`, installed by `bin/setup` at a pinned ref, reaching both harnesses through `~/.agents/skills`. The name stays bare and `skillOverrides` still reaches it.
+1. **skills.sh** — declared in `skills.json`, installed by `bin/setup` at a pinned ref, reaching both harnesses through `~/.agents/skills`. The name stays bare and `skillOverrides` still reaches it.
 2. **Curated marketplace entry** — a `git-subdir` source pinned by sha, as `superpowers` is. No copy, no drift test. **Claude-only**: Codex has no curated-entry path, and its equivalent is a symlink farm `bin/setup` builds.
-3. **Vendored** — copied into a plugin, with a provenance header, a drift test, and a LICENSE notice. Namespaced `<plugin>:<name>` and dropped from `upstream/skills.json` or it installs twice.
+3. **Vendored** — copied into a plugin, with a provenance header, a drift test, and a LICENSE notice. Namespaced `<plugin>:<name>` and dropped from `skills.json` or it installs twice.
 
 **A skill takes route 3 only when this marketplace must change it.** Sub-project 2's §12 declined the wholesale curated route for all eighteen mattpocock skills and listed its costs; that decision stands. What it did not decline was vendoring an individual skill, which is what `brainstorming` already is: `superpowers` is curated whole, and `brainstorming` was copied out of it because its description needed narrowing.
 
@@ -155,7 +155,7 @@ Two changes — the gate and the Codex yaml — so route 3.
 npx skills add tt-a1i/archify#v2.16.0 --skill archify -g -y
 ```
 
-`#` is the ref selector. [bin/setup:441](../../../bin/setup) has been using it since 2026-09-05. The ticket reasoned from `@`, the wrong sigil. So `archify` is an ordinary pinned source — a third entry in `upstream/skills.json` at annotated tag `v2.16.0` — and the moving-branch, release-zip and fork trilemma the ticket posed dissolves. Two of those three would have produced assets `bin/upstream-watch` and `tests/test-skills-pin.sh` cannot represent.
+`#` is the ref selector. [bin/setup:441](../../../bin/setup) has been using it since 2026-09-05. The ticket reasoned from `@`, the wrong sigil. So `archify` is an ordinary pinned source — a third entry in `skills.json` at annotated tag `v2.16.0` — and the moving-branch, release-zip and fork trilemma the ticket posed dissolves. Two of those three would have produced assets `bin/upstream-watch` and `tests/test-skills-pin.sh` cannot represent.
 
 Three edits follow:
 
@@ -210,7 +210,7 @@ Drop the **plugin**, keep skills.sh. Keeping the plugin would leave Claude with 
 
 This design creates three such cases: this pair, `writing-clearly-and-concisely@agent-toolkit` against the curated entry (§6.4), and `adhd` if it is ever installed from its own marketplace alongside the vendored copy. `bin/setup` already handles one, `setup-matt-pocock-skills`, as a one-off `note`.
 
-**The check is derived, not declared.** A hand-maintained table of "if this is installed, ours is duplicated" can only know what someone remembered to add, and goes stale silently — a rule where a mechanism is available. `bin/doctor` already reads every route: `upstream/skills.json`, the vendored skill directories, `claude plugin list`, `codex plugin list --json`, and the three skill roots. A duplicate is computable from what it already has.
+**The check is derived, not declared.** A hand-maintained table of "if this is installed, ours is duplicated" can only know what someone remembered to add, and goes stale silently — a rule where a mechanism is available. `bin/doctor` already reads every route: `skills.json`, the vendored skill directories, `claude plugin list`, `codex plugin list --json`, and the three skill roots. A duplicate is computable from what it already has.
 
 **By resolved target, not by name.** `~/.agents/skills` holds 31 entries, thirteen of them symlinks into the pinned `superpowers` clone — same name, same target, harmless. The hazard is one name resolving to two _different_ trees, which is precisely the D1 incident: an adapted and an unadapted `setup-matt-pocock-skills` installed together, where a bare invocation reached the wrong one and wrote its block to the wrong file.
 
@@ -294,7 +294,7 @@ Twenty-one tracked files.
 
 **Twelve move here** — the four skills and the inspector agent, per §7.
 
-**Six are dead or derived.** `bin/harness-drift-check.py` is superseded on both halves: `.github/workflows/upstream-watch.yml` covers the upstream half and `bin/doctor` the local one. `agents/.skill-lock.json` is derived from `upstream/skills.json`. `claude/CLAUDE.md` and `codex/AGENTS.md` go empty at §10 step 8. `.drift-state.json` and `.drift-cron.log` die with the detector.
+**Six are dead or derived.** `bin/harness-drift-check.py` is superseded on both halves: `.github/workflows/upstream-watch.yml` covers the upstream half and `bin/doctor` the local one. `agents/.skill-lock.json` is derived from `skills.json`. `claude/CLAUDE.md` and `codex/AGENTS.md` go empty at §10 step 8. `.drift-state.json` and `.drift-cron.log` die with the detector.
 
 **Two cannot come here, and are deleted with their history.** `claude/settings.json` (16 commits) and `codex/config.toml` (14) are personal machine state: `model`, `theme`, `effortLevel`, a statusline pointing into a plugin cache, nine `[projects.*]` trust entries naming absolute paths on this machine, a GitKraken MCP server. **`agent-plugins` is a public marketplace**; publishing either file ships a directory layout and editor preferences to anyone who clones it. Sub-project 2's §7.4 already forbids `--scope project` for exactly this reason, and folding the backups in would do by hand what that rule forbids by script.
 
@@ -340,7 +340,7 @@ Migrate, prove, then delete. The gate is the only step that requires evidence ra
 2. `sensemaking`: `rethink-audit` with its reference repointed
 3. `software-dev`: `consistency-audit` + inspector minus `permissionMode`; `finding-duplicate-functions` with provenance, drift test, LICENSE notice
 4. Delete the `rethink` stub from both locations
-5. `diagnosing-bugs` vendored into `software-dev`; `adhd` vendored into `sensemaking`, gated on both harnesses, with an authored `agents/openai.yaml`; `archify` declared in `upstream/skills.json` at `v2.16.0`; `ARCHIFY_UPDATE_CHECK_DISABLED` documented in the plugin README and not set by `bin/setup` (§6.3); `test-skills-pin.sh` count to 19; `upstream-watch`'s prerelease filter widened
+5. `diagnosing-bugs` vendored into `software-dev`; `adhd` vendored into `sensemaking`, gated on both harnesses, with an authored `agents/openai.yaml`; `archify` declared in `skills.json` at `v2.16.0`; `ARCHIFY_UPDATE_CHECK_DISABLED` documented in the plugin README and not set by `bin/setup` (§6.3); `test-skills-pin.sh` count to 19; `upstream-watch`'s prerelease filter widened
 6. `writing-clearly-and-concisely` curated at `dist/plugins/…`; the `agent-toolkit` install removed
 7. The `superpowers-developing-for-claude-code` plugin uninstalled
 8. **Gate.** Measured on this machine: every migrated skill loads from its plugin on both harnesses; the eight `harness-backup` symlinks are gone; `bin/doctor` reports clean; `claude plugin list` and `codex plugin list` agree with the manifests

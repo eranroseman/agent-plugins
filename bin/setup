@@ -8,7 +8,7 @@
 # machine:
 #   .claude-plugin/marketplace.json   every curated (git-subdir) entry: url,
 #                                     sha, version, and its skill names
-#   upstream/skills.json              the skills.sh set: repo, ref, names
+#   skills.json                       the skills.sh set: repo, ref, names
 #
 # The machine is reached through HOME and CODEX_HOME and nothing else, so a
 # scratch home is a complete test fixture.
@@ -27,7 +27,7 @@ script_dir="${0%/*}"
 [ "$script_dir" != "$0" ] || script_dir=.
 REPO_ROOT="$(cd "$script_dir/.." && pwd)"
 MARKETPLACE="$REPO_ROOT/.claude-plugin/marketplace.json"
-SKILLS_JSON="$REPO_ROOT/upstream/skills.json"
+SKILLS_JSON="$REPO_ROOT/skills.json"
 
 # Each later task adds the variables its own checks need, beside them, rather
 # than here: a variable declared before anything reads it is a shellcheck

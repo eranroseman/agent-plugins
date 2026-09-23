@@ -4,7 +4,7 @@
 
 **Goal:** Ship one bash engine (`bin/setup` / `bin/doctor`) that applies and verifies the machine state this repository declares, a scheduled workflow that watches both upstreams, a vendored repository scaffolder, and the emptying of the two global instruction files.
 
-**Architecture:** Every machine fact this design controls is declared in two files in this repository — the curated `superpowers` entry in `.claude-plugin/marketplace.json` and a new `upstream/skills.json`. One script reads only those, in two modes: `bin/setup` applies then re-checks, `bin/doctor` reports and changes nothing. Nothing is inferred from the machine, and the script never hand-edits a configuration file — every `settings.json` and `config.toml` write is the CLI's own. A scheduled GitHub Actions workflow compares the declared pins against `git ls-remote` and files one issue, updated in place. A vendored, adapted `setup-matt-pocock-skills` moves repository-scoped rules out of the two global instruction files, which then empty.
+**Architecture:** Every machine fact this design controls is declared in two files in this repository — the curated `superpowers` entry in `.claude-plugin/marketplace.json` and a new `skills.json`. One script reads only those, in two modes: `bin/setup` applies then re-checks, `bin/doctor` reports and changes nothing. Nothing is inferred from the machine, and the script never hand-edits a configuration file — every `settings.json` and `config.toml` write is the CLI's own. A scheduled GitHub Actions workflow compares the declared pins against `git ls-remote` and files one issue, updated in place. A vendored, adapted `setup-matt-pocock-skills` moves repository-scoped rules out of the two global instruction files, which then empty.
 
 **Tech Stack:** bash (no `set -e` in the engine; a failing check must be reported, not fatal), jq, git, Claude Code CLI 2.1.261, codex-cli 0.147.0, `npx skills` (skills.sh), shellcheck, GitHub Actions.
 
@@ -51,7 +51,7 @@ Two defects were found that way and are already fixed in the text below: `readli
 
 These are visible choices, not silent ones. Any of them can be vetoed; each names what changes if it is.
 
-- **D1. `upstream/skills.json` lists 17 mattpocock skills, not 18.** `setup-matt-pocock-skills` is dropped because Task 2 vendors an adapted copy under the same name. Installing both puts the unadapted skill — the one whose file-pick rule writes `CLAUDE.md` and leaves Codex reading nothing (§8) — one invocation away from the adapted one. Veto: add the name back to the array and delete the negative assertion in `tests/test-skills-pin.sh`.
+- **D1. `skills.json` lists 17 mattpocock skills, not 18.** `setup-matt-pocock-skills` is dropped because Task 2 vendors an adapted copy under the same name. Installing both puts the unadapted skill — the one whose file-pick rule writes `CLAUDE.md` and leaves Codex reading nothing (§8) — one invocation away from the adapted one. Veto: add the name back to the array and delete the negative assertion in `tests/test-skills-pin.sh`.
 - **D2. The vendored scaffolder is seven files, not six.** Upstream v1.2.3 ships `agents/openai.yaml` (a Codex interface block carrying `allow_implicit_invocation: false`) beside `SKILL.md` and the five seed templates. Six are byte-identical; only `SKILL.md` is edited, exactly as §8 requires.
 - **D3. The stale-marketplace-clone check is skipped, not failed, when the marketplace source is a directory.** `claude plugin marketplace add /abs/path` records `"source": "directory"` and an `installLocation` equal to that path, with no clone to compare (measured 2026-09-05). CI and any local-path install hit this.
 - **D4. The doctor reports redundant Codex links generically**, by resolved path, rather than asserting the twenty §7.3 counted. The thirteen new links become redundant by the same rule the moment they exist in `$HOME/.agents/skills`.
@@ -113,7 +113,7 @@ bin/setup                        Tasks 4-9: the engine. Modes, prerequisites, de
 bin/doctor                       Task 4: three lines, exec bin/setup --check
 bin/bump-superpowers             Task 3: sha bump; owns the payload build recipe
 bin/upstream-watch               Task 11: pin comparison, run by the workflow, runnable by hand
-upstream/skills.json             Task 1: the skills.sh declaration
+skills.json                       Task 1: the skills.sh declaration
 plugins/software-development/
 ├── .claude-plugin/plugin.json   Task 2: version 0.4.0
 ├── .codex-plugin/plugin.json    Task 2: version 0.4.0
@@ -138,13 +138,13 @@ docs/superpowers/specs/2026-09-05-setup-and-drift-design.md   Task 13: gate resu
 
 **Files:**
 
-- Create: `upstream/skills.json`
+- Create: `skills.json`
 - Create: `tests/test-skills-pin.sh`
 
 **Interfaces:**
 
 - Consumes: nothing from other tasks.
-- Produces: `upstream/skills.json` with the shape `{"sources": [{"repo", "ref", "skills": [...]}, ...]}`. Task 8 reads it with `jq -r '.sources[] as $s | $s.skills[] | [$s.repo, $s.ref, .] | @tsv'`. Task 11 reads `.sources[] | [.repo, .ref] | @tsv`.
+- Produces: `skills.json` with the shape `{"sources": [{"repo", "ref", "skills": [...]}, ...]}`. Task 8 reads it with `jq -r '.sources[] as $s | $s.skills[] | [$s.repo, $s.ref, .] | @tsv'`. Task 11 reads `.sources[] | [.repo, .ref] | @tsv`.
 
 - [ ] **Step 1: Cut the branch**
 
@@ -161,7 +161,7 @@ Create `tests/test-skills-pin.sh`:
 
 ```bash
 #!/usr/bin/env bash
-# upstream/skills.json must be well-formed, every declared ref must exist as a
+# skills.json must be well-formed, every declared ref must exist as a
 # tag on its repo, and every listed skill name must resolve to exactly one
 # SKILL.md at that ref, the way `skills add --skill <name>` resolves it. The
 # two declared sources use different layouts -- mattpocock/skills nests a
@@ -169,7 +169,7 @@ Create `tests/test-skills-pin.sh`:
 # the search is by directory basename, not by a hardcoded path. Needs network.
 . "$(dirname "$0")/lib.sh"
 
-S="$REPO_ROOT/upstream/skills.json"
+S="$REPO_ROOT/skills.json"
 [ -f "$S" ] || fail "missing $S"
 jq -e . "$S" >/dev/null 2>&1 || fail "$S is not well-formed JSON"
 
@@ -215,11 +215,11 @@ printf 'skills-pin: 19 declared skills, every ref a real tag, every name resolvi
 - [ ] **Step 3: Run the test to verify it fails**
 
 Run: `bash tests/test-skills-pin.sh`
-Expected: `FAIL: missing /home/eranr/agent-plugins/upstream/skills.json`, exit 1.
+Expected: `FAIL: missing /home/eranr/agent-plugins/skills.json`, exit 1.
 
 - [ ] **Step 4: Write the declaration**
 
-Create `upstream/skills.json`:
+Create `skills.json`:
 
 ```json
 {
@@ -255,7 +255,7 @@ Expected: nine `PASS` lines, exit 0.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add upstream/skills.json tests/test-skills-pin.sh
+git add skills.json tests/test-skills-pin.sh
 git commit -m "$(cat <<'EOF'
 Declare the skills.sh set at a pinned ref
 
@@ -953,7 +953,7 @@ EOF
 
 **Interfaces:**
 
-- Consumes: `upstream/skills.json` from Task 1.
+- Consumes: `skills.json` from Task 1.
 - Produces, for Tasks 5 to 9 to build on:
   - Reporting helpers `ok "msg"`, `bad "msg"` (increments `FAILURES`) and `die "msg"` (exit 2). The other three are staged like the variables, added by the task that first calls them: `did` in Task 5, `skip` in Task 6, `note` in Task 9.
   - `applying` — true in apply mode, false in check mode.
@@ -1030,7 +1030,7 @@ Expected: `FAIL: bin/setup missing or not executable`, exit 1.
 # machine:
 #   .claude-plugin/marketplace.json   the curated superpowers entry: sha,
 #                                     version, and the thirteen skill names
-#   upstream/skills.json              the skills.sh set: repo, ref, names
+#   skills.json                       the skills.sh set: repo, ref, names
 #
 # The machine is reached through HOME and CODEX_HOME and nothing else, so a
 # scratch home is a complete test fixture.
@@ -1042,7 +1042,7 @@ set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 MARKETPLACE="$REPO_ROOT/.claude-plugin/marketplace.json"
-SKILLS_JSON="$REPO_ROOT/upstream/skills.json"
+SKILLS_JSON="$REPO_ROOT/skills.json"
 
 # Each later task adds the variables its own checks need, beside them, rather
 # than here: a variable declared before anything reads it is a shellcheck
@@ -1301,7 +1301,7 @@ jq '{version: 3,
      skills: (reduce (.sources[] as $s | $s.skills[] |
        {key: ., value: {source: $s.repo, ref: $s.ref}}) as $e ({}; . + {($e.key): $e.value})),
      dismissed: {}}' \
-  "$REPO_ROOT/upstream/skills.json" > "$H/.agents/.skill-lock.json" \
+  "$REPO_ROOT/skills.json" > "$H/.agents/.skill-lock.json" \
   || fail "could not synthesise a pinned lockfile"
 
 env HOME="$H" CODEX_HOME="$H/.codex" PATH="$BIN" /bin/bash "$SETUP" >/dev/null 2>&1 || true
@@ -1856,7 +1856,7 @@ Measured 2026-09-05 in a scratch `HOME`: `npx skills add "mattpocock/skills#v1.2
 
 **Interfaces:**
 
-- Consumes: `upstream/skills.json` (Task 1), Task 4's helpers.
+- Consumes: `skills.json` (Task 1), Task 4's helpers.
 - Produces: the completed five-fault fixture that gate S2 mirrors.
 
 - [ ] **Step 1: Write the failing assertion**
@@ -2375,7 +2375,7 @@ The two Codex constants were verified on 2026-09-05 at both `rust-v0.147.0` and 
 
 **Interfaces:**
 
-- Consumes: `.claude-plugin/marketplace.json`, `upstream/skills.json`.
+- Consumes: `.claude-plugin/marketplace.json`, `skills.json`.
 - Produces: a markdown report on stdout and exit 0 when everything matches, exit 1 when something moved, exit 2 on an error it could not interpret.
 
 - [ ] **Step 1: Extend the lint assertion**
@@ -2409,7 +2409,7 @@ set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 MARKETPLACE="$REPO_ROOT/.claude-plugin/marketplace.json"
-SKILLS_JSON="$REPO_ROOT/upstream/skills.json"
+SKILLS_JSON="$REPO_ROOT/skills.json"
 
 die() { printf 'ERROR: %s\n' "$*" >&2; exit 2; }
 DRIFT=0
@@ -2454,7 +2454,7 @@ while IFS="$(printf '\t')" read -r repo ref; do
   if [ "$newest" = "$ref" ]; then
     report "- \`$repo\` pinned at \`$ref\`, the newest tag."
   else
-    report "- \`$repo\` pinned at \`$ref\`; newest tag is \`$newest\`. Bump by editing \`upstream/skills.json\`."
+    report "- \`$repo\` pinned at \`$ref\`; newest tag is \`$newest\`. Bump by editing \`skills.json\`."
     DRIFT=1
   fi
 done < <(jq -r '.sources[] | [.repo, .ref] | @tsv' "$SKILLS_JSON")
@@ -2914,14 +2914,14 @@ git push origin main
 File an issue for anything this plan deliberately left open, and note it in the spec's §16 rather than in a report that gets deleted:
 
 - Whether the twenty-odd redundant `~/.codex/skills` links are removed — sub-project 5's call ([issue #10](https://github.com/eranroseman/agent-plugins/issues/10)); the doctor now reports them.
-- Whether `setup-matt-pocock-skills` stays out of `upstream/skills.json` (Deviation D1), and whether the pre-existing skills.sh copy on this machine is removed with `npx skills remove setup-matt-pocock-skills -g`.
+- Whether `setup-matt-pocock-skills` stays out of `skills.json` (Deviation D1), and whether the pre-existing skills.sh copy on this machine is removed with `npx skills remove setup-matt-pocock-skills -g`.
 - Gate S3's outcome, if it is still pending when the branch closes.
 
 ---
 
 ## Self-Review
 
-**Spec coverage.** §4.1 disposition of both global files → Tasks 12 and 13. §5 declarations → Task 1 (`upstream/skills.json`), with the `superpowers` entry unchanged. §6 upstream watch → Task 11. §7.1 bootstrap and the stale-clone rule → Tasks 4, 9, 10. §7.2 prerequisites → Task 4. §7.3 what it applies (Claude, Codex, clone, symlinks, skills.sh) → Tasks 5 to 8. §7.4 prohibitions → Global Constraints, enforced in Tasks 5 to 7. §7.5 what it cannot do → the README's closing note in Task 10. §7.6 telemetry → Task 9's report and Task 10's README paragraph. §8 scaffolding and the 0.4.0 bump → Task 2. §9 update path → Task 10's Update sections and the plugin README's auto-update steps. §10 bumping a pin → Task 3. §11 static checks → Tasks 1, 2, 4, 5, 8, 9, 10 (all six bullets: skills pin, CI end-to-end, shellcheck plus five faults, vendored scaffolder drift, the hook frame read from the clone, README ↔ `--help`). §13 gates → Task 13.
+**Spec coverage.** §4.1 disposition of both global files → Tasks 12 and 13. §5 declarations → Task 1 (`skills.json`), with the `superpowers` entry unchanged. §6 upstream watch → Task 11. §7.1 bootstrap and the stale-clone rule → Tasks 4, 9, 10. §7.2 prerequisites → Task 4. §7.3 what it applies (Claude, Codex, clone, symlinks, skills.sh) → Tasks 5 to 8. §7.4 prohibitions → Global Constraints, enforced in Tasks 5 to 7. §7.5 what it cannot do → the README's closing note in Task 10. §7.6 telemetry → Task 9's report and Task 10's README paragraph. §8 scaffolding and the 0.4.0 bump → Task 2. §9 update path → Task 10's Update sections and the plugin README's auto-update steps. §10 bumping a pin → Task 3. §11 static checks → Tasks 1, 2, 4, 5, 8, 9, 10 (all six bullets: skills pin, CI end-to-end, shellcheck plus five faults, vendored scaffolder drift, the hook frame read from the clone, README ↔ `--help`). §13 gates → Task 13.
 
 Three spec sentences are deliberately not implemented as written, each recorded as a deviation above: the eighteenth mattpocock skill (D1), the "six files" count (D2), and — discovered by running both validators against the vendored tree — the clean Codex validator pass, which becomes one recorded exception rather than a weakened invocation gate (D7).
 
@@ -2933,7 +2933,7 @@ Three spec sentences are deliberately not implemented as written, each recorded 
 
 ## Plan executed, 2026-09-06
 
-Merged to `main` at `aedbac7`, twenty commits, CI green. Twelve tests pass and `shellcheck` is clean on all four scripts. Shipped: `bin/setup` and `bin/doctor`, `bin/bump-superpowers`, `bin/upstream-watch` and its scheduled workflow, `upstream/skills.json`, the vendored scaffolder at 0.4.0, both READMEs rewritten and held to `--help` by a drift test, and five new test files.
+Merged to `main` at `aedbac7`, twenty commits, CI green. Twelve tests pass and `shellcheck` is clean on all four scripts. Shipped: `bin/setup` and `bin/doctor`, `bin/bump-superpowers`, `bin/upstream-watch` and its scheduled workflow, `skills.json`, the vendored scaffolder at 0.4.0, both READMEs rewritten and held to `--help` by a drift test, and five new test files.
 
 **One place this document diverges from what shipped, deliberately.** The Global Constraints line above records `mattpocock/skills` v1.2.3 as `835450ef…` and `obra/superpowers-developing-for-claude-code` v0.3.1 as `aa900d59…`. Both are annotated-tag objects, not commits. The shipped artifacts use the peeled commits, `6acc160e…` and `74afe935…`, keeping the tag objects separately for the `ls-remote` assertion. The narrative was left uncorrected on purpose: every fix in the review record is anchored to a line number here, and editing the body would have invalidated all of them while execution was still running. It is recorded rather than silently wrong.
 
