@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared helpers for tests/test-*.sh and bin/format. Source this file; do not execute it.
+# Shared helpers for tests/test-*.sh and scripts/format. Source this file; do not execute it.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -143,8 +143,8 @@ checked_shell() {
   done < <(checked "$@")
 }
 
-# shfmt's flags, read by tests/test-format-shell.sh and bin/format (spec
+# shfmt's flags, read by tests/test-format-shell.sh and scripts/format (spec
 # §8.1): the set measured closest to the code as written, 17 files and 272
 # lines at aa8e78d; -sr was dropped because it restyled a further 140 lines.
-# shellcheck disable=SC2034  # read by the test and by bin/format
+# shellcheck disable=SC2034  # read by the test and by scripts/format
 SHFMT_FLAGS=(-i 2 -ci -bn)

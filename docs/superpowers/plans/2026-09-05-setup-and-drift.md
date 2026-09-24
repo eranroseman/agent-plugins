@@ -42,7 +42,7 @@ These are not predictions. Each was run on 2026-09-05 against the real upstreams
 - The payload recipe and the brainstorming re-vendor recipe, each reproducing the shipped file byte-for-byte.
 - Both validators against a plugin tree carrying the vendored scaffolder, which is how Deviation D7 was found rather than guessed.
 - The adapted `SKILL.md` built by Task 2's Steps 3 to 6, with Task 2's drift test run against it: it passes, and the Codex-validator exception matches exactly one bullet.
-- `bin/setup` assembled from Tasks 4 to 9 (475 lines), plus `bin/doctor`, `bin/bump-superpowers` and `bin/upstream-watch`: `bash -n` and `shellcheck` clean on all four.
+- `bin/setup` assembled from Tasks 4 to 9 (475 lines), plus `bin/doctor`, `scripts/bump-superpowers` and `scripts/upstream-watch`: `bash -n` and `shellcheck` clean on all four.
 - `tests/test-setup-doctor.sh` with every task's additions, and `tests/test-doctor-faults.sh` with all five faults, run against that assembled engine in a scratch repository: both exit 0, and the fault fixture repairs the links it is supposed to.
 
 Two defects were found that way and are already fixed in the text below: `readlink -f` canonicalises a _dangling_ link rather than returning empty, so dangling detection uses `[ -e ]` on the link; and the fault fixture's restricted `PATH` has to carry `rm`, `mv`, `ln` and `mkdir`, or a repair fails for the wrong reason.
@@ -111,9 +111,9 @@ One important and eleven minor, each with its location and fix, are listed in th
 ```text
 bin/setup                        Tasks 4-9: the engine. Modes, prerequisites, declarations, ensure_* checks
 bin/doctor                       Task 4: three lines, exec bin/setup --check
-bin/bump-superpowers             Task 3: sha bump; owns the payload build recipe
-bin/upstream-watch               Task 11: pin comparison, run by the workflow, runnable by hand
-skills.json                       Task 1: the skills.sh declaration
+scripts/bump-superpowers         Task 3: sha bump; owns the payload build recipe
+scripts/upstream-watch           Task 11: pin comparison, run by the workflow, runnable by hand
+skills.json                      Task 1: the skills.sh declaration
 plugins/software-development/
 ├── .claude-plugin/plugin.json   Task 2: version 0.4.0
 ├── .codex-plugin/plugin.json    Task 2: version 0.4.0
@@ -687,7 +687,7 @@ EOF
 
 ---
 
-### Task 3: Give the payload one build recipe, in `bin/bump-superpowers`
+### Task 3: Give the payload one build recipe, in `scripts/bump-superpowers`
 
 Today the recipe that turns upstream's `using-superpowers` into `hooks/using-superpowers.md` exists only inside `tests/test-hook.sh`, and it transcribes upstream's `<EXTREMELY_IMPORTANT>` frame rather than reading it. A bump that changed the frame would leave the suite green while the injection diverged (§10). This task moves the recipe into the bump script and makes the test call it.
 
@@ -695,13 +695,13 @@ The extraction was verified on 2026-09-05 against the current `using-superpowers
 
 **Files:**
 
-- Create: `bin/bump-superpowers`
+- Create: `scripts/bump-superpowers`
 - Modify: `tests/test-hook.sh` (section `(1) payload exactness`)
 
 **Interfaces:**
 
 - Consumes: `tests/lib.sh`'s `fetch_upstream` and `upstream_sha` (unchanged).
-- Produces: `bin/bump-superpowers --emit-using-superpowers <clone-dir>`, which prints the payload to stdout and is the only copy of the recipe. Task 4's `tests/test-setup-doctor.sh` shellchecks this file too.
+- Produces: `scripts/bump-superpowers --emit-using-superpowers <clone-dir>`, which prints the payload to stdout and is the only copy of the recipe. Task 4's `tests/test-setup-doctor.sh` shellchecks this file too.
 
 - [ ] **Step 1: Write the failing assertion**
 
@@ -709,15 +709,15 @@ In `tests/test-hook.sh`, replace the whole `# (1) payload exactness` block — f
 
 ```bash
 # (1) payload exactness. The frame is read from upstream's own hooks/session-start
-# rather than transcribed here, and the recipe lives in bin/bump-superpowers so a
+# rather than transcribed here, and the recipe lives in scripts/bump-superpowers so a
 # bump and this test cannot diverge.
 UP="$(fetch_upstream)"
 src="$UP/skills/using-superpowers/SKILL.md"
 [ "$(sed -n 30p "$src")" = '- "Let'"'"'s build X" → superpowers:brainstorming first, then implementation skills.' ] \
   || fail "upstream line 30 is not the expected superpowers:brainstorming line; re-audit the edit"
 expected="$(mktemp)"
-bash "$REPO_ROOT/bin/bump-superpowers" --emit-using-superpowers "$UP" > "$expected" \
-  || fail "bin/bump-superpowers --emit-using-superpowers failed"
+bash "$REPO_ROOT/scripts/bump-superpowers" --emit-using-superpowers "$UP" > "$expected" \
+  || fail "scripts/bump-superpowers --emit-using-superpowers failed"
 diff "$expected" "$H/using-superpowers.md" || fail "using-superpowers.md != the recipe's output for the pinned clone"
 [ "$(grep -c 'software-development:brainstorming' "$H/using-superpowers.md")" -eq 1 ] || fail "expected exactly one software-development:brainstorming"
 if grep -q 'superpowers:brainstorming' "$H/using-superpowers.md"; then fail "a superpowers:brainstorming reference survived"; fi
@@ -726,16 +726,16 @@ if grep -q 'superpowers:brainstorming' "$H/using-superpowers.md"; then fail "a s
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `bash tests/test-hook.sh`
-Expected: `FAIL: bin/bump-superpowers --emit-using-superpowers failed`, exit 1.
+Expected: `FAIL: scripts/bump-superpowers --emit-using-superpowers failed`, exit 1.
 
-- [ ] **Step 3: Write `bin/bump-superpowers`**
+- [ ] **Step 3: Write `scripts/bump-superpowers`**
 
 ```bash
 #!/usr/bin/env bash
 # Move the obra/superpowers pin to a new sha and leave the diff for review.
 #
-#   bin/bump-superpowers <sha>              apply the bump in this checkout
-#   bin/bump-superpowers --emit-using-superpowers DIR print the payload for a clone at DIR
+#   scripts/bump-superpowers <sha>              apply the bump in this checkout
+#   scripts/bump-superpowers --emit-using-superpowers DIR print the payload for a clone at DIR
 #
 # A bump moves four coupled artifacts by three mechanisms:
 #   substituted   .claude-plugin/marketplace.json source.sha, LICENSE "at commit"
@@ -797,7 +797,7 @@ case "${1:-}" in
     exit 0
     ;;
   -h|--help|"")
-    printf 'usage: bin/bump-superpowers <sha>\n       bin/bump-superpowers --emit-using-superpowers <clone-dir>\n'
+    printf 'usage: scripts/bump-superpowers <sha>\n       scripts/bump-superpowers --emit-using-superpowers <clone-dir>\n'
     [ -n "${1:-}" ] && exit 0 || exit 2
     ;;
 esac
@@ -879,7 +879,7 @@ printf 'Then run: bash tests/run.sh\n'
 Make it executable:
 
 ```bash
-chmod +x bin/bump-superpowers
+chmod +x scripts/bump-superpowers
 ```
 
 - [ ] **Step 4: Run the test to verify it passes**
@@ -894,7 +894,7 @@ Expected: the hook test's summary line, then ten `PASS` lines.
 - [ ] **Step 5: Prove the script's own output against the shipped payload**
 
 ```bash
-diff <(bash bin/bump-superpowers --emit-using-superpowers \
+diff <(bash scripts/bump-superpowers --emit-using-superpowers \
         "$HOME/.local/share/software-development/upstream/superpowers") \
      plugins/software-development/hooks/using-superpowers.md && echo "recipe reproduces using-superpowers.md"
 ```
@@ -922,13 +922,13 @@ Expected: `the re-vendor shape matches the shipped skill`. That is the same asse
 - [ ] **Step 6: Commit**
 
 ```bash
-git add bin/bump-superpowers tests/test-hook.sh
+git add scripts/bump-superpowers tests/test-hook.sh
 git commit -m "$(cat <<'EOF'
 Move the payload build recipe out of the test and into the bump script
 
 test-hook.sh transcribed upstream's EXTREMELY_IMPORTANT frame, so a bump that
 changed the frame would have left the suite green while the injection diverged.
-The recipe now lives in bin/bump-superpowers, reads the frame out of upstream's
+The recipe now lives in scripts/bump-superpowers, reads the frame out of upstream's
 own hooks/session-start, and the test calls the script rather than repeating it.
 
 The script also performs the whole bump rather than half of it: the two
@@ -978,7 +978,7 @@ DOCTOR="$REPO_ROOT/bin/doctor"
 [ -x "$DOCTOR" ] || fail "bin/doctor missing or not executable"
 
 if command -v shellcheck >/dev/null 2>&1; then
-  shellcheck "$SETUP" "$DOCTOR" "$REPO_ROOT/bin/bump-superpowers" \
+  shellcheck "$SETUP" "$DOCTOR" "$REPO_ROOT/scripts/bump-superpowers" \
     || fail "shellcheck reported problems in bin/"
 else
   printf 'SKIP: shellcheck is not installed; bin/ was not linted\n'
@@ -2369,7 +2369,7 @@ The two Codex constants were verified on 2026-09-05 at both `rust-v0.147.0` and 
 
 **Files:**
 
-- Create: `bin/upstream-watch`
+- Create: `scripts/upstream-watch`
 - Create: `.github/workflows/upstream-watch.yml`
 - Modify: `tests/test-setup-doctor.sh` (shellcheck the new script)
 
@@ -2380,26 +2380,26 @@ The two Codex constants were verified on 2026-09-05 at both `rust-v0.147.0` and 
 
 - [ ] **Step 1: Extend the lint assertion**
 
-In `tests/test-setup-doctor.sh`, add `bin/upstream-watch` to the shellcheck invocation:
+In `tests/test-setup-doctor.sh`, add `scripts/upstream-watch` to the shellcheck invocation:
 
 ```bash
-  shellcheck "$SETUP" "$DOCTOR" "$REPO_ROOT/bin/bump-superpowers" \
-    "$REPO_ROOT/bin/upstream-watch" \
+  shellcheck "$SETUP" "$DOCTOR" "$REPO_ROOT/scripts/bump-superpowers" \
+    "$REPO_ROOT/scripts/upstream-watch" \
     || fail "shellcheck reported problems in bin/"
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `bash tests/test-setup-doctor.sh`
-Expected: shellcheck's `bin/upstream-watch: openBinaryFile: does not exist`, and the test's `FAIL: shellcheck reported problems in bin/`, exit 1.
+Expected: shellcheck's `scripts/upstream-watch: openBinaryFile: does not exist`, and the test's `FAIL: shellcheck reported problems in bin/`, exit 1.
 
-- [ ] **Step 3: Write `bin/upstream-watch`**
+- [ ] **Step 3: Write `scripts/upstream-watch`**
 
 ```bash
 #!/usr/bin/env bash
 # Compare this repository's declared pins against their upstreams and print a
 # markdown report. Never bumps a pin and never opens a pull request: a bump is
-# a human decision made on a branch with bin/bump-superpowers.
+# a human decision made on a branch with scripts/bump-superpowers.
 #
 #   exit 0   everything matches
 #   exit 1   something upstream moved; the report says what
@@ -2434,7 +2434,7 @@ if [ "$head_sha" = "$sha" ]; then
   report "- Pinned at \`$sha\`, which is main. Nothing to do."
 else
   report "- Pinned at \`$sha\`; main is \`$head_sha\`."
-  report "- Bump with \`bin/bump-superpowers $head_sha\`, then read the diff to"
+  report "- Bump with \`scripts/bump-superpowers $head_sha\`, then read the diff to"
   report "  \`hooks/using-superpowers.md\` and \`skills/brainstorming/\` before merging."
   DRIFT=1
 fi
@@ -2512,13 +2512,13 @@ exit 1
 ```
 
 ```bash
-chmod +x bin/upstream-watch
+chmod +x scripts/upstream-watch
 ```
 
 - [ ] **Step 4: Run the script and the lint test**
 
 ```bash
-bash bin/upstream-watch; echo "exit=$?"
+bash scripts/upstream-watch; echo "exit=$?"
 bash tests/test-setup-doctor.sh
 ```
 
@@ -2555,7 +2555,7 @@ jobs:
         id: watch
         run: |
           set +e
-          bash bin/upstream-watch > "$RUNNER_TEMP/report.md" 2>&1
+          bash scripts/upstream-watch > "$RUNNER_TEMP/report.md" 2>&1
           code=$?
           cat "$RUNNER_TEMP/report.md"
           echo "code=$code" >> "$GITHUB_OUTPUT"
@@ -2593,7 +2593,7 @@ jobs:
       - name: Fail the run if the watch itself errored
         run: |
           [ "${{ steps.watch.outputs.code }}" != "2" ] || {
-            echo "bin/upstream-watch could not complete; see the step log"
+            echo "scripts/upstream-watch could not complete; see the step log"
             exit 1
           }
 ```
@@ -2611,7 +2611,7 @@ If it already exists, `gh` says so and nothing needs doing.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add bin/upstream-watch .github/workflows/upstream-watch.yml tests/test-setup-doctor.sh
+git add scripts/upstream-watch .github/workflows/upstream-watch.yml tests/test-setup-doctor.sh
 git commit -m "$(cat <<'EOF'
 Watch both upstreams and the two Codex constants from CI
 
@@ -2927,13 +2927,13 @@ Three spec sentences are deliberately not implemented as written, each recorded 
 
 **Placeholder scan.** Every code step carries the code. The four bracketed spans that remain are all in Task 13's gate-results table, where the value is the result of a run that has not happened yet, and in the vendored skill's block template, where upstream's own bracketed instructions are quoted verbatim.
 
-**Type consistency.** `ensure_clone`, `ensure_links`, `ensure_claude`, `ensure_codex`, `ensure_skills_sh` and `report_only` are stubbed in Task 4 and filled in Tasks 5 to 9 under exactly those names. `declared_sha` and `curated_skills` (Task 5) are reused in Tasks 9 and 11 and by `tests/test-doctor-faults.sh`. `emit_using_superpowers` is reached only through `bin/bump-superpowers --emit-using-superpowers`, which is the form `tests/test-hook.sh` calls; `revendor_brainstorming` and the `DESCRIPTION` literal beside it are internal to that script, and that literal must stay identical to the `want=` string in `tests/test-vendored-brainstorming.sh`. `locked_ref` reads `.skills.<name>.ref`, the key measured on 2026-09-05. `MARKETPLACE_SOURCE` (Claude, owner/repo form) and `CODEX_MARKETPLACE_SOURCE` (Codex, git URL form) are distinct on purpose: the two CLIs take different arguments.
+**Type consistency.** `ensure_clone`, `ensure_links`, `ensure_claude`, `ensure_codex`, `ensure_skills_sh` and `report_only` are stubbed in Task 4 and filled in Tasks 5 to 9 under exactly those names. `declared_sha` and `curated_skills` (Task 5) are reused in Tasks 9 and 11 and by `tests/test-doctor-faults.sh`. `emit_using_superpowers` is reached only through `scripts/bump-superpowers --emit-using-superpowers`, which is the form `tests/test-hook.sh` calls; `revendor_brainstorming` and the `DESCRIPTION` literal beside it are internal to that script, and that literal must stay identical to the `want=` string in `tests/test-vendored-brainstorming.sh`. `locked_ref` reads `.skills.<name>.ref`, the key measured on 2026-09-05. `MARKETPLACE_SOURCE` (Claude, owner/repo form) and `CODEX_MARKETPLACE_SOURCE` (Codex, git URL form) are distinct on purpose: the two CLIs take different arguments.
 
 ---
 
 ## Plan executed, 2026-09-06
 
-Merged to `main` at `aedbac7`, twenty commits, CI green. Twelve tests pass and `shellcheck` is clean on all four scripts. Shipped: `bin/setup` and `bin/doctor`, `bin/bump-superpowers`, `bin/upstream-watch` and its scheduled workflow, `skills.json`, the vendored scaffolder at 0.4.0, both READMEs rewritten and held to `--help` by a drift test, and five new test files.
+Merged to `main` at `aedbac7`, twenty commits, CI green. Twelve tests pass and `shellcheck` is clean on all four scripts. Shipped: `bin/setup` and `bin/doctor`, `scripts/bump-superpowers`, `scripts/upstream-watch` and its scheduled workflow, `skills.json`, the vendored scaffolder at 0.4.0, both READMEs rewritten and held to `--help` by a drift test, and five new test files.
 
 **One place this document diverges from what shipped, deliberately.** The Global Constraints line above records `mattpocock/skills` v1.2.3 as `835450ef…` and `obra/superpowers-developing-for-claude-code` v0.3.1 as `aa900d59…`. Both are annotated-tag objects, not commits. The shipped artifacts use the peeled commits, `6acc160e…` and `74afe935…`, keeping the tag objects separately for the `ls-remote` assertion. The narrative was left uncorrected on purpose: every fix in the review record is anchored to a line number here, and editing the body would have invalidated all of them while execution was still running. It is recorded rather than silently wrong.
 

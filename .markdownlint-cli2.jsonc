@@ -1,5 +1,5 @@
 {
-  // Read by tests/test-lint-markdown.sh and bin/format over the explicit
+  // Read by tests/test-lint-markdown.sh and scripts/format over the explicit
   // list tests/lib.sh derives (spec §8.1): no globs here, no ignore file.
   "config": {
     // Line length: proseWrap is preserve, so a paragraph is one line.

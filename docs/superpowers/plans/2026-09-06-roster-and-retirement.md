@@ -45,7 +45,7 @@ Measured, and load-bearing:
 - **A plugin agent is not reachable by its bare name.** `Agent(subagent_type: "cavecrew-investigator")` on this machine fails with `Agent type 'cavecrew-investigator' not found. Available agents: caveman:cavecrew-builder, caveman:cavecrew-investigator, …`. The inspector becomes `software-dev:consistency-audit-inspector` and the skill dispatches it by that name (Deviation D3).
 - **Both validators, run against the assembled plugins.** `claude plugin validate --strict` passes on `software-dev` with an `agents/` directory and on `sensemaking` with `adhd`. Codex's `validate_plugin.py` emits exactly three bullets across both: ``skill `consistency-audit` frontmatter field `disable-model-invocation` must be false``, the same for `setup-repository`, and the same for `adhd`. Task 3 and Task 5 record them.
 - **The prototype `bin/doctor` on this machine**, non-OK lines, before any machine change: four `FAIL:` lines that are exactly the not-yet-converged state (the `writing-clearly-and-concisely` clone, its link target, its plugin, and the marketplace clone being behind origin), and these `NOTE:` lines: the telemetry variable, auto-update, the eighteen redundant Codex links, `Claude: skill brainstorming resolves to 2 different trees: …/cache/eranroseman/superpowers/6.3.0/brainstorming (74edf03ea6d2), …/cache/eranroseman/software-dev/0.6.0/skills/brainstorming (4a2033c06acf)`, `Codex: no skill name resolves to more than one tree`, and `plugin cache for an unregistered marketplace: /home/eranr/.claude/plugins/cache/superpowers-dev (left alone; remove it by hand)`. The first cut of the check, pooled across harnesses, also fired seven times on `caveman`, whose Claude copy is a pinned 2026-08-10 cache and whose Codex copy tracks upstream `main`; that is Deviation D7's evidence.
-- **The prototype `bin/upstream-watch`**, run live with the third skills.sh source declared: every pin reported current, `tt-a1i/archify` at `v2.16.0` "the newest tag", exit 0. The old filter, fed archify's real tag list plus `v2.17.0-dev.1`, picks the dev tag; the new one picks `v2.16.0`. Through the new filter `mattpocock/skills` → `v1.2.3`, `obra/superpowers-developing-for-claude-code` → `v0.3.1`, `obra/superpowers` → `v6.3.0`.
+- **The prototype `scripts/upstream-watch`**, run live with the third skills.sh source declared: every pin reported current, `tt-a1i/archify` at `v2.16.0` "the newest tag", exit 0. The old filter, fed archify's real tag list plus `v2.17.0-dev.1`, picks the dev tag; the new one picks `v2.16.0`. Through the new filter `mattpocock/skills` → `v1.2.3`, `obra/superpowers-developing-for-claude-code` → `v0.3.1`, `obra/superpowers` → `v6.3.0`.
 - **`UditAkhourii/adhd`'s tag `v0.1.4` is not the text the spec read.** The tag dates from 2026-05-30 and its `SKILL.md` carries a nineteen-line "When to trigger (summary)" section that `HEAD` (`16dc239`, 2026-08-29) has dropped; the plugin manifest arrived at `3d9dc48` on 2026-08-05, after the tag. The spec's quotations match `HEAD`.
 - **`dist/plugins/writing-clearly-and-concisely/skills/writing-clearly-and-concisely` equals `skills/writing-clearly-and-concisely`** at `3027f20f3181`, `diff -r` clean, eight files. Upstream ships no plugin manifest under `dist/` and no version anywhere.
 - **`git ls-remote --tags <repo> 'refs/tags/v1.2.3^{}'`** prints the peeled commit on its own line, so a test can assert a tag still peels to a recorded sha without a fetch.
@@ -64,7 +64,7 @@ Visible choices, not silent ones. Each names what changes if it is vetoed.
 - **D6. Duplicate findings and unregistered caches are `NOTE:` lines.** A `FAIL:` would make "`bin/doctor` reports clean" unreachable: §6.6 itself names the vendored `brainstorming` against upstream's copy as a survivor "by design". So the check reports and the gate in Task 12 enumerates the exact `NOTE:` lines a correct machine prints and rejects any other. Veto: make them `FAIL:` and teach the check to read each marketplace entry's `skills` allowlist so the by-design pair is excluded.
 - **D7. Pools are per harness.** §6.6 says "one name resolving to two different trees"; the first implementation pooled both harnesses and fired seven times on `caveman`, whose two copies are different upstream versions — a different, milder thing than the D1 incident, where one session held two skills under one name. The Claude pool is `~/.claude/skills`, `~/.agents/skills` and each Claude plugin's install path; the Codex pool is `~/.codex/skills`, `~/.agents/skills` and each Codex plugin's cache directory. Veto: one pool, and seven standing notes on this machine.
 - **D8. The unregistered-cache rule is Claude-only.** §6.6 measured it on Claude. Codex's cache holds `openai-curated-remote`, which no `codex plugin marketplace list` line names and which is the CLI's own; the rule would misfire there on every machine. Veto: extend it to Codex with an allowlist for the built-in pair.
-- **D9. `bin/upstream-watch` watches every `git-subdir` entry, and gains a `--newest-stable-tag` mode.** The spec asks only that the prerelease filter widen. A second curated entry is a second declared pin, and sub-project 2 §6 says the watch "compares the declared pins"; leaving one out would be the one silent gap. The stdin mode exists so the filter is asserted in `tests/test-setup-doctor.sh` without the network. Veto: hardcode superpowers and drop the mode.
+- **D9. `scripts/upstream-watch` watches every `git-subdir` entry, and gains a `--newest-stable-tag` mode.** The spec asks only that the prerelease filter widen. A second curated entry is a second declared pin, and sub-project 2 §6 says the watch "compares the declared pins"; leaving one out would be the one silent gap. The stdin mode exists so the filter is asserted in `tests/test-setup-doctor.sh` without the network. Veto: hardcode superpowers and drop the mode.
 - **D10. The `setup-matt-pocock-skills` note in `report_only` stays.** §6.6 reads as if the derived check replaces it; it cannot, because that case is a rename and a by-name check never sees it.
 - **D11. `harness-backup`'s historical spec is archived to `docs/archive/2026-08-08-harness-update-design.md` in this repository**, with a two-line provenance note, because this repository holds the mechanisms that replaced the detector it designed. §8.2 says "archived" and names no destination. Veto: research-vault's `docs/`.
 - **D12. `adhd`'s description is rewritten here.** §6.2 gates it and §6.5 says the truncation is "fixed incidentally" for skills adapted anyway. The text in Global Constraints describes and never triggers: it drops "brainstorm/ideate intents", "open-ended design, architecture" and "fuzzy-debugging decisions", the three claims that collide with `software-dev:brainstorming` and `systematic-debugging`.
@@ -95,7 +95,7 @@ plugins/software-dev/
 .claude-plugin/marketplace.json              Tasks 8, 11: the curated writing entry; descriptions
 skills.json                                  Task 7: a third source, archify
 bin/setup                                    Tasks 9, 10: curated-entry loops; the duplicate check
-bin/upstream-watch                           Task 7: the stable-tag filter; every curated entry
+scripts/upstream-watch                       Task 7: the stable-tag filter; every curated entry
 README.md                                    Task 11: four entries, the Checks list
 docs/superpowers/specs/2026-09-06-…-design.md  Tasks 1, 12, 15: §10 step 5; gate results
 docs/archive/2026-08-08-harness-update-design.md  Task 14: archived from harness-backup
@@ -1145,14 +1145,14 @@ EOF
 
 - Modify: `skills.json` (a third source)
 - Modify: `tests/test-skills-pin.sh` (18 → 19)
-- Modify: `bin/upstream-watch` (the stable-tag filter, the `--newest-stable-tag` mode, every curated entry)
+- Modify: `scripts/upstream-watch` (the stable-tag filter, the `--newest-stable-tag` mode, every curated entry)
 - Modify: `tests/test-setup-doctor.sh` (the filter assertion)
 - Modify: `plugins/software-dev/README.md` (the `## Environment` section)
 
 **Interfaces:**
 
 - Consumes: nothing.
-- Produces: `bin/upstream-watch --newest-stable-tag` reading tag names on stdin and printing the newest stable one; the curated-entry loop Task 8's second entry will be picked up by.
+- Produces: `scripts/upstream-watch --newest-stable-tag` reading tag names on stdin and printing the newest stable one; the curated-entry loop Task 8's second entry will be picked up by.
 
 - [ ] **Step 1: Make the pin test demand nineteen**
 
@@ -1204,7 +1204,7 @@ In `tests/test-setup-doctor.sh`, inside the `if command -v shellcheck` branch, d
   # upstream-watch's tag filter, with no network: the newest stable release
   # wins over a prerelease, a -dev build, and a parallel tag series.
   got="$(printf '%s\n' archify-dsh-v0.1.0 v2.16.0 v2.17.0-dev.1 v2.16.1-rc.1 v2.16.0-beta v2.15.0 \
-    | bash "$REPO_ROOT/bin/upstream-watch" --newest-stable-tag)"
+    | bash "$REPO_ROOT/scripts/upstream-watch" --newest-stable-tag)"
   [ "$got" = "v2.16.0" ] || fail "upstream-watch --newest-stable-tag picked '$got', expected v2.16.0"
 ```
 
@@ -1213,7 +1213,7 @@ Expected: `FAIL: upstream-watch --newest-stable-tag picked '<the last line of a 
 
 - [ ] **Step 4: Widen the filter and watch every curated entry**
 
-In `bin/upstream-watch`, directly after the line `report() { printf '%s\n' "$*"; }`, insert:
+In `scripts/upstream-watch`, directly after the line `report() { printf '%s\n' "$*"; }`, insert:
 
 ```bash
 # Stable release tags only, from tag names on stdin: v1.2.3 or 1.2.3 with
@@ -1249,7 +1249,7 @@ while IFS="$(printf '\t')" read -r name url ref sha; do
   else
     report "- Pinned at \`$sha\`; $ref is \`$head_sha\`."
     if [ "$name" = superpowers ]; then
-      report "- Bump with \`bin/bump-superpowers $head_sha\`, then read the diff to"
+      report "- Bump with \`scripts/bump-superpowers $head_sha\`, then read the diff to"
       report "  \`hooks/using-superpowers.md\` and \`skills/brainstorming/\` before merging."
     else
       report "- Bump by editing \`.claude-plugin/marketplace.json\`: move \`sha\` and \`version\` together, then update the pinned pair in \`tests/test-curated-$name.sh\`."
@@ -1281,7 +1281,7 @@ with
 
 The `openai/codex` section keeps its own `rust-v0.*` pattern and filter; its tag shape is different and was not the problem.
 
-Run: `shellcheck bin/upstream-watch && bash tests/test-setup-doctor.sh && bash bin/upstream-watch`
+Run: `shellcheck scripts/upstream-watch && bash tests/test-setup-doctor.sh && bash scripts/upstream-watch`
 Expected: shellcheck silent; `setup-doctor: two entry points, lint clean, prerequisites split as documented`; then a report whose `### superpowers (https://github.com/obra/superpowers.git)` section reads `Pinned at … which is main. Nothing to do.` and `Latest upstream tag:`v6.3.0`.`, whose skills.sh section lists all three sources `pinned at …, the newest tag.` including `` `tt-a1i/archify` pinned at `v2.16.0`, the newest tag. ``, and which ends `Everything matches. No action.`, exit 0.
 
 - [ ] **Step 5: Document the update check and the variable**
@@ -1313,7 +1313,7 @@ Expected: passes as before.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add skills.json tests/test-skills-pin.sh bin/upstream-watch tests/test-setup-doctor.sh plugins/software-dev/README.md
+git add skills.json tests/test-skills-pin.sh scripts/upstream-watch tests/test-setup-doctor.sh plugins/software-dev/README.md
 git commit -m "$(cat <<'EOF'
 Adopt archify through skills.sh, pinned at v2.16.0
 

@@ -1,6 +1,6 @@
-# Read by tests/test-format-prettier.sh and bin/format over the explicit file
-# lists tests/lib.sh derives (spec §8.1). No .prettierignore: the list is the
-# scope, and an ignore file would restate the vendored set a second time.
+# Read by tests/test-format-prettier.sh and scripts/format over the explicit
+# file lists tests/lib.sh derives (spec §8.1). No .prettierignore: the list is
+# the scope, and an ignore file would restate the vendored set a second time.
 
 # tests/test-vendored-scaffolder.sh holds two sections of AGENTS.md
 # byte-identical to a block inside the vendored setup-repository/SKILL.md,

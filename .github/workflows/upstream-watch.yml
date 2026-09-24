@@ -34,7 +34,7 @@ jobs:
         id: watch
         run: |
           set +e
-          bash bin/upstream-watch > "$RUNNER_TEMP/report.md" 2>&1
+          bash scripts/upstream-watch > "$RUNNER_TEMP/report.md" 2>&1
           code=$?
           cat "$RUNNER_TEMP/report.md"
           echo "code=$code" >> "$GITHUB_OUTPUT"
@@ -72,6 +72,6 @@ jobs:
       - name: Fail the run if the watch itself errored
         run: |
           [ "${{ steps.watch.outputs.code }}" != "2" ] || {
-            echo "bin/upstream-watch could not complete; see the step log"
+            echo "scripts/upstream-watch could not complete; see the step log"
             exit 1
           }

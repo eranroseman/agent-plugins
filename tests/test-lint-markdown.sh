@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Every markdown file this repository owns passes markdownlint-cli2 under
 # .markdownlint-cli2.jsonc (spec §8). Formatter first, then linter: prettier
-# retires most findings free, and bin/format runs --fix for the rest it can;
+# retires most findings free, and scripts/format runs --fix for the rest it can;
 # what remains -- a fence with no language, a heading style -- is fixed by
 # hand once.
 # needs: markdownlint-cli2

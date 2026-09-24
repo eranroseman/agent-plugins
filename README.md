@@ -104,7 +104,7 @@ validator `codex-cli` installs, or a copy fetched by the recipe in
 pin and drift checks fetch from GitHub; offline, they fail rather than skip.
 
 Every run writes `tests/results.tsv`, one row per check under a header naming
-the commit; a report cites that file rather than pasting output. `bin/format`
-rewrites what the format checks check. CI runs the same script with
-`--no-skip`, so nothing is skipped there, uploads the result file as an
-artifact, and runs `bin/setup` end to end against a scratch `HOME`.
+the commit; a report cites that file rather than pasting output.
+`scripts/format` rewrites what the format checks check. CI runs the same
+script with `--no-skip`, so nothing is skipped there, uploads the result file
+as an artifact, and runs `bin/setup` end to end against a scratch `HOME`.

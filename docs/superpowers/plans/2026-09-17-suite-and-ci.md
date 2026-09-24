@@ -4,7 +4,7 @@
 
 **Goal:** Close every way `tests/run.sh` or `bin/doctor` can pass for the wrong reason, then build the substrate that keeps it closed: one ownership derivation, one prerequisite gate with declared needs and a result file, an engine that cannot fall silent, pinned formatters and linters over the files we own, least-privilege CI with pinned inputs, and a README Checks section that describes the suite as it stands.
 
-**Architecture:** Every list of "the files we own" comes from one function in `tests/lib.sh` over `git ls-files`, minus six vendored patterns each paired with the drift test that guards it. `tests/run.sh` holds three things hard (`bash` 4, `jq`, `git`), reads a `# needs:` line from each test's header, probes each need once, skips an unmet one (or fails it under `--no-skip`, which CI runs), and writes `tests/results.tsv` for reports to cite. `bin/setup` counts every report line and brackets every check, so a check that prints nothing is a `FAIL:`; four tab-IFS `read` loops become parameter-expansion splits; both scripts stop calling `dirname`. Milestone 2 adds four configuration files, a version registry, `bin/format`, six one-tool tests, sha-pinned actions with `permissions:` and `persist-credentials: false`, and a CI step that installs exactly the registry's versions ahead of the image's own.
+**Architecture:** Every list of "the files we own" comes from one function in `tests/lib.sh` over `git ls-files`, minus six vendored patterns each paired with the drift test that guards it. `tests/run.sh` holds three things hard (`bash` 4, `jq`, `git`), reads a `# needs:` line from each test's header, probes each need once, skips an unmet one (or fails it under `--no-skip`, which CI runs), and writes `tests/results.tsv` for reports to cite. `bin/setup` counts every report line and brackets every check, so a check that prints nothing is a `FAIL:`; four tab-IFS `read` loops become parameter-expansion splits; both scripts stop calling `dirname`. Milestone 2 adds four configuration files, a version registry, `scripts/format`, six one-tool tests, sha-pinned actions with `permissions:` and `persist-credentials: false`, and a CI step that installs exactly the registry's versions ahead of the image's own.
 
 **Tech Stack:** bash (no `set -e` in the engine; `set -euo pipefail` in the tests), jq, git, `sha256sum`, shellcheck 0.9.0, actionlint 1.7.12, shfmt 3.14.1, prettier 3.9.6, markdownlint-cli2 0.23.2, cspell 10.2.2, Claude Code CLI 2.1.220 (CI) / 2.1.273 (local), codex-cli 0.147.0, GitHub Actions, `gh`.
 
@@ -29,7 +29,7 @@ Every count and exit status below was measured in this checkout or in a scratch 
 - **Tool version output.** `shellcheck --version` → `version: 0.9.0`; `actionlint -version` → `1.7.12`; `shfmt --version` → `v3.14.1`; `prettier --version` → `3.9.6`; `markdownlint-cli2 --version` → `markdownlint-cli2 v0.23.2 (markdownlint v0.41.1)`; `cspell --version` → `10.2.2`. The first dotted triple is the version in every case.
 - **Pins**, recorded in Global Constraints: the four action tag shas from `git ls-remote --tags` (`v4` and `v5` are lightweight tags on the newest patch of each major); the three release-asset sha256s from downloads, actionlint's verified against `actionlint_1.7.12_checksums.txt`, mvdan/sh v3.14.1 and shellcheck v0.9.0 publishing none; both validator sha256s from `raw.githubusercontent.com` at the pinned sha, byte-identical to the local codex-cli copies (and the md5 `validate.yml` records matches); pyyaml 6.0.3, the newest on PyPI and the version installed here.
 - **History has no merge commits**: branches land fast-forward. Commit messages carry no type prefix and end with the `Co-Authored-By` trailer.
-- **The plan's code was run before the plan was handed over.** Every fenced block was extracted and syntax-checked; the full files were shellchecked; and the tasks were applied in order to scratch copies of `55f1bcc` and their tests run: milestone 1 end to end (Tasks 1–15, 20, and the #5, #1 and #43 edits — `tests/run.sh` on the result reports `23 passed, 0 failed, 0 skipped`), and milestone 2's mechanism (Task 17 red on arrival, Task 18's `bin/format` leaving `AGENTS.md` and `working-rules.md` untouched and every engine and drift test green, the workflow hardening and install step passing `tests/test-workflows.sh` and `prettier --check`, and Task 22's dry run of the install step downloading and verifying all three binaries). Task 6's `tests/test-setup-upgrade.sh` ran against the real `claude` with `node` real and `npx` a stub, and passed in 9 seconds. Two findings from those runs shaped the plan: shellcheck's SC2317 against §6.1's wrapper (Deviation P8), and an unused loop variable in `split_tsv`.
+- **The plan's code was run before the plan was handed over.** Every fenced block was extracted and syntax-checked; the full files were shellchecked; and the tasks were applied in order to scratch copies of `55f1bcc` and their tests run: milestone 1 end to end (Tasks 1–15, 20, and the #5, #1 and #43 edits — `tests/run.sh` on the result reports `23 passed, 0 failed, 0 skipped`), and milestone 2's mechanism (Task 17 red on arrival, Task 18's `scripts/format` leaving `AGENTS.md` and `working-rules.md` untouched and every engine and drift test green, the workflow hardening and install step passing `tests/test-workflows.sh` and `prettier --check`, and Task 22's dry run of the install step downloading and verifying all three binaries). Task 6's `tests/test-setup-upgrade.sh` ran against the real `claude` with `node` real and `npx` a stub, and passed in 9 seconds. Two findings from those runs shaped the plan: shellcheck's SC2317 against §6.1's wrapper (Deviation P8), and an unused loop variable in `split_tsv`.
 
 ## Deviations decided while planning
 
@@ -91,7 +91,7 @@ Created:
 - `tests/test-lint-shell.sh` — shellcheck over the shell list, `# needs: shellcheck` (Task 5).
 - `tests/test-setup-upgrade.sh` — the upgrade path, `# needs: claude` (Task 6).
 - `tests/test-doctor-silence.sh` — the ten unreadable machines (Tasks 8, 13, 15).
-- `.prettierrc.yaml`, `.markdownlint-cli2.jsonc`, `cspell.config.yaml`, `bin/format`, `tests/test-format-shell.sh`, `tests/test-format-prettier.sh`, `tests/test-lint-markdown.sh`, `tests/test-spelling.sh` (Task 17).
+- `.prettierrc.yaml`, `.markdownlint-cli2.jsonc`, `cspell.config.yaml`, `scripts/format`, `tests/test-format-shell.sh`, `tests/test-format-prettier.sh`, `tests/test-lint-markdown.sh`, `tests/test-spelling.sh` (Task 17).
 - `tests/test-workflows.sh` (Task 21).
 
 Modified: `tests/lib.sh` (Tasks 1, 17), `tests/run.sh` (Task 4, rewritten), `.gitignore` (Task 4), `tests/test-json-wellformed.sh` (2), `tests/test-links-resolve.sh` (3), `docs/superpowers/plans/2026-09-04-session-start-hook.md` (3, three link paths), `tests/test-claude-validate.sh` (5, 11), `tests/test-codex-validate.sh` (5, 20), `tests/test-vendored-duplicates.sh` (5), `tests/test-setup-doctor.sh` (5, 8, 9 — rewritten in 9), `tests/test-doctor-faults.sh` (7, 8), `tests/test-upstream-pin.sh` and `tests/test-vendored-scaffolder.sh` (10), `tests/test-references-resolve.sh` and `tests/test-codex-marketplace.sh` (11), `tests/test-hook.sh` (11, 12), `docs/superpowers/specs/2026-09-04-session-start-hook-design.md` (12, 19), `bin/setup` (9, 13, 14, 15), `bin/doctor` (9), `tests/test-doctor-duplicates.sh` (14), 17 shell and 20 JSON/YAML/markdown files by the formatters (18), the markdown files with residual findings and the eight spelling sites (19), `.github/workflows/validate.yml` and `upstream-watch.yml` (21, 22), `README.md` (23), the four plugin manifests (24).
@@ -240,7 +240,7 @@ checked_shell() {
 }
 ```
 
-Also change lib.sh's line 2 to read: `# Shared helpers for tests/test-*.sh and bin/format. Source this file; do not execute it.`
+Also change lib.sh's line 2 to read: `# Shared helpers for tests/test-*.sh and scripts/format. Source this file; do not execute it.`
 
 - [ ] **Step 5: Run the test to verify it passes**
 
@@ -781,7 +781,7 @@ Replace lines 14–36 (`if command -v shellcheck …` through `fi`) with:
 # upstream-watch's tag filter, with no network: the newest stable release
 # wins over a prerelease, a -dev build, and a parallel tag series.
 got="$(printf '%s\n' archify-dsh-v0.1.0 v2.16.0 v2.17.0-dev.1 v2.16.1-rc.1 v2.16.0-beta v2.15.0 \
-  | bash "$REPO_ROOT/bin/upstream-watch" --newest-stable-tag)" \
+  | bash "$REPO_ROOT/scripts/upstream-watch" --newest-stable-tag)" \
   || fail "upstream-watch --newest-stable-tag failed"
 [ "$got" = "v2.16.0" ] || fail "upstream-watch --newest-stable-tag picked '$got', expected v2.16.0"
 ```
@@ -1246,7 +1246,7 @@ DOCTOR="$REPO_ROOT/bin/doctor"
 # upstream-watch's tag filter, with no network: the newest stable release
 # wins over a prerelease, a -dev build, and a parallel tag series.
 got="$(printf '%s\n' archify-dsh-v0.1.0 v2.16.0 v2.17.0-dev.1 v2.16.1-rc.1 v2.16.0-beta v2.15.0 \
-  | bash "$REPO_ROOT/bin/upstream-watch" --newest-stable-tag)" \
+  | bash "$REPO_ROOT/scripts/upstream-watch" --newest-stable-tag)" \
   || fail "upstream-watch --newest-stable-tag failed"
 [ "$got" = "v2.16.0" ] || fail "upstream-watch --newest-stable-tag picked '$got', expected v2.16.0"
 
@@ -2127,16 +2127,16 @@ If a job is red, fix forward on the branch; Gate 1 holds only when the run is gr
 
 ## Milestone 2: CI, lint, and the Checks section
 
-### Task 17: The tool mechanism — four configuration files, `bin/format`, four tests, red on arrival (§8)
+### Task 17: The tool mechanism — four configuration files, `scripts/format`, four tests, red on arrival (§8)
 
 **Files:**
 
-- Create: `.prettierrc.yaml`, `.markdownlint-cli2.jsonc`, `cspell.config.yaml`, `bin/format`, `tests/test-format-shell.sh`, `tests/test-format-prettier.sh`, `tests/test-lint-markdown.sh`, `tests/test-spelling.sh`
+- Create: `.prettierrc.yaml`, `.markdownlint-cli2.jsonc`, `cspell.config.yaml`, `scripts/format`, `tests/test-format-shell.sh`, `tests/test-format-prettier.sh`, `tests/test-lint-markdown.sh`, `tests/test-spelling.sh`
 - Modify: `tests/lib.sh` (append `SHFMT_FLAGS`)
 
 **Interfaces:**
 
-- Produces: `SHFMT_FLAGS` (bash array in `tests/lib.sh`), `bin/format` (applies shfmt, prettier, `markdownlint-cli2 --fix` over the derived lists), and the four tests, each `# needs:` one tool.
+- Produces: `SHFMT_FLAGS` (bash array in `tests/lib.sh`), `scripts/format` (applies shfmt, prettier, `markdownlint-cli2 --fix` over the derived lists), and the four tests, each `# needs:` one tool.
 
 - [ ] **Step 1: Install the six tools at the registry's versions**
 
@@ -2158,7 +2158,7 @@ Expected: `shfmt_v3.14.1_linux_amd64: OK` from `sha256sum -c`, then the six vers
 `.prettierrc.yaml`:
 
 ```yaml
-# Read by tests/test-format-prettier.sh and bin/format over the explicit file
+# Read by tests/test-format-prettier.sh and scripts/format over the explicit file
 # lists tests/lib.sh derives (spec §8.1). No .prettierignore: the list is the
 # scope, and an ignore file would restate the vendored set a second time.
 
@@ -2179,7 +2179,7 @@ embeddedLanguageFormatting: "off"
 
 ```jsonc
 {
-  // Read by tests/test-lint-markdown.sh and bin/format over the explicit
+  // Read by tests/test-lint-markdown.sh and scripts/format over the explicit
   // list tests/lib.sh derives (spec §8.1): no globs here, no ignore file.
   "config": {
     // Line length: proseWrap is preserve, so a paragraph is one line.
@@ -2231,10 +2231,10 @@ Append to `tests/lib.sh`:
 
 ```bash
 
-# shfmt's flags, read by tests/test-format-shell.sh and bin/format (spec
+# shfmt's flags, read by tests/test-format-shell.sh and scripts/format (spec
 # §8.1): the set measured closest to the code as written, 17 files and 272
 # lines at aa8e78d; -sr was dropped because it restyled a further 140 lines.
-# shellcheck disable=SC2034  # read by the test and by bin/format
+# shellcheck disable=SC2034  # read by the test and by scripts/format
 SHFMT_FLAGS=(-i 2 -ci -bn)
 ```
 
@@ -2245,7 +2245,7 @@ SHFMT_FLAGS=(-i 2 -ci -bn)
 ```bash
 #!/usr/bin/env bash
 # Every shell file this repository owns is formatted as shfmt formats it with
-# the flags tests/lib.sh declares (spec §8). bin/format applies them.
+# the flags tests/lib.sh declares (spec §8). scripts/format applies them.
 # needs: shfmt
 . "$(dirname "$0")/lib.sh"
 
@@ -2253,7 +2253,7 @@ files="$(checked_shell)"
 [ -n "$files" ] || fail "checked_shell() listed nothing; the ownership derivation went vacuous"
 cd "$REPO_ROOT" || fail "could not cd to $REPO_ROOT"
 # shellcheck disable=SC2086  # one path per word, asserted by tests/test-ownership.sh
-shfmt -d "${SHFMT_FLAGS[@]}" $files || fail "shfmt would reformat the files above; run bin/format"
+shfmt -d "${SHFMT_FLAGS[@]}" $files || fail "shfmt would reformat the files above; run scripts/format"
 printf 'format-shell: %s shell file(s) formatted\n' "$(printf '%s\n' "$files" | grep -c .)"
 ```
 
@@ -2277,7 +2277,7 @@ md="$(checked '*.md')"
 [ -n "$md" ] || fail "checked '*.md' listed nothing"
 cd "$REPO_ROOT" || fail "could not cd to $REPO_ROOT"
 # shellcheck disable=SC2086  # one path per word, asserted by tests/test-ownership.sh
-prettier --log-level warn --check $json $yaml $md || fail "prettier would reformat the files above; run bin/format"
+prettier --log-level warn --check $json $yaml $md || fail "prettier would reformat the files above; run scripts/format"
 printf 'format-prettier: %s JSON, %s YAML, %s markdown file(s) formatted\n' \
   "$(printf '%s\n' "$json" | grep -c .)" "$(printf '%s\n' "$yaml" | grep -c .)" "$(printf '%s\n' "$md" | grep -c .)"
 ```
@@ -2288,7 +2288,7 @@ printf 'format-prettier: %s JSON, %s YAML, %s markdown file(s) formatted\n' \
 #!/usr/bin/env bash
 # Every markdown file this repository owns passes markdownlint-cli2 under
 # .markdownlint-cli2.jsonc (spec §8). Formatter first, then linter: prettier
-# retires most findings free, and bin/format runs --fix for the rest it can;
+# retires most findings free, and scripts/format runs --fix for the rest it can;
 # what remains -- a fence with no language, a heading style -- is fixed by
 # hand once.
 # needs: markdownlint-cli2
@@ -2335,7 +2335,7 @@ printf 'spelling: %s markdown, %s shell and %s YAML file(s) spelled\n' \
 Run: `for t in tests/test-format-shell.sh tests/test-format-prettier.sh tests/test-lint-markdown.sh tests/test-spelling.sh; do bash "$t" >/dev/null 2>&1; echo "$t exit=$?"; done`
 Expected: `exit=1` for all four. `bash tests/test-format-shell.sh 2>&1 | grep -c '^--- '` reports 17 files; `bash tests/test-format-prettier.sh 2>&1 | grep -c '\[warn\]'` reports 20 files plus the summary line; the lint reports about 224 findings (before prettier); cspell reports the 77 markdown hits and the 58 comment hits. Counts may differ by a few on a tree with later commits; the shape is what matters.
 
-- [ ] **Step 5: Write `bin/format`**
+- [ ] **Step 5: Write `scripts/format`**
 
 ```bash
 #!/usr/bin/env bash
@@ -2349,7 +2349,7 @@ set -euo pipefail
 . "$(dirname "$0")/../tests/lib.sh"
 
 for t in shfmt prettier markdownlint-cli2; do
-  command -v "$t" >/dev/null 2>&1 || fail "bin/format needs $t on PATH; the versions are in tests/tools.txt"
+  command -v "$t" >/dev/null 2>&1 || fail "scripts/format needs $t on PATH; the versions are in tests/tools.txt"
 done
 shell="$(checked_shell)"
 [ -n "$shell" ] || fail "checked_shell() listed nothing; the ownership derivation went vacuous"
@@ -2368,14 +2368,14 @@ prettier --log-level warn --write $docs
 markdownlint-cli2 --fix $md || true
 ```
 
-Run: `chmod +x bin/format && git add .prettierrc.yaml .markdownlint-cli2.jsonc cspell.config.yaml tests/lib.sh bin/format tests/test-format-shell.sh tests/test-format-prettier.sh tests/test-lint-markdown.sh tests/test-spelling.sh && bash tests/test-ownership.sh && bash tests/test-lint-shell.sh`
-Expected: `ownership: 6 vendored pattern(s) each guarded; 86 checked file(s), 36 of them shell` (staged first, because the derivation lists tracked files: the four tests and `bin/format` join the shell list, the three configuration files join the others; one more markdown file if this plan is committed), and the lint clean over 36 files.
+Run: `chmod +x scripts/format && git add .prettierrc.yaml .markdownlint-cli2.jsonc cspell.config.yaml tests/lib.sh scripts/format tests/test-format-shell.sh tests/test-format-prettier.sh tests/test-lint-markdown.sh tests/test-spelling.sh && bash tests/test-ownership.sh && bash tests/test-lint-shell.sh`
+Expected: `ownership: 6 vendored pattern(s) each guarded; 86 checked file(s), 36 of them shell` (staged first, because the derivation lists tracked files: the four tests and `scripts/format` join the shell list, the three configuration files join the others; one more markdown file if this plan is committed), and the lint clean over 36 files.
 
 - [ ] **Step 6: Commit the mechanism, red**
 
 ```bash
-git add .prettierrc.yaml .markdownlint-cli2.jsonc cspell.config.yaml tests/lib.sh bin/format tests/test-format-shell.sh tests/test-format-prettier.sh tests/test-lint-markdown.sh tests/test-spelling.sh
-git commit -m "Add the formatters, the linters and the spell checker over the files we own" -m "Four configuration files, each carrying the reason beside the setting; the shfmt flags in tests/lib.sh; bin/format to apply; and one test per tool, each declaring its need, each over a list derived from git ls-files and asserted non-empty (spec §8, #29). The tree is not yet formatted, so this commit is red on arrival by design: the one-time reformat lands next as its own commit, verified by the suite rather than by reading the diff, and the hand corrections after it.
+git add .prettierrc.yaml .markdownlint-cli2.jsonc cspell.config.yaml tests/lib.sh scripts/format tests/test-format-shell.sh tests/test-format-prettier.sh tests/test-lint-markdown.sh tests/test-spelling.sh
+git commit -m "Add the formatters, the linters and the spell checker over the files we own" -m "Four configuration files, each carrying the reason beside the setting; the shfmt flags in tests/lib.sh; scripts/format to apply; and one test per tool, each declaring its need, each over a list derived from git ls-files and asserted non-empty (spec §8, #29). The tree is not yet formatted, so this commit is red on arrival by design: the one-time reformat lands next as its own commit, verified by the suite rather than by reading the diff, and the hand corrections after it.
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
@@ -2384,9 +2384,9 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 **Files:** every owned shell, JSON, YAML and markdown file the tools change (17 shell, about 20 others).
 
-- [ ] **Step 1: Run `bin/format`**
+- [ ] **Step 1: Run `scripts/format`**
 
-Run: `bin/format; git diff --stat | tail -n 1`
+Run: `scripts/format; git diff --stat | tail -n 1`
 Expected: about 37 files changed, roughly 1,300 lines. The markdownlint findings it cannot fix are printed and left.
 
 - [ ] **Step 2: Check the couplings §8.4 names**
@@ -2403,7 +2403,7 @@ Expected: `exit=1` with exactly two `FAIL` rows, `tests/test-lint-markdown.sh` a
 
 ```bash
 git add -u
-git commit -m "Reformat every owned file with the pinned formatters" -m "bin/format at the versions tests/tools.txt declares: shfmt -i 2 -ci -bn over the shell files, prettier with proseWrap preserve and embedded formatting off over JSON, YAML and markdown, markdownlint-cli2 --fix over markdown (spec §8.3). Mechanical, and verified by the suite rather than by reading the diff: every test passes on this tree except the two lint tests the hand corrections satisfy next. AGENTS.md and hooks/working-rules.md are byte-identical to before, which the scaffolder drift test and the hook test require.
+git commit -m "Reformat every owned file with the pinned formatters" -m "scripts/format at the versions tests/tools.txt declares: shfmt -i 2 -ci -bn over the shell files, prettier with proseWrap preserve and embedded formatting off over JSON, YAML and markdown, markdownlint-cli2 --fix over markdown (spec §8.3). Mechanical, and verified by the suite rather than by reading the diff: every test passes on this tree except the two lint tests the hand corrections satisfy next. AGENTS.md and hooks/working-rules.md are byte-identical to before, which the scaffolder drift test and the hook test require.
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ```
@@ -2438,7 +2438,7 @@ Four in the markdown scope, four in comments:
 | `plugins/sensemaking/README.md:12`                                                                                                                                                | `organisational` → `organizational`                                                                                                       |
 | `plugins/software-dev/hooks/working-rules.md:3` **and** the same line inside the fenced block under `### 4.2` of `docs/superpowers/specs/2026-09-04-session-start-hook-design.md` | `recognises` → `recognizes` (same byte length, so §4.3's figures hold; `tests/test-hook.sh` fails unless both move)                       |
 | `plugins/software-dev/skills/consistency-audit/SKILL.md:123`                                                                                                                      | `will summarise instead` → `will summarize instead`, made through `superpowers:writing-skills` because it is an edit to an authored skill |
-| `bin/bump-superpowers:13`                                                                                                                                                         | `change behaviour` → `change behavior`                                                                                                    |
+| `scripts/bump-superpowers:13`                                                                                                                                                     | `change behaviour` → `change behavior`                                                                                                    |
 | `bin/setup:256` and `:266`                                                                                                                                                        | `canonicalises` → `canonicalizes`                                                                                                         |
 | `tests/test-doctor-faults.sh` (`could not synthesise a pinned lockfile`)                                                                                                          | `synthesise` → `synthesize`                                                                                                               |
 | `.github/workflows/upstream-watch.yml:12`                                                                                                                                         | `Serialised` → `Serialized`                                                                                                               |
@@ -2801,7 +2801,7 @@ In the `validate` job, replace from `# ubuntu-latest ships shellcheck, but the l
 - [ ] **Step 2: Lint, format and run the install step locally**
 
 Run: `bash tests/test-workflows.sh && bash tests/test-format-prettier.sh`
-Expected: both success lines (actionlint lints the new `run:` block; prettier accepts the file as written — if it does not, run `bin/format` and keep its result).
+Expected: both success lines (actionlint lints the new `run:` block; prettier accepts the file as written — if it does not, run `scripts/format` and keep its result).
 
 Run the step's body by hand against a scratch directory, to catch a wrong asset name before CI does:
 
@@ -2852,7 +2852,7 @@ validator `codex-cli` installs, or a copy fetched by the recipe in
 pin and drift checks fetch from GitHub; offline, they fail rather than skip.
 
 Every run writes `tests/results.tsv`, one row per check under a header naming
-the commit; a report cites that file rather than pasting output. `bin/format`
+the commit; a report cites that file rather than pasting output. `scripts/format`
 rewrites what the format checks check. CI runs the same script with
 `--no-skip`, so nothing is skipped there, uploads the result file as an
 artifact, and runs `bin/setup` end to end against a scratch `HOME`.
@@ -2957,7 +2957,7 @@ close 8  "Decided on main at $M ($S §9.3): push stays unfiltered by branch, pul
 close 16 "Landed on main at $M ($S §6.5, §7.2): bin/setup and bin/doctor resolve their own directory by parameter expansion and the doctor execs \$BASH, so both survive an empty PATH; the refusal grep matches the refusal's own words; every capture and command in tests/test-setup-doctor.sh is guarded; the two stale comments are gone."
 close 27 "Landed on main at $M ($S §4): one derivation in tests/lib.sh over git ls-files, minus six vendored patterns each paired with its drift test, feeds every list; tests/test-json-wellformed.sh reports eight files where the hardcoded find saw seven; tests/test-ownership.sh keeps the exclusion honest."
 close 28 "Landed on main at $M ($S §9.4): tests/test-workflows.sh runs actionlint, which lints every run: block with shellcheck, and asserts beside it what actionlint cannot see: every uses: sha-pinned, permissions: at the top level, persist-credentials: false on every checkout."
-close 29 "Landed on main at $M ($S §8): shfmt, prettier, markdownlint-cli2 and cspell (en-US) over the files we own, at the versions tests/tools.txt declares, applied by bin/format and checked by one test each. The one-time reformat and the hand corrections landed as their own commits."
+close 29 "Landed on main at $M ($S §8): shfmt, prettier, markdownlint-cli2 and cspell (en-US) over the files we own, at the versions tests/tools.txt declares, applied by scripts/format and checked by one test each. The one-time reformat and the hand corrections landed as their own commits."
 close 38 "Landed on main at $M ($S §6.2): the first-entry fixture moved into tests/test-doctor-silence.sh with its comment corrected, beside a second-entry fixture for the shape only the exit status can catch."
 close 41 "Landed on main at $M ($S §6.1): ok, bad, skip and note count what they print, and every check is bracketed by a snapshot of that count and a reported() call that fails a check which printed nothing. Both rungs; the class, not the instances."
 close 42 "The repository half landed on main at $M ($S §5.4): every tests/run.sh run writes tests/results.tsv, CI uploads it, and a report cites the path. The template half -- editing or prompting the SDD skill to cite artifacts -- is declined: no skill edit and no prose rule (§12)."
@@ -2978,7 +2978,7 @@ Expected: none of 1, 3, 5, 7, 8, 16, 18, 27, 28, 29, 38, 40, 41, 42, 43 among th
 
 ## Self-review
 
-**Spec coverage.** §4 → Tasks 1–3 (`checked`, the JSON and link consumers, `test-ownership.sh`); the shellcheck consumer → Task 5; the three prettier lists, markdownlint, cspell, `bin/format` → Task 17. §5.1–5.2 → Task 4 (gate, needs, probes, `--no-skip`, the two shapes), headers → Task 5 and each new test. §5.3 → Tasks 5 (lint moved, tag assertion ungated), 6 (upgrade split), 7 (hermetic repair). §5.4 → Task 4. §6.1 → Task 15. §6.2's nine fixtures → Tasks 8 (1–7), 13 (8–9), plus fixture 10 (Deviation P2). §6.3 → Task 13. §6.4 → Task 14. §6.5 → Task 9. §7.1 → Task 11. §7.2 → Task 9 (guards, comments) and Task 6 (the block). §7.3 → Task 9. §7.4 → Task 12. §7.5 → Task 5. §7.6 → Task 10. §7.7 → Task 3. §8.1–8.4 → Tasks 17–19 (the couplings checked in Task 18 Step 2). §8.2's registry → Task 4 (Deviation P4), consumed in Tasks 17 and 22. §9.1 → Task 21. §9.2 → Task 20. §9.3 → Task 21 (no change, recorded). §9.4 → Task 21. §9.5–9.6 → Task 22. §10.1 → Task 23. §10.2 → Task 24. §11's gates → Tasks 16 and 25. §12's declines and the three deviations → recorded in Global Constraints and closed in Task 26. §14's open items are not this plan's.
+**Spec coverage.** §4 → Tasks 1–3 (`checked`, the JSON and link consumers, `test-ownership.sh`); the shellcheck consumer → Task 5; the three prettier lists, markdownlint, cspell, `scripts/format` → Task 17. §5.1–5.2 → Task 4 (gate, needs, probes, `--no-skip`, the two shapes), headers → Task 5 and each new test. §5.3 → Tasks 5 (lint moved, tag assertion ungated), 6 (upgrade split), 7 (hermetic repair). §5.4 → Task 4. §6.1 → Task 15. §6.2's nine fixtures → Tasks 8 (1–7), 13 (8–9), plus fixture 10 (Deviation P2). §6.3 → Task 13. §6.4 → Task 14. §6.5 → Task 9. §7.1 → Task 11. §7.2 → Task 9 (guards, comments) and Task 6 (the block). §7.3 → Task 9. §7.4 → Task 12. §7.5 → Task 5. §7.6 → Task 10. §7.7 → Task 3. §8.1–8.4 → Tasks 17–19 (the couplings checked in Task 18 Step 2). §8.2's registry → Task 4 (Deviation P4), consumed in Tasks 17 and 22. §9.1 → Task 21. §9.2 → Task 20. §9.3 → Task 21 (no change, recorded). §9.4 → Task 21. §9.5–9.6 → Task 22. §10.1 → Task 23. §10.2 → Task 24. §11's gates → Tasks 16 and 25. §12's declines and the three deviations → recorded in Global Constraints and closed in Task 26. §14's open items are not this plan's.
 
 **Placeholder scan.** Every code step carries its code; the two full-file rewrites (`tests/run.sh`, `tests/test-setup-doctor.sh`) and the three new fixture files are complete; the hand corrections of Task 19 list each finding by file and rule with the fix each rule takes, and the dictionary by word.
 

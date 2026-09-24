@@ -9,7 +9,7 @@ set -euo pipefail
 . "$(dirname "$0")/../tests/lib.sh"
 
 for t in shfmt prettier markdownlint-cli2; do
-  command -v "$t" >/dev/null 2>&1 || fail "bin/format needs $t on PATH; the versions are in tests/tools.txt"
+  command -v "$t" >/dev/null 2>&1 || fail "scripts/format needs $t on PATH; the versions are in tests/tools.txt"
 done
 shell="$(checked_shell)"
 [ -n "$shell" ] || fail "checked_shell() listed nothing; the ownership derivation went vacuous"

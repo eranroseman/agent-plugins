@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Move the obra/superpowers pin to a new sha and leave the diff for review.
 #
-#   bin/bump-superpowers <sha>              apply the bump in this checkout
-#   bin/bump-superpowers --emit-using-superpowers DIR print the payload for a clone at DIR
+#   scripts/bump-superpowers <sha>              apply the bump in this checkout
+#   scripts/bump-superpowers --emit-using-superpowers DIR print the payload for a clone at DIR
 #
 # A bump moves four coupled artifacts by three mechanisms:
 #   substituted   .claude-plugin/marketplace.json source.sha, LICENSE "at commit"
@@ -67,7 +67,7 @@ case "${1:-}" in
     exit 0
     ;;
   -h | --help | "")
-    printf 'usage: bin/bump-superpowers <sha>\n       bin/bump-superpowers --emit-using-superpowers <clone-dir>\n'
+    printf 'usage: scripts/bump-superpowers <sha>\n       scripts/bump-superpowers --emit-using-superpowers <clone-dir>\n'
     [ -n "${1:-}" ] && exit 0 || exit 2
     ;;
 esac

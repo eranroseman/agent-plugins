@@ -287,7 +287,7 @@ For `superpowers` a bump moves four coupled artifacts by three different mechani
 - **Regenerated from the new clone**, because they carry no sha and are coupled by content: `hooks/using-superpowers.md`, which contains no 40-character string at all and whose only build recipe currently lives inside `tests/test-hook.sh`; and `skills/brainstorming/`, re-vendored, where the sha appears only in the provenance header.
 - **Read, not written**: `version` in the marketplace entry is copied from upstream's own `.claude-plugin/plugin.json` at the new sha, which is what `test-upstream-pin.sh` already asserts.
 
-`bin/bump-superpowers <sha>` performs all three and leaves the diff for review. Two parts deserve reading rather than skimming: the vendored `brainstorming` body, because that is where upstream can change behaviour, and any change to `using-superpowers.md`, because it is the text injected into every session. Extracting the payload build recipe out of the test and into the script is part of this work, so the two cannot diverge.
+`scripts/bump-superpowers <sha>` performs all three and leaves the diff for review. Two parts deserve reading rather than skimming: the vendored `brainstorming` body, because that is where upstream can change behaviour, and any change to `using-superpowers.md`, because it is the text injected into every session. Extracting the payload build recipe out of the test and into the script is part of this work, so the two cannot diverge.
 
 For a skills.sh source it is one `ref` edit in `skills.json`.
 

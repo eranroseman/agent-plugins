@@ -52,7 +52,7 @@ Sources: **G1** and **G2** are the first and second question rounds of 2026-09-1
 | `shfmt` flags, prettier options, markdownlint rules  | `-i 2 -ci -bn`; `proseWrap: preserve`, `embeddedLanguageFormatting: off`; MD013, MD033, MD041 off                                                                       | D §3, §5.2                                                          |
 | `cspell` over comments in shell and YAML             | Yes, through an `overrides` entry, as D §3 ruled; veto drops that entry                                                                                                 | D §3                                                                |
 | `cspell` scope                                       | The checked markdown outside the three record directories under `docs/` (`superpowers`, `research`, `archive`); `docs/agents/` stays in                                 | D §3's scope, widened by two directories on the measurement in §8.1 |
-| `bin/format` as the apply script                     | Yes                                                                                                                                                                     | G1 Q8 default                                                       |
+| `scripts/format` as the apply script                 | Yes                                                                                                                                                                     | G1 Q8 default                                                       |
 | A skip in CI                                         | `tests/run.sh --no-skip` makes every unmet need a `FAIL`; CI runs with it, with the pinned binaries ahead of the image's on `PATH`                                      | this spec, from G1 Q6's "CI installs everything, so CI never skips" |
 
 ## 4. Ownership: one derivation
@@ -70,7 +70,7 @@ plugins/software-dev/skills/finding-duplicate-functions/scripts/*-prompt.md
 plugins/software-dev/hooks/using-superpowers.md
 ```
 
-Twenty-three files match at `aa8e78d`. `using-superpowers.md` is rebuilt from the pinned clone by `bin/bump-superpowers --emit-using-superpowers` and diffed by `tests/test-hook.sh`, which is the same constraint. `adhd/agents/openai.yaml` is authored here but sits inside a vendored directory; the directory is excluded whole, because the drift test's file-set assertion governs the directory and `tests/test-plugin-skills.sh` already asserts the one policy line the file exists to carry. `finding-duplicate-functions` is a fork: only its two prompt templates are upstream's, so only they are excluded.
+Twenty-three files match at `aa8e78d`. `using-superpowers.md` is rebuilt from the pinned clone by `scripts/bump-superpowers --emit-using-superpowers` and diffed by `tests/test-hook.sh`, which is the same constraint. `adhd/agents/openai.yaml` is authored here but sits inside a vendored directory; the directory is excluded whole, because the drift test's file-set assertion governs the directory and `tests/test-plugin-skills.sh` already asserts the one policy line the file exists to carry. `finding-duplicate-functions` is a fork: only its two prompt templates are upstream's, so only they are excluded.
 
 **Nothing else is excluded.** `docs/` is checked like the rest: its fifteen markdown files are formatted and linted, and spelling is scoped by directory in §8.1. The first draft of this spec carried `docs/` as a second class, to match a CI path filter that skipped docs-only pushes; the maintainer dropped the filter on 2026-09-17 (§9.3), and the class went with it. A plan is a record that freezes once executed (`a3c797f`), and formatting one changes whitespace and emphasis markers, never a sentence; §8.1 says what the one-time pass does to them.
 
@@ -83,7 +83,7 @@ checked() { git -C "$REPO_ROOT" ls-files "$@" | grep -vE "$EXCLUDED"; }
 
 `git -C "$REPO_ROOT"`, never bare: `git ls-files` is cwd-relative and `lib.sh` never changes directory. The contract is _tracked files_: a new file joins when it is staged, which is also the moment anything else in the repository notices it. The stale worktree at `.kilo/worktrees/brass-settee` holds byte-identical copies of the tree; a `find` would see them and `ls-files` does not.
 
-Consumers, each filtering by type and each asserting a non-empty list (#27's vacuity guard; `prettier --check` on a file it cannot parse exits 0, D §5.2, so an empty or wrong list is a false green): the shellcheck list and the `shfmt` list (shell by shebang), the three prettier lists (`*.json`, `*.yml` and `*.yaml`, `*.md`), `markdownlint-cli2` (`*.md`) and `cspell` (`*.md` within §8.1's scope, plus the shell and YAML lists for comments), `tests/test-json-wellformed.sh` (`*.json`, closing #27: eight files where the hardcoded `find` saw seven), `tests/test-links-resolve.sh` (`*.md`), and `bin/format`. The `*/skills/*` exclusion in the JSON check goes; no tracked JSON lives there, and the vendored patterns cover the case it guarded against.
+Consumers, each filtering by type and each asserting a non-empty list (#27's vacuity guard; `prettier --check` on a file it cannot parse exits 0, D §5.2, so an empty or wrong list is a false green): the shellcheck list and the `shfmt` list (shell by shebang), the three prettier lists (`*.json`, `*.yml` and `*.yaml`, `*.md`), `markdownlint-cli2` (`*.md`) and `cspell` (`*.md` within §8.1's scope, plus the shell and YAML lists for comments), `tests/test-json-wellformed.sh` (`*.json`, closing #27: eight files where the hardcoded `find` saw seven), `tests/test-links-resolve.sh` (`*.md`), and `scripts/format`. The `*/skills/*` exclusion in the JSON check goes; no tracked JSON lives there, and the vendored patterns cover the case it guarded against.
 
 A new `tests/test-ownership.sh` keeps the exclusion honest: every vendored pattern matches at least one tracked file, and every pattern's path is named in a `tests/test-vendored-*.sh` or in `tests/test-hook.sh`, so nothing sits in the excluded set without a drift test behind it.
 
@@ -258,7 +258,7 @@ Measured at `aa8e78d`, plus this spec, on 2026-09-17 with the candidate versions
 
 The locale is `en-US`. The prose is mixed today (`behavior` and `normalization` sit in the same skills as the four British spellings), which is the case for choosing, and everything this repository embeds is American. A spelling correction inside an authored skill is an edit to the skill and goes through `superpowers:writing-skills`, as any other skill edit does.
 
-Configuration lives in four files, each carrying the reason beside the setting: `.prettierrc.yaml` (`proseWrap: preserve` for §8.4; `embeddedLanguageFormatting: off` because fenced blocks quote other files verbatim, and the README recipes are compared byte for byte against `bin/setup --help`), `.markdownlint-cli2.jsonc` (three rules off, no globs), `cspell.json` (locale, words, the comment override; the scope lives at the call site, not here), and the `shfmt` flags in one variable in `tests/lib.sh` read by the test and by `bin/format`. No per-tool ignore file: `.prettierignore`, `.markdownlintignore` and cspell's `ignorePaths` would each restate §4's list, which is #27's defect four times over. Every tool receives explicit paths from `checked`.
+Configuration lives in four files, each carrying the reason beside the setting: `.prettierrc.yaml` (`proseWrap: preserve` for §8.4; `embeddedLanguageFormatting: off` because fenced blocks quote other files verbatim, and the README recipes are compared byte for byte against `bin/setup --help`), `.markdownlint-cli2.jsonc` (three rules off, no globs), `cspell.json` (locale, words, the comment override; the scope lives at the call site, not here), and the `shfmt` flags in one variable in `tests/lib.sh` read by the test and by `scripts/format`. No per-tool ignore file: `.prettierignore`, `.markdownlintignore` and cspell's `ignorePaths` would each restate §4's list, which is #27's defect four times over. Every tool receives explicit paths from `checked`.
 
 ### 8.2 The registry, and versions
 
@@ -280,7 +280,7 @@ The third column is filled when the plan pins the versions. `actionlint` publish
 
 The versions above are candidates, read on 2026-09-17: the three npm tools at the versions the measurement pass cached, `actionlint` and `shellcheck` at the versions installed here, `shfmt` at its newest release because no measured binary exists on this machine and apt's 3.8.0 is two years old. The registry, not this spec, is the record; the plan pins whatever the reformat commit was produced with. Locally the three npm tools install with `npm install -g` and the three binaries from their release pages; the README says so in one line and names the file (§10.1).
 
-### 8.3 Where the checks run, and `bin/format`
+### 8.3 Where the checks run, and `scripts/format`
 
 Six test files, one tool each, so a contributor lacking one tool skips one file:
 
@@ -291,7 +291,7 @@ Six test files, one tool each, so a contributor lacking one tool skips one file:
 - `tests/test-spelling.sh`: `cspell` over the markdown list and, for comments, the shell and YAML lists.
 - `tests/test-workflows.sh`: §9.4.
 
-`bin/format` applies what the first three check: `shfmt -w`, `prettier --write`, then `markdownlint-cli2 --fix`, over the same lists, sourcing `tests/lib.sh` for `checked`. No check mode of its own: the tests are the check. No pre-commit hook: the suite is the gate.
+`scripts/format` applies what the first three check: `shfmt -w`, `prettier --write`, then `markdownlint-cli2 --fix`, over the same lists, sourcing `tests/lib.sh` for `checked`. No check mode of its own: the tests are the check. No pre-commit hook: the suite is the gate.
 
 The one-time reformat lands as its own commit, separate from the mechanism, verified by the full suite rather than by reading 1,300 changed lines. The hand corrections follow in a third commit: the 67 markdownlint findings, the four spellings, the dictionary, and the three link paths of §7.7.
 
@@ -356,7 +356,7 @@ The section is rewritten to say what runs and what it needs, without counts that
 - The Codex manifest check needs `python3` with `pyyaml` and the validator that `codex-cli` installs, or a copy fetched by the recipe in `.github/workflows/validate.yml`.
 - The pin and drift checks fetch from GitHub; offline, they fail rather than skip.
 - Every run writes `tests/results.tsv`; a report cites it.
-- `bin/format` rewrites what the format checks check.
+- `scripts/format` rewrites what the format checks check.
 - CI runs the same script with `--no-skip`, so nothing is skipped there, uploads the result file, and runs `bin/setup` end to end against a scratch `HOME`.
 
 The user-facing prerequisites of `bin/setup` are already correct and do not change.
@@ -373,7 +373,7 @@ Branch `suite-and-ci` from `main`. Milestone 1 first, a gate, then milestone 2, 
 2. **The suite tells the truth.** The gate in `run.sh` with its probes and the result file; `# needs:` headers; the three splits (`test-setup-upgrade.sh`, `test-lint-shell.sh`, the hermetic repair fixture); #5's three sites; #16's guards and comments; #18's extractor; #1's assertions; #43's extraction and the spec amendments; #40's two comments.
 3. **The engine.** §6.5's `dirname`; the four loop splits; the two report-only messages; rung 1; `test-doctor-silence.sh` with its nine fixtures, taking the two blocks that move into it. Rung 2 lands before rung 1 and guards its edit to `main`.
 4. **Gate 1.** Full suite green locally with `tests/results.tsv` cited; CI green on the branch.
-5. **Tools.** The four configuration files, `tests/tools.txt`, `bin/format`, the five tool tests, the CI install step. Red on arrival. Then the reformat, one commit; then the hand corrections, one commit.
+5. **Tools.** The four configuration files, `tests/tools.txt`, `scripts/format`, the five tool tests, the CI install step. Red on arrival. Then the reformat, one commit; then the hand corrections, one commit.
 6. **CI.** Pins, `permissions:`, `persist-credentials`, `pyyaml`, `test-workflows.sh`, the artifact upload.
 7. **Checks section**, then the version bump.
 8. **Gate 2**, the same evidence as gate 1, then merge to `main` and push in the same motion.

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Compare this repository's declared pins against their upstreams and print a
 # markdown report. Never bumps a pin and never opens a pull request: a bump is
-# a human decision made on a branch with bin/bump-superpowers.
+# a human decision made on a branch with scripts/bump-superpowers.
 #
 #   exit 0   everything matches
 #   exit 1   something upstream moved; the report says what
@@ -61,7 +61,7 @@ while IFS="$(printf '\t')" read -r name url ref sha; do
   else
     report "- Pinned at \`$sha\`; $ref is \`$head_sha\`."
     if [ "$name" = superpowers ]; then
-      report "- Bump with \`bin/bump-superpowers $head_sha\`, then read the diff to"
+      report "- Bump with \`scripts/bump-superpowers $head_sha\`, then read the diff to"
       report "  \`hooks/using-superpowers.md\` and \`skills/brainstorming/\` before merging."
     else
       report "- Bump by editing \`.claude-plugin/marketplace.json\`: move \`sha\` and \`version\` together, then update the pinned pair in \`tests/test-curated-$name.sh\`."

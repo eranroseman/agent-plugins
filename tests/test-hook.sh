@@ -28,15 +28,15 @@ guards plugins/software-dev/hooks/using-superpowers.md
 
 # (1) using-superpowers.md is the recipe's output, exactly. The frame is read
 # from upstream's own hooks/session-start rather than transcribed here, and
-# the recipe lives in bin/bump-superpowers so a bump and this test cannot
+# the recipe lives in scripts/bump-superpowers so a bump and this test cannot
 # diverge.
 UP="$(fetch_upstream)"
 src="$UP/skills/using-superpowers/SKILL.md"
 [ "$(sed -n 30p "$src")" = '- "Let'"'"'s build X" → superpowers:brainstorming first, then implementation skills.' ] \
   || fail "upstream line 30 is not the expected superpowers:brainstorming line; re-audit the edit"
 expected="$(mktemp)"
-bash "$REPO_ROOT/bin/bump-superpowers" --emit-using-superpowers "$UP" >"$expected" \
-  || fail "bin/bump-superpowers --emit-using-superpowers failed"
+bash "$REPO_ROOT/scripts/bump-superpowers" --emit-using-superpowers "$UP" >"$expected" \
+  || fail "scripts/bump-superpowers --emit-using-superpowers failed"
 diff "$expected" "$H/using-superpowers.md" || fail "using-superpowers.md != the recipe's output for the pinned clone"
 [ "$(grep -c 'software-dev:brainstorming' "$H/using-superpowers.md")" -eq 1 ] || fail "expected exactly one software-dev:brainstorming"
 if grep -q 'superpowers:brainstorming' "$H/using-superpowers.md"; then fail "a superpowers:brainstorming reference survived"; fi

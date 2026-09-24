@@ -155,12 +155,12 @@ Two changes — the gate and the Codex yaml — so route 3.
 npx skills add tt-a1i/archify#v2.16.0 --skill archify -g -y
 ```
 
-`#` is the ref selector. [bin/setup:441](../../../bin/setup) has been using it since 2026-09-05. The ticket reasoned from `@`, the wrong sigil. So `archify` is an ordinary pinned source — a third entry in `skills.json` at annotated tag `v2.16.0` — and the moving-branch, release-zip and fork trilemma the ticket posed dissolves. Two of those three would have produced assets `bin/upstream-watch` and `tests/test-skills-pin.sh` cannot represent.
+`#` is the ref selector. [bin/setup:441](../../../bin/setup) has been using it since 2026-09-05. The ticket reasoned from `@`, the wrong sigil. So `archify` is an ordinary pinned source — a third entry in `skills.json` at annotated tag `v2.16.0` — and the moving-branch, release-zip and fork trilemma the ticket posed dissolves. Two of those three would have produced assets `scripts/upstream-watch` and `tests/test-skills-pin.sh` cannot represent.
 
 Three edits follow:
 
 - `tests/test-skills-pin.sh` asserts `[ "$total" -eq 18 ]`; it becomes 19.
-- `bin/upstream-watch`'s prerelease filter matches `-alpha|-beta`. `archify` uses `-dev.N` and publishes a parallel `archify-dsh-*` tag series, so an unwidened filter will pick a dev tag as "newest" and report false drift indefinitely.
+- `scripts/upstream-watch`'s prerelease filter matches `-alpha|-beta`. `archify` uses `-dev.N` and publishes a parallel `archify-dsh-*` tag series, so an unwidened filter will pick a dev tag as "newest" and report false drift indefinitely.
 - **`archify` performs a version check per invocation.** Read at the source rather than taken from the ticket, it is milder than "phones home" suggests: the skill says to run the packaged checker once and _"if the command cannot run, continue without mentioning the check"_, and _"this workflow never downloads, installs, or executes an update, and silence is never consent."_ A notification that degrades silently and cannot act on what it finds.
 
 **The disposition is a README instruction, and the ladder requires saying why.** Higher rungs, in order, and why each was not taken:

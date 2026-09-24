@@ -14,7 +14,7 @@ lenses: coverage, danger (2 finding(s))
 
 ISSUE: Task 6 Step 3's `ensure_claude` gives the Claude half only one apply verb — `claude plugin install software-development@eranroseman -y --scope user` — and `claude plugin update` appears nowhere in the plan. Measured on claude 2.1.261 against both a directory-source and a github-source marketplace: `install` on an already-installed plugin prints "already installed", exits 0, and leaves the old version on disk regardless of what the refreshed catalog declares; only `claude plugin update <plugin>@<marketplace>` moves it, and update does not cascade to dependencies. The plan's evidence bullet (line 41) measured only a fresh install in an empty scratch HOME, which is the one case where install is the right verb.
 
-On this machine (installed 0.3.0, plan declares 0.4.0), Task 13 Step 2 therefore prints a false `DID: installed software-development@eranroseman`, then `FAIL: software-development@eranroseman is 0.3.0, declared 0.4.0`; the `--- re-checking ---` pass exits 1 and Step 8's `Expected: 0.4.0` gate never opens, leaving Steps 8-13 unreachable and the machine converged on everything except the plugin. Nothing in the plan can detect this: the CI e2e job always starts from an empty HOME, and `tests/test-doctor-faults.sh` seeds installed_plugins.json with the declared versions on purpose. The shipped engine consequently cannot do the job spec §9 step 2 assigns it — re-running `bin/setup` from the refreshed clone as the Claude update path whenever auto-update is off — for any machine with an older version installed, and the same gap makes the `superpowers@eranroseman` version check (lines 1553-1560) unrepairable after any `bin/bump-superpowers` run.
+On this machine (installed 0.3.0, plan declares 0.4.0), Task 13 Step 2 therefore prints a false `DID: installed software-development@eranroseman`, then `FAIL: software-development@eranroseman is 0.3.0, declared 0.4.0`; the `--- re-checking ---` pass exits 1 and Step 8's `Expected: 0.4.0` gate never opens, leaving Steps 8-13 unreachable and the machine converged on everything except the plugin. Nothing in the plan can detect this: the CI e2e job always starts from an empty HOME, and `tests/test-doctor-faults.sh` seeds installed_plugins.json with the declared versions on purpose. The shipped engine consequently cannot do the job spec §9 step 2 assigns it — re-running `bin/setup` from the refreshed clone as the Claude update path whenever auto-update is off — for any machine with an older version installed, and the same gap makes the `superpowers@eranroseman` version check (lines 1553-1560) unrepairable after any `scripts/bump-superpowers` run.
 
 FIX: Three edits, all inside Task 6.
 
@@ -59,7 +59,7 @@ FIX: Three edits, all inside Task 6.
 
    The existing re-read and `ok`/`bad` block below it stays as written and still delivers the verdict.
 
-2. Task 6 Step 3 — give the `superpowers` check the same repair, since `bin/bump-superpowers` moves its declared `version` and update does not cascade from the parent. Replace the tail of that check with:
+2. Task 6 Step 3 — give the `superpowers` check the same repair, since `scripts/bump-superpowers` moves its declared `version` and update does not cascade from the parent. Replace the tail of that check with:
 
    ```bash
      have="$(installed_version superpowers)"

@@ -15,6 +15,6 @@ md="$(checked '*.md')"
 [ -n "$md" ] || fail "checked '*.md' listed nothing"
 cd "$REPO_ROOT" || fail "could not cd to $REPO_ROOT"
 # shellcheck disable=SC2086  # one path per word -- no whitespace, a glob character, or a quoted path, asserted by tests/test-ownership.sh
-prettier --log-level warn --check $json $yaml $md || fail "prettier would reformat the files above; run bin/format"
+prettier --log-level warn --check $json $yaml $md || fail "prettier would reformat the files above; run scripts/format"
 printf 'format-prettier: %s JSON, %s YAML, %s markdown file(s) formatted\n' \
   "$(printf '%s\n' "$json" | grep -c .)" "$(printf '%s\n' "$yaml" | grep -c .)" "$(printf '%s\n' "$md" | grep -c .)"

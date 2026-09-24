@@ -269,7 +269,7 @@ Declines, each with its home here so the workspace can close:
 - **Editing a spec's quoted manifest for #58:** a URL in a quotation is neither a term nor a path.
 - **A doctor line for superseded Claude Code versions** (#64): §11.
 - **Two specs:** milestone 4's text must use milestone 3's words and paths; two plans carry the size.
-- **Keeping `bin/format` in `bin/`:** it fails the audience rule it postdates.
+- **Keeping `bin/format` in `bin/`:** it fails the audience rule it postdates; it is `scripts/format` now.
 - **A per-file callout for `skills.json`'s formatter ownership** (#63 item 4): §18.
 - **`ubuntu-24.04` or `ubuntu-26.04`:** §14.
 - **Renaming prose only and leaving identifiers** (#26 option b): the `_Avoid_` list would need an exception, which is a rule.
@@ -296,7 +296,7 @@ Declines, each with its home here so the workspace can close:
 | actionlint 1.7.12 rejects `ubuntu-26.04` as a runner label unless `.github/actionlint.yaml` declares it                                                                                                                           | sweep, #6, run                                                               |
 | `ubuntu-latest` migrates to 26.04 from 2026-10-19                                                                                                                                                                                 | GitHub's annotation on the `61714c1` runs, quoted in #6                      |
 | `/(?<=^\|\s)#.*$/gm` excludes `insection` and `nosuchtool` and keeps trailing `# comment` text                                                                                                                                    | #62, verified                                                                |
-| `bin/format` reduced to `exit 0`: suite 29/0/0; a dropped `*.json` glob: green on a clean tree, and once a JSON file is unformatted the prettier test goes red and its prescribed remedy does nothing                             | #62, reproduced; the clean-tree half re-measured 2026-09-20                  |
+| `1dd7362:bin/format` reduced to `exit 0`: suite 29/0/0; a dropped `*.json` glob: green on a clean tree, and once a JSON file is unformatted the prettier test goes red and its prescribed remedy does nothing                     | #62, reproduced; the clean-tree half re-measured 2026-09-20                  |
 | Bash 4.0–4.3 abort on `"${arr[@]}"` with an empty array under `set -u`; 4.4 does not                                                                                                                                              | #61 M3, bash 4.3.0 built from source                                         |
 | `{ print $2; exit 0 } END { exit 1 }` runs `END` after `exit` and takes the suite down                                                                                                                                            | #61 M11, verified                                                            |
 | `printf … \| grep -q && fail` skips the assertion under `pipefail` past roughly 400–500 tracked paths                                                                                                                             | #61 M8, reproduced on a clone                                                |
