@@ -1346,7 +1346,7 @@ EOF
 
 - Modify: `.claude-plugin/marketplace.json` (a fourth entry)
 - Modify: `plugins/software-dev/.claude-plugin/plugin.json` (a third dependency)
-- Create: `tests/test-subset-writing.sh`
+- Create: `tests/test-subset-writing-clearly-and-concisely.sh`
 
 **Interfaces:**
 
@@ -1355,7 +1355,7 @@ EOF
 
 - [ ] **Step 1: Write the failing test**
 
-Create `tests/test-subset-writing.sh`:
+Create `tests/test-subset-writing-clearly-and-concisely.sh`:
 
 ```bash
 #!/usr/bin/env bash
@@ -1407,7 +1407,7 @@ printf 'curated-writing: dist == source at %s, version %s, one skill, a software
 
 - [ ] **Step 2: Run it to verify it fails**
 
-Run: `bash tests/test-subset-writing.sh`
+Run: `bash tests/test-subset-writing-clearly-and-concisely.sh`
 Expected: `FAIL: source.source must be git-subdir`, exit 1 (the entry does not exist, so every `jq` selection is empty).
 
 - [ ] **Step 3: Declare the entry and the dependency**
@@ -1448,13 +1448,13 @@ to
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
-Run: `bash tests/test-subset-writing.sh && bash tests/test-references-resolve.sh && bash tests/test-claude-validate.sh && bash tests/test-codex-marketplace.sh && bash tests/test-json-wellformed.sh`
+Run: `bash tests/test-subset-writing-clearly-and-concisely.sh && bash tests/test-references-resolve.sh && bash tests/test-claude-validate.sh && bash tests/test-codex-marketplace.sh && bash tests/test-json-wellformed.sh`
 Expected: `subset-writing: dist == source at 3027f20f3181758385a1bb8c022d4041dfb4de84, version 0.1.0, one skill, a software-dev dependency`; `references-resolve: 2 string-source path(s) resolve, 3 dependency name(s) resolve`; `✔ Validation passed` three times; `codex-marketplace: 2 local plugins, manifests match, no superpowers entry` (the new entry has an object source, so the Codex side stays at two); `json: … files well-formed`; exit 0.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add .claude-plugin/marketplace.json plugins/software-dev/.claude-plugin/plugin.json tests/test-curated-writing.sh
+git add .claude-plugin/marketplace.json plugins/software-dev/.claude-plugin/plugin.json tests/test-subset-writing-clearly-and-concisely.sh
 git commit -m "$(cat <<'EOF'
 Curate writing-clearly-and-concisely at a pinned sha
 
@@ -2250,7 +2250,7 @@ And in `## License`, replace the sentence with: ``MIT. The vendored `skills/brai
 - [ ] **Step 4: Run the whole suite**
 
 Run: `bash tests/run.sh`
-Expected: eighteen `PASS` lines — `test-claude-validate`, `test-codex-marketplace`, `test-codex-validate`, `test-subset-writing`, `test-doctor-duplicates`, `test-doctor-faults`, `test-hook`, `test-json-wellformed`, `test-plugin-skills`, `test-references-resolve`, `test-setup-doctor`, `test-skills-pin`, `test-upstream-pin`, `test-vendored-adhd`, `test-vendored-brainstorming`, `test-vendored-diagnosing-bugs`, `test-vendored-duplicates`, `test-vendored-scaffolder` — exit 0.
+Expected: eighteen `PASS` lines — `test-claude-validate`, `test-codex-marketplace`, `test-codex-validate`, `test-subset-writing-clearly-and-concisely`, `test-doctor-duplicates`, `test-doctor-faults`, `test-hook`, `test-json-wellformed`, `test-plugin-skills`, `test-references-resolve`, `test-setup-doctor`, `test-skills-pin`, `test-upstream-pin`, `test-vendored-adhd`, `test-vendored-brainstorming`, `test-vendored-diagnosing-bugs`, `test-vendored-duplicates`, `test-vendored-scaffolder` — exit 0.
 
 - [ ] **Step 5: Commit, push the branch, and watch CI**
 
