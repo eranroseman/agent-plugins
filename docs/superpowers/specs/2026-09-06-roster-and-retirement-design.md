@@ -16,7 +16,7 @@ Two survey passes read those tickets, 143 agents in total, each finding tagged V
 
 Sub-project 2 shipped the machine layer: a marketplace, two plugins, a `superpowers` subset entry, `bin/setup`, `bin/doctor`, and a repository scaffolder that has now been through four repositories. What it did not settle is **which skills exist and where each one lives**.
 
-Four first-party assets are the forcing function. `consistency-audit`, its inspector agent, `finding-duplicate-functions` and `rethink-audit` live in `~/harness-backup/claude/`, symlinked live into both harnesses. They exist nowhere else. Until they have a home, `harness-backup` cannot be deleted, and until it is deleted the two global instruction files cannot empty.
+Four first-party assets are the forcing function. `consistency-audit`, its inspector agent, `finding-duplicate-functions` and `rethink-audit` live in `~/harness-backup/claude/`, symlinked live into both CLIs. They exist nowhere else. Until they have a home, `harness-backup` cannot be deleted, and until it is deleted the two global instruction files cannot empty.
 
 ## 3. Decisions
 
@@ -67,7 +67,7 @@ It also prices `sensemaking` honestly. Eight of the eighteen would land there, s
 
 Three routes, in ascending cost:
 
-1. **skills.sh** — declared in `skills.json`, installed by `bin/setup` at a pinned ref, reaching both harnesses through `~/.agents/skills`. The name stays bare and `skillOverrides` still reaches it.
+1. **skills.sh** — declared in `skills.json`, installed by `bin/setup` at a pinned ref, reaching both CLIs through `~/.agents/skills`. The name stays bare and `skillOverrides` still reaches it.
 2. **Subset entry** — a `git-subdir` source pinned by sha, as `superpowers` is. No copy, no drift test. **Claude-only**: Codex has no subset-entry path, and its equivalent is a symlink farm `bin/setup` builds.
 3. **Vendored** — copied into a plugin, with a provenance header, a drift test, and a LICENSE notice. Namespaced `<plugin>:<name>` and dropped from `skills.json` or it installs twice.
 
@@ -125,7 +125,7 @@ Across rounds two and three the rewritten description is **0 false positives in 
 
 **Two scenarios are excluded, and both were the author's error rather than the descriptions'.** One sent 5/5 to `test-driven-development` in _both_ arms because it stated the cause was already identified, which makes writing a failing test first correct. The other — _"I've tried three different fixes and none of them helped"_ — is `systematic-debugging`'s documented territory: its body lists _"You've already tried multiple fixes"_ and _"Previous fix didn't work"_ under **Use this ESPECIALLY when**. Both expectations were written without reading the competing skill's body first, which is the check that would have caught them.
 
-**Limits of this evidence.** It measures description-based selection with the descriptions in context, not a live catalogue on either harness. Two of eighty round-three cells returned with the safety classifier unavailable; both were current-description cells and both returned a bare skill name, so the risk to the result is negligible but it is recorded rather than dropped. It is a proxy, and a strong one for the mechanism at issue — the model reads descriptions and picks — but a live confirmation on both harnesses belongs to [#23](https://github.com/eranroseman/agent-plugins/issues/23)'s campaign.
+**Limits of this evidence.** It measures description-based selection with the descriptions in context, not a live catalogue on either CLI. Two of eighty round-three cells returned with the safety classifier unavailable; both were current-description cells and both returned a bare skill name, so the risk to the result is negligible but it is recorded rather than dropped. It is a proxy, and a strong one for the mechanism at issue — the model reads descriptions and picks — but a live confirmation on both CLIs belongs to [#23](https://github.com/eranroseman/agent-plugins/issues/23)'s campaign.
 
 Option E from #60 — restructuring `systematic-debugging` into a three-path classifier — is **unexecutable** and is not adopted. That file arrives through a `git-subdir` entry pointing at unmodified upstream; nothing local can edit it without vendoring a second skill out of the subset entry.
 
@@ -206,7 +206,7 @@ That is three of three, which makes it a property of the upstream population rat
 
 Drop the **plugin**, keep skills.sh. Keeping the plugin would leave Claude with two copies and Codex with one, since skills.sh is Codex's only route.
 
-**Nothing can enforce absence.** A plugin manifest carries `dependencies` and no inverse, on either harness — Claude's keys are `author dependencies description homepage hooks keywords license name repository version`, Codex's the same shape plus `interface` and `skills`. There is no `conflicts`, no `replaces`, no `provides`. So a plugin cannot declare that installing it should remove something else, and the only available mechanism is detection.
+**Nothing can enforce absence.** A plugin manifest carries `dependencies` and no inverse, on either CLI — Claude's keys are `author dependencies description homepage hooks keywords license name repository version`, Codex's the same shape plus `interface` and `skills`. There is no `conflicts`, no `replaces`, no `provides`. So a plugin cannot declare that installing it should remove something else, and the only available mechanism is detection.
 
 This design creates three such cases: this pair, `writing-clearly-and-concisely@agent-toolkit` against the subset entry (§6.4), and `adhd` if it is ever installed from its own marketplace alongside the vendored copy. `bin/setup` already handles one, `setup-matt-pocock-skills`, as a one-off `note`.
 
@@ -286,7 +286,7 @@ The stub is a second name for an instruction already inside the file it delegate
 
 `research-vault#64` proposed a **backup-to-intent inversion**: the five copied files become repository-authored templates, `bin/setup` deploys them, and hand-editing a live file becomes drift for the doctor to catch.
 
-**That mechanism was formally declined.** Sub-project 2's §3 and §7.6 rule that neither script ever writes a configuration file by hand, on either harness. So this retirement is not #64's proposal executed; it is a deletion without a replacement, and it must be argued on its own terms.
+**That mechanism was formally declined.** Sub-project 2's §3 and §7.6 rule that neither script ever writes a configuration file by hand, on either CLI. So this retirement is not #64's proposal executed; it is a deletion without a replacement, and it must be argued on its own terms.
 
 ### 8.2 What the repository holds, sorted
 
@@ -328,7 +328,7 @@ The weekly cron is not a fallback for it. Measured 2026-09-05: since the 2026-09
 
 ## 9. Retiring `eranroseman/rethink`
 
-A published marketplace: plugin v1.0.1, two skills, a `hooks/` directory never used, registered on Claude and installed on neither harness. Its copies of `rethink` and `rethink-audit` have **diverged** from the first-party originals and lack the `agents/` directory those carry.
+A published marketplace: plugin v1.0.1, two skills, a `hooks/` directory never used, registered on Claude and installed on neither CLI. Its copies of `rethink` and `rethink-audit` have **diverged** from the first-party originals and lack the `agents/` directory those carry.
 
 `research-vault#73` ruled on this in 2026-08 and none of it was carried out. The obligations, unchanged: de-register the marketplace, delete the repository, delete the two `harness-backup` copies, apply the adaptation. Nothing is taken from it — the authoritative copies are the first-party ones in §7.
 
@@ -340,10 +340,10 @@ Migrate, prove, then delete. The gate is the only step that requires evidence ra
 2. `sensemaking`: `rethink-audit` with its reference repointed
 3. `software-dev`: `consistency-audit` + inspector minus `permissionMode`; `finding-duplicate-functions` with provenance, drift test, LICENSE notice
 4. Delete the `rethink` stub from both locations
-5. `diagnosing-bugs` vendored into `software-dev`; `adhd` vendored into `sensemaking`, user-invocable only on both harnesses, with a first-party `agents/openai.yaml`; `archify` declared in `skills.json` at `v2.16.0`; `ARCHIFY_UPDATE_CHECK_DISABLED` documented in the plugin README and not set by `bin/setup` (§6.3); `test-skills-pin.sh` count to 19; `upstream-watch`'s prerelease filter widened
+5. `diagnosing-bugs` vendored into `software-dev`; `adhd` vendored into `sensemaking`, user-invocable only on both CLIs, with a first-party `agents/openai.yaml`; `archify` declared in `skills.json` at `v2.16.0`; `ARCHIFY_UPDATE_CHECK_DISABLED` documented in the plugin README and not set by `bin/setup` (§6.3); `test-skills-pin.sh` count to 19; `upstream-watch`'s prerelease filter widened
 6. `writing-clearly-and-concisely` added as a subset entry at `dist/plugins/…`; the `agent-toolkit` install removed
 7. The `superpowers-developing-for-claude-code` plugin uninstalled
-8. **Gate.** Measured on this machine: every migrated skill loads from its plugin on both harnesses; the eight `harness-backup` symlinks are gone; `bin/doctor` reports clean; `claude plugin list` and `codex plugin list` agree with the manifests
+8. **Gate.** Measured on this machine: every migrated skill loads from its plugin on both CLIs; the eight `harness-backup` symlinks are gone; `bin/doctor` reports clean; `claude plugin list` and `codex plugin list` agree with the manifests
 9. `eranroseman/rethink`: de-register the marketplace, then delete the repository and `~/dev/rethink`
 10. `harness-backup`: remove the crontab line, close the `memoria-vault` drift issue, archive the historical spec, then delete the repository
 11. Remove the intro paragraph from `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md`. Every surviving repository now has an `AGENTS.md`, so it self-negates as sub-project 2's §4.1 predicted, and both files go empty
@@ -357,7 +357,7 @@ Executed 2026-09-06 and 2026-09-07. The gate in this section was reached and pas
 - **The release.** `software-dev` 0.7.0 and `sensemaking` 0.2.0 merged to `main` at `dd1ed5e`, with `validate` and `setup-e2e` green. `setup-e2e` built a machine from nothing and its `bin/doctor` printed `clean`.
 - **Convergence.** `bin/setup` produced exactly the seven `DID:` lines this section predicts, then `clean`, exit 0.
 - **The gate.** `bin/doctor` printed the five `NOTE:` lines enumerated above and `clean`, exit 0. The redundant-Codex-link count held at 18, confirming that the four links removed at the cutover pointed into `~/harness-backup` and were never counted. The `brainstorming` note carried `software-dev/0.7.0` and both hashes as measured in the prototype, `74edf03ea6d2` and `4a2033c06acf`.
-- **Ordering changed.** §10 sequences the two retirements as `harness-backup` then the global files. That is reversed in execution: the only copies of `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md` were `harness-backup/claude/CLAUDE.md` and `harness-backup/codex/AGENTS.md`, so deleting the backup first would have removed the parachute before the jump. The files were emptied, both harnesses confirmed working, and only then was the backup removed.
+- **Ordering changed.** §10 sequences the two retirements as `harness-backup` then the global files. That is reversed in execution: the only copies of `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md` were `harness-backup/claude/CLAUDE.md` and `harness-backup/codex/AGENTS.md`, so deleting the backup first would have removed the parachute before the jump. The files were emptied, both CLIs confirmed working, and only then was the backup removed.
 - **Deletions.** Both repositories were deleted through GitHub's web UI by the owner. The automation's token carries no `delete_repo` scope, and granting one would have left a standing capability to delete any repository the owner holds — declined as disproportionate to a fifteen-second manual action.
 - **Duplicate detection in production.** The check added for §6.6 reported, on a real machine, the four hand-copied skills this plan set out to remove, and after their removal reported only the `brainstorming` pair §6.6 names as a survivor by design. Note ordering is not deterministic: CI and the local machine emitted the two paths in opposite orders, which the gate's wording already tolerates.
 - **Carried forward.** [#25](https://github.com/eranroseman/agent-plugins/issues/25) was reframed rather than closed: `claude plugin marketplace remove` leaves the cache behind every time, so clearing the instances does not close the class. The durable forms are `bin/setup` clearing an orphaned cache, or `bin/doctor` reporting one as a fault rather than a note.
@@ -413,7 +413,7 @@ Two claims are marked weaker than their sources suggested. Plan mode's exact Bas
 
 ## 13. Open items carried forward
 
-- The `diagnosing-bugs` skill-selection clause is measured by proxy (§6.1); live confirmation on both harnesses belongs to [#23](https://github.com/eranroseman/agent-plugins/issues/23).
+- The `diagnosing-bugs` skill-selection clause is measured by proxy (§6.1); live confirmation on both CLIs belongs to [#23](https://github.com/eranroseman/agent-plugins/issues/23).
 - `writing-reqs` and `sourcing` are specified and unbuilt, and the **need analysis precedes them** — the research meant to close the gap widened the frame instead. [#19](https://github.com/eranroseman/agent-plugins/issues/19)'s brief is repaired to say so.
 - Prior-art search and competitive analysis sit inside `writing-reqs` and wait on the same need analysis.
 - A declared conflict list for `bin/doctor` (§6.5), since no manifest can express absence.

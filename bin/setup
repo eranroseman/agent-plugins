@@ -4,8 +4,8 @@
 #   bin/setup           check, apply, re-check; non-zero if anything remains
 #   bin/setup --check   check and report only (this is what bin/doctor runs)
 #
-# The desired state is read from the checkout this script lives in, never from the
-# machine:
+# The desired state is read from the checkout this script lives in, never from
+# the machine:
 #   .claude-plugin/marketplace.json   every subset (git-subdir) entry: url,
 #                                     sha, version, and its skill names
 #   skills.json                       the skills.sh set: repo, ref, names
@@ -14,8 +14,8 @@
 # scratch home is a complete test fixture.
 #
 # `set -e` is deliberately absent: a failing check must be reported and
-# counted, not fatal. Only a missing prerequisite or a missing desired-state file
-# exits early, with status 2.
+# counted, not fatal. Only a missing prerequisite or a missing desired-state
+# file exits early, with status 2.
 set -uo pipefail
 
 # Builtins only until require_tools has spoken: under an empty PATH the
@@ -60,7 +60,7 @@ REPORTED=0
 
 # Checks that could not run, and the tools they wanted. Only `needs` fills
 # these, never the claude and codex gates: those skip a half that is genuinely
-# inapplicable, and a machine with neither harness can still be clean. A
+# inapplicable, and a machine with neither agent CLI can still be clean. A
 # missing reader of the desired state is a different kind of absence -- nothing
 # was checked at all -- and it must not read as a healthy machine.
 UNANSWERED=0
@@ -728,8 +728,8 @@ report_only() {
   reported "$before" report_duplicates
 }
 
-# 5. One skill name reaching two different trees on one harness. Derived
-# from every route that harness loads a skill by, never from a declared list:
+# 5. One skill name reaching two different trees on one agent CLI. Derived
+# from every route that CLI loads a skill by, never from a declared list:
 # its user skill root, the shared root, and the install path of each of its
 # plugins. Three rules, each earned from a measured false positive on a clean
 # machine (spec section 6.6): compare content, not path, so the thirteen
@@ -737,8 +737,8 @@ report_only() {
 # the current version of each installed plugin, which the install registry
 # names, so a plugin bump does not manufacture duplicates of its own skills;
 # and report a Claude plugin cache whose marketplace is no longer registered
-# as its own finding rather than filtering it away. Per harness, because the
-# hazard is one name reaching two skills in one session; the two harnesses
+# as its own finding rather than filtering it away. Per agent CLI, because the
+# hazard is one name reaching two skills in one session; the two CLIs
 # running different versions of a third-party plugin is a different, milder
 # thing and is not reported here. Reported, never repaired.
 report_duplicates() {
@@ -746,7 +746,7 @@ report_duplicates() {
   local root dir path mkt name version line F before
   local can_hash=1
   # Guarded once here, not inside report_pool: report_pool runs once per
-  # harness, and a guard placed there would print this SKIP twice. The
+  # CLI, and a guard placed there would print this SKIP twice. The
   # residue check below needs jq, not sha256sum, and still runs either way.
   needs sha256sum "the skill trees cannot be compared by content, so the duplicate check is unanswered" \
     || can_hash=0
@@ -819,11 +819,11 @@ report_duplicates() {
   fi
 }
 
-# $1 the harness name, then every skill directory that harness can load.
+# $1 the agent CLI's name, then every skill directory that CLI can load.
 # Hashing SKILL.md is the content identity: two paths with one hash are the
 # same skill, and a name with two hashes is the finding.
 report_pool() {
-  local harness="$1" dir name h found=0 hashed=0
+  local cli="$1" dir name h found=0 hashed=0
   local -A hashes=() places=()
   local -a distinct
   shift
@@ -844,9 +844,9 @@ report_pool() {
     read -r -a distinct <<<"${hashes[$name]}"
     [ "${#distinct[@]}" -gt 1 ] || continue
     found=$((found + 1))
-    note "$harness: skill $name resolves to ${#distinct[@]} different trees: ${places[$name]}"
+    note "$cli: skill $name resolves to ${#distinct[@]} different trees: ${places[$name]}"
   done
-  [ "$found" -eq 0 ] && note "$harness: $hashed skill tree(s) hashed; no name resolves to more than one tree"
+  [ "$found" -eq 0 ] && note "$cli: $hashed skill tree(s) hashed; no name resolves to more than one tree"
 }
 
 main() {

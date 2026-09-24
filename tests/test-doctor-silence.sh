@@ -2,10 +2,10 @@
 # The machines the doctor cannot read (spec §6.2). For each, bin/setup --check
 # must exit non-zero and never print the line `clean`; most cases also assert
 # the line that names what could not be read. Each fixture is a scratch
-# checkout -- a symlinked bin/setup beside a corrupted desired-state file -- so the
-# real marketplace.json is never touched. Needs no network and no CLI: every
-# fixture PATH omits claude, codex, node and npx, so both harness halves report
-# skipped and nothing can reach the network.
+# checkout -- a symlinked bin/setup beside a corrupted desired-state file -- so
+# the real marketplace.json is never touched. Needs no network and no CLI:
+# every fixture PATH omits claude, codex, node and npx, so both CLI halves
+# report skipped and nothing can reach the network.
 . "$(dirname "$0")/lib.sh"
 
 T="$(mktemp -d)" || fail "mktemp failed"
@@ -26,8 +26,8 @@ bin_without() {
 }
 
 # A scratch checkout named $1 under $T: a symlinked bin/setup, so REPO_ROOT
-# resolves to the scratch directory, and intact copies of both desired-state files
-# for the case to corrupt. Prints its path.
+# resolves to the scratch directory, and intact copies of both desired-state
+# files for the case to corrupt. Prints its path.
 scratch_repo() {
   local r="$T/$1"
   mkdir -p "$r/bin" "$r/.claude-plugin" || fail "could not seed $r"
@@ -111,7 +111,7 @@ run_case "second entry without .skills" "$R" "$(seeded_home 4)" "$BIN"
 saw "the subset entries' skill list could not be read from" \
   || fail "second entry without .skills: the partial list was not reported:"$'\n'"$OUT"
 
-# 5. jq off PATH. jq is not an optional harness like claude or codex, whose
+# 5. jq off PATH. jq is not an optional agent CLI like claude or codex, whose
 # absence makes one half genuinely inapplicable: it is the reader of this
 # repository's own desired state, so without it every check is unanswered.
 # The home passes the one guard that needs no jq -- a skill root that merely

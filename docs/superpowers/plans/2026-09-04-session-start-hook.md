@@ -615,7 +615,7 @@ Observed, real machine, codex-cli 0.147.0:
 
 - `/hooks` in a Codex session, run by the user: **"Enabled hooks: ponytail SessionStart, ponytail UserPromptSubmit, ponytail SubagentStart. All three are trusted."** No entry for `software-development@eranroseman`, consistent with the three `[hooks.state]` entries in `config.toml`.
 
-**G6 PASSES on every leg.** The plugin ships `claude-hooks.json`, `using-superpowers.md`, `working-rules.md` and `session-start` into the Codex cache, and Codex registers nothing, which is the design's central claim about that harness.
+**G6 PASSES on every leg.** The plugin ships `claude-hooks.json`, `using-superpowers.md`, `working-rules.md` and `session-start` into the Codex cache, and Codex registers nothing, which is the design's central claim about Codex.
 
 ---
 

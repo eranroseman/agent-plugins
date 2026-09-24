@@ -91,7 +91,7 @@ Let them edit before writing.
 
 - The `## Agent skills` block always goes in `AGENTS.md`. Codex reads that file
   natively, and Claude Code reaches it through the import below, so one file
-  serves both harnesses.
+  serves both Claude Code and Codex.
 - If `CLAUDE.md` exists and holds content of its own, move that content into
   `AGENTS.md` first, verbatim, before adding the block.
 - Then write `CLAUDE.md` so that it holds exactly one line, `@AGENTS.md`.

@@ -6,7 +6,7 @@ tells you when a machine has drifted from them.
 ## Why
 
 Skills reach an agent by three different routes: a subset entry taken from an upstream at a pinned commit, `skills.sh`
-with its own lockfile, and skills written here. Two harnesses consume
+with its own lockfile, and skills written here. The two agent CLIs consume
 them differently — Codex has no dependency concept and no update verb, so
 anything Claude resolves automatically has to be done explicitly there. And
 upstreams move underneath all of it.
@@ -58,7 +58,7 @@ Codex is optional. When `codex` is on `PATH` the same run adds the Codex
 marketplace and installs both local plugins there. When it is not, that half
 is reported as skipped and nothing else changes.
 
-What the run leaves behind: both plugins installed on each harness present, a
+What the run leaves behind: both plugins installed on each agent CLI present, a
 pinned clone per subset entry — obra/superpowers and softaworks/agent-toolkit
 — fourteen symlinks into them under `~/.agents/skills` (Codex's documented
 user skill root, created whether or not Codex is present), and the declared

@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # bin/doctor must report one skill name reaching two different trees on one
-# harness, and a Claude plugin cache whose marketplace is not registered, and
+# agent CLI, and a Claude plugin cache whose marketplace is not registered, and
 # must stay quiet on the three false positives spec section 6.6 measured: the
 # same content under two paths, a superseded plugin version, and the same
-# name differing only across harnesses. Needs no network and no CLI: every
+# name differing only across the two CLIs. Needs no network and no CLI: every
 # route is filesystem state plus the two registry files. The Codex half is
 # driven by two stub `codex plugin list --json` runs, one failing and one
 # succeeding; the succeeding one is the only place in the suite where the
@@ -32,7 +32,7 @@ skill "$H/.claude/plugins/cache/mkt/plug/2.0.0/skills/beta" "beta as the plugin 
 skill "$A/gamma" "gamma current"
 skill "$H/.claude/plugins/cache/mkt/plug/1.0.0/skills/gamma" "gamma old"
 
-# delta: differs only across harnesses. Not a finding on either.
+# delta: differs only across the two CLIs. Not a finding on either.
 skill "$C/delta" "delta on claude"
 skill "$X/delta" "delta on codex"
 

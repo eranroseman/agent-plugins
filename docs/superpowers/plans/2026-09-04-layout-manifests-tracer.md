@@ -4,7 +4,7 @@
 
 **Goal:** Turn this repository into the `eranroseman` marketplace hosting the `software-development` and `sensemaking` plugins plus a `superpowers` subset entry taken from upstream, prove it with static checks in CI, then cut this machine over to it on Claude Code and Codex and record the five gates.
 
-**Architecture:** Two local plugins under `plugins/`, one marketplace file per harness at the repo root, and a `git-subdir` marketplace entry that installs 13 of obra/superpowers' 14 skills straight from upstream at a pinned sha. `software-development` vendors upstream's `brainstorming` skill with a narrowed description and ships a SessionStart hook that injects upstream's `using-superpowers` text with one reference repointed. Every static claim is a bash test under `tests/`, run by `tests/run.sh` locally and in GitHub Actions.
+**Architecture:** Two local plugins under `plugins/`, one marketplace file per CLI at the repo root, and a `git-subdir` marketplace entry that installs 13 of obra/superpowers' 14 skills straight from upstream at a pinned sha. `software-development` vendors upstream's `brainstorming` skill with a narrowed description and ships a SessionStart hook that injects upstream's `using-superpowers` text with one reference repointed. Every static claim is a bash test under `tests/`, run by `tests/run.sh` locally and in GitHub Actions.
 
 **Tech Stack:** bash, jq, python3 (+ pyyaml for the Codex validator), Claude Code CLI 2.1.220 (`claude plugin validate`), codex-cli 0.147.0, GitHub Actions.
 
@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- Marketplace name is `eranroseman` on both harnesses. Owner display name "Eran Roseman", URL `https://github.com/eranroseman`.
+- Marketplace name is `eranroseman` on both CLIs. Owner display name "Eran Roseman", URL `https://github.com/eranroseman`.
 - Upstream pin: `https://github.com/obra/superpowers.git`, sha `b36e0829c6d0140e93cfef2ca599b1b07d4a7797`, version `6.3.0`, ref `main`. No fork.
 - The `superpowers` subset entry lists exactly these 13 skill directories and never `brainstorming`: `dispatching-parallel-agents`, `executing-plans`, `finishing-a-development-branch`, `receiving-code-review`, `requesting-code-review`, `subagent-driven-development`, `systematic-debugging`, `test-driven-development`, `using-git-worktrees`, `using-superpowers`, `verification-before-completion`, `writing-plans`, `writing-skills`.
 - Both plugins are version `0.1.0`, license MIT, author `{ "name": "Eran Roseman", "url": "https://github.com/eranroseman" }`.

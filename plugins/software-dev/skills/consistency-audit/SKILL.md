@@ -209,7 +209,7 @@ After the report is committed, put the open questions to the user in one message
 
 > "Audit report written and committed to `<path>`: <N> findings. Which do you want acted on? The questions below are the ones only you can settle — your answer to each is both the yes and the choice."
 
-- Run the `grilling` skill, if available — it owns the rounds method. Its question glyphs are optional; some harnesses reject them
+- Run the `grilling` skill, if available — it owns the rounds method. Its question glyphs are optional; some agent CLIs reject them
 - List the `ready-for-agent` findings as a pick-list — each needs only a yes or no
 - Put each `ready-for-human` finding as a numbered question: the finding, its options with their trade-offs, and your recommended answer. "Leave it as it is" is always one of the options
 - A question whose answer depends on another still open waits for the next round; say how many are waiting
