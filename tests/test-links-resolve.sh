@@ -49,7 +49,6 @@ DECLARED_ABSENT=(
   'bin/setpu'                  # the names-and-surface spec's example of a typo this test must catch
   'plugins/ghost/'             # the suite-and-ci spec's mutation, created and removed inside the mutation
   'tests/test-format-apply.sh' # named by the names-and-surface spec §18; plan B creates it and drops this line
-  'tests/test-vocabulary.sh'   # named by the names-and-surface spec §5.4; Task 15 of plan A creates it and drops this line
   '.claude/settings.json'      # the project-scope file `claude plugin install --scope project` would write; named so it is never written
 )
 
