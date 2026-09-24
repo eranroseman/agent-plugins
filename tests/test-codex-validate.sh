@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Run Codex's own plugin validator on every plugin. Each must pass cleanly,
-# except for one recorded bullet on each gated skill (Deviation D7, below) —
+# except for one recorded bullet on each user-invocable-only skill (Deviation D7, below) —
 # any other failure, bullet-shaped or not, fails the test.
 # The validator ships with codex-cli under ~/.codex/skills/.system; CI fetches
 # the same two files from openai/codex and points CODEX_PLUGIN_VALIDATOR at them.
@@ -35,12 +35,12 @@ for p in "$REPO_ROOT"/plugins/*/; do
   [ -f "$p/.codex-plugin/plugin.json" ] || fail "$p has no .codex-plugin/plugin.json"
   # The recorded exceptions. validate_plugin.py requires Claude's
   # disable-model-invocation to be false or absent, on every directory under
-  # <plugin>/skills. Every gated skill keeps `true` because that is the field
+  # <plugin>/skills. Every user-invocable-only skill keeps `true` because that is the field
   # Claude reads; Codex reads policy.allow_implicit_invocation in
   # agents/openai.yaml, which is set to false, and the Codex runtime never
   # reads the frontmatter field at all. Any other bullet from the validator
   # still fails the test.
-  # Three gated skills, each carrying the field Claude reads beside the yaml
+  # Three user-invocable-only skills, each carrying the field Claude reads beside the yaml
   # policy Codex reads: the vendored scaffolder, the first-party consistency
   # audit, and the vendored adhd. tests/test-plugin-skills.sh asserts the pair.
   known="$(printf '%s\n' \

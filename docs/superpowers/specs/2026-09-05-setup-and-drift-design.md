@@ -152,10 +152,10 @@ The path is recorded as `installLocation` in `~/.claude/plugins/known_marketplac
 
 The two entry points have different requirements, because they answer to different failures. A setup run that cannot complete should refuse; a doctor should always be able to describe whatever is there.
 
-|              | Fatal if missing                     | Gated, skipped and reported |
-| ------------ | ------------------------------------ | --------------------------- |
-| `bin/setup`  | `git`, `jq`, `node`, `npx`, `claude` | `codex`                     |
-| `bin/doctor` | none                                 | `claude`, `codex`           |
+|              | Fatal if missing                     | Conditional, skipped and reported |
+| ------------ | ------------------------------------ | --------------------------------- |
+| `bin/setup`  | `git`, `jq`, `node`, `npx`, `claude` | `codex`                           |
+| `bin/doctor` | none                                 | `claude`, `codex`                 |
 
 **Claude is required for setup, and the reason is structural rather than a preference.** The script lives in the clone that `claude plugin marketplace add` creates, and reads its desired state from `.claude-plugin/marketplace.json` inside it (§5, §7.1). Requiring Claude is requiring the script's own delivery mechanism. Codex is a consumer of that desired state, so the whole Codex half of §7.3 and §9 runs only when the binary is on `PATH`, and is reported as skipped otherwise.
 
@@ -258,7 +258,7 @@ The first fix drafted was a third place to look, `~/.agents/skills/triage/`. Tha
 
 The drift test gains a sixth region per side for that one line, and the provenance header grows to eight lines.
 
-**Corrected the same day (0.5.5).** The reason recorded above — that this marketplace always installs `triage` — is true but weak: it makes the conditional vacuous rather than wrong, so a machine that later removed `triage` would invite the test back. The stronger reason is that upstream's premise is false. Its text is "an uninstalled skill needs no labels", and the labels are not the skill's to need: they are a tracker convention any agent applies through `gh` or `glab`. Measured here the same day — six issues in this repository carry `needs-triage`, `ready-for-agent` and `ready-for-human`, every one applied by an agent that could not invoke `triage` at all, because the skill is gated. The bullet now gives that reason instead.
+**Corrected the same day (0.5.5).** The reason recorded above — that this marketplace always installs `triage` — is true but weak: it makes the conditional vacuous rather than wrong, so a machine that later removed `triage` would invite the test back. The stronger reason is that upstream's premise is false. Its text is "an uninstalled skill needs no labels", and the labels are not the skill's to need: they are a tracker convention any agent applies through `gh` or `glab`. Measured here the same day — six issues in this repository carry `needs-triage`, `ready-for-agent` and `ready-for-human`, every one applied by an agent that could not invoke `triage` at all, because the skill is user-invocable only. The bullet now gives that reason instead.
 
 ## 9. Updating an installation
 

@@ -22,7 +22,7 @@ Verbatim from the spec unless marked. Every task's requirements implicitly inclu
 - **Paths.** Pinned clones live under `$HOME/.local/share/software-dev/upstream/<entry name>`: `superpowers` (unchanged) and `writing-clearly-and-concisely` (new). The symlink root is `$HOME/.agents/skills`; a subset-entry skill's link target is `<clone>/<source.path>/<skill>`, so `…/upstream/superpowers/skills/writing-plans` and `…/upstream/writing-clearly-and-concisely/dist/plugins/writing-clearly-and-concisely/skills/writing-clearly-and-concisely`.
 - **Which plugin holds a skill** (§4.1): `sensemaking` when the skill is shared by more than one product or is not about software development; `software-dev` only when both are false.
 - **How a skill is adopted** (§5): skills.sh, then a subset entry, then vendoring; a skill is vendored **only when this marketplace must change it**, and a vendored skill is dropped from `skills.json` or it installs twice. `test-skills-pin.sh` asserts the negative for every vendored mattpocock skill.
-- **When a skill is gated** (§5): when the decision to invoke is inherently the human's; never to paper over a routing failure. `adhd` and `consistency-audit` are gated; `diagnosing-bugs` and `finding-duplicate-functions` are not. A gated skill carries **both** gates: `disable-model-invocation: true` in `SKILL.md` for Claude and `policy.allow_implicit_invocation: false` in `agents/openai.yaml` for Codex (sub-project 2 plan, Deviation D7). `tests/test-plugin-skills.sh` asserts the pair on every plugin skill.
+- **When a skill is user-invocable only** (§5): when the decision to invoke is inherently the human's; never to paper over a routing failure. `adhd` and `consistency-audit` are user-invocable only; `diagnosing-bugs` and `finding-duplicate-functions` are not. A user-invocable-only skill carries **both** gates: `disable-model-invocation: true` in `SKILL.md` for Claude and `policy.allow_implicit_invocation: false` in `agents/openai.yaml` for Codex (sub-project 2 plan, Deviation D7). `tests/test-plugin-skills.sh` asserts the pair on every plugin skill.
 - **Report, never repair** (§6.6). Duplicates and residue are `NOTE:` lines, not `FAIL:` (Deviation D6). Removing another marketplace's plugin is not the script's business.
 - **Engine rules inherited from sub-project 2**, all still binding: never `--scope project` (§7.4); never re-run `codex plugin marketplace add` (§7.3); never delete a squatting file or link, move it aside (§7.4); setup never hand-edits a configuration file (§7.6), which is why `ARCHIFY_UPDATE_CHECK_DISABLED` is documented and not set (§6.3, Deviation D1); never chain `git clone … && git checkout …`; never compare `HEAD` against `origin/main`.
 - **Codex removal order** (sub-project 2 §7.4): remove the plugin, then the marketplace, never the reverse — `codex plugin marketplace remove` leaves orphaned `[plugins.*]` tables silently. The same order on Claude.
@@ -334,7 +334,7 @@ Expected: exactly one line, `82:  known job —`software-dev:brainstorming`elici
 - [ ] **Step 4: Run the test to verify it passes**
 
 Run: `bash tests/test-plugin-skills.sh`
-Expected: `plugin-skills: 3 skills checked; gates paired, references resolve, rethink absent`, exit 0. The three are `brainstorming`, `setup-repository` and `rethink-audit`; `setup-repository` is the one gated skill and carries both gates already.
+Expected: `plugin-skills: 3 skills checked; gates paired, references resolve, rethink absent`, exit 0. The three are `brainstorming`, `setup-repository` and `rethink-audit`; `setup-repository` is the one user-invocable-only skill and carries both gates already.
 
 - [ ] **Step 5: Commit**
 
@@ -462,7 +462,7 @@ Expected: `plugin-skills: 4 skills checked; gates paired, references resolve, re
 
 - [ ] **Step 5: Record the Codex validator's bullet, and run both validators**
 
-`consistency-audit` is gated on Claude by `disable-model-invocation: true`, which Codex's validator rejects on principle (sub-project 2 plan, Deviation D7: Codex never reads the field; its runtime reads only the yaml). In `tests/test-codex-validate.sh`, replace
+`consistency-audit` is user-invocable only on Claude by `disable-model-invocation: true`, which Codex's validator rejects on principle (sub-project 2 plan, Deviation D7: Codex never reads the field; its runtime reads only the yaml). In `tests/test-codex-validate.sh`, replace
 
 ```bash
   known='- skill `setup-repository` frontmatter field `disable-model-invocation` must be false'
@@ -747,7 +747,7 @@ EOF
 
 ---
 
-### Task 5: adhd, vendored and gated, into sensemaking
+### Task 5: adhd, vendored and user-invocable only, into sensemaking
 
 **Files:**
 
@@ -948,7 +948,7 @@ EOF
 
 ---
 
-### Task 6: diagnosing-bugs, vendored and not gated, into software-dev
+### Task 6: diagnosing-bugs, vendored and not user-invocable only, into software-dev
 
 **Files:**
 

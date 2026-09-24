@@ -3,7 +3,7 @@
 # except: a provenance header right after the frontmatter, line 3 (the
 # description, shortened so Codex shows it whole), an added line 5 carrying
 # Claude's invocation gate, and an added agents/openai.yaml carrying Codex's.
-# Gated on both harnesses because its cost is the operator's call (spec
+# User-invocable only on both Claude Code and Codex because its cost is the operator's call (spec
 # section 6.2). Needs network access.
 . "$(dirname "$0")/lib.sh"
 

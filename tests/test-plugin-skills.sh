@@ -2,7 +2,7 @@
 # Invariants over every skill the two plugins ship, plus the shape of the
 # first-party assets that have no upstream to drift from. Each is a mechanism
 # for a rule that would otherwise live in prose:
-#   - a gated skill carries both gates, the field Claude reads and the yaml
+#   - a user-invocable-only skill carries both gates, the field Claude reads and the yaml
 #     policy Codex reads, never one without the other;
 #   - every <plugin>:<skill> reference in a SKILL.md resolves to something an
 #     install actually gets, so a repointed or vendored skill cannot leave a
@@ -26,12 +26,12 @@ for skill in "$REPO_ROOT"/plugins/*/skills/*/; do
   checked=$((checked + 1))
 
   # Gates travel as a pair.
-  claude_gated=false
-  codex_gated=false
-  grep -qx 'disable-model-invocation: true' "$md" && claude_gated=true
-  [ -f "$skill/agents/openai.yaml" ] && grep -qx '  allow_implicit_invocation: false' "$skill/agents/openai.yaml" && codex_gated=true
-  [ "$claude_gated" = "$codex_gated" ] \
-    || fail "$plugin:$name is gated on one harness only (Claude $claude_gated, Codex $codex_gated); each gated skill carries both"
+  claude_user_invocable=false
+  codex_user_invocable=false
+  grep -qx 'disable-model-invocation: true' "$md" && claude_user_invocable=true
+  [ -f "$skill/agents/openai.yaml" ] && grep -qx '  allow_implicit_invocation: false' "$skill/agents/openai.yaml" && codex_user_invocable=true
+  [ "$claude_user_invocable" = "$codex_user_invocable" ] \
+    || fail "$plugin:$name is user-invocable only on one CLI (Claude $claude_user_invocable, Codex $codex_user_invocable); each such skill carries both gates"
 
   # Qualified references resolve.
   while IFS= read -r ref; do
@@ -65,7 +65,7 @@ CA="$REPO_ROOT/plugins/software-dev/skills/consistency-audit/SKILL.md"
 AG="$REPO_ROOT/plugins/software-dev/agents/consistency-audit-inspector.md"
 [ -f "$CA" ] || fail "missing $CA"
 [ -f "$AG" ] || fail "missing $AG"
-grep -qx 'disable-model-invocation: true' "$CA" || fail "consistency-audit must be user-invoked on Claude"
+grep -qx 'disable-model-invocation: true' "$CA" || fail "consistency-audit must be user-invocable only on Claude Code"
 [ "$(sed -n 2p "$AG")" = "name: consistency-audit-inspector" ] || fail "the inspector's name changed"
 grep -qx 'tools: Read, Bash, WebFetch, WebSearch' "$AG" || fail "the inspector's tool grant changed"
 if grep -q 'permissionMode' "$AG"; then fail "the inspector must not carry permissionMode (spec section 7.1)"; fi

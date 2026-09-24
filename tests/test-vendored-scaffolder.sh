@@ -57,7 +57,7 @@ grep -qx '  display_name: "Setup Repository"' "$V/agents/openai.yaml" \
 # `name` follows the rename and `description` is ours. The two harnesses gate
 # differently and each skill carries both: Claude reads this field, Codex reads
 # policy.allow_implicit_invocation in agents/openai.yaml. Upstream ships them as
-# a pair on all 21 of its gated skills.
+# a pair on all 21 of its user-invocable-only skills.
 diff <(sed -n '1p;4,5p' "$U/SKILL.md") <(sed -n '1p;4,5p' "$V/SKILL.md") \
   || fail "the frontmatter fences or the invocation gate were edited"
 [ "$(sed -n '2p' "$V/SKILL.md")" = "name: setup-repository" ] \

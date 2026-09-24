@@ -797,7 +797,7 @@ report_duplicates() {
     done < <(printf '%s' "$CODEX_LIST" \
       | jq -r '.installed[]? | select(.enabled) | [.marketplaceName, .name, .version] | @tsv')
   fi
-  # Gated on the pool being complete, not on `have codex`: with codex present
+  # Conditional on the pool being complete, not on `have codex`: with codex present
   # and `codex plugin list --json` failed, CODEX_LIST is empty, the FAIL line
   # already stands above, and an all-clear here would speak for a pool
   # missing its plugin half (#40).

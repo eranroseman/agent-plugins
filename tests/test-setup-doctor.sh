@@ -2,7 +2,7 @@
 # The engine's shape: two entry points, one of them a wrapper; a usage text;
 # the documented prerequisite split, with both scripts run under an empty
 # PATH; a doctor that describes an empty machine rather than dying on it; the
-# gated halves reporting their own absence; the report-only checks; and the
+# conditional halves reporting their own absence; the report-only checks; and the
 # README recipes against the usage text. Needs no network and no CLI. The
 # shell lint is tests/test-lint-shell.sh, the upgrade path is
 # tests/test-setup-upgrade.sh, and the machines the doctor cannot read are
@@ -28,7 +28,7 @@ grep -q -- '--check' "$DOCTOR" || fail "bin/doctor must invoke bin/setup --check
 "$SETUP" --help >/dev/null 2>&1 || fail "bin/setup --help must exit 0"
 "$SETUP" --nonsense >/dev/null 2>&1 && fail "an unknown argument must not exit 0"
 
-# Prerequisites: fatal for setup, gated for the doctor. An empty PATH removes
+# Prerequisites: fatal for setup, conditional for the doctor. An empty PATH removes
 # every one of the five, so setup must refuse and the doctor must not.
 H="$(mktemp -d)" || fail "mktemp failed"
 trap 'rm -rf "$H"' EXIT
@@ -75,7 +75,7 @@ else
     || fail "with claude off PATH the doctor must report the Claude half as skipped"
 fi
 
-# The Codex half is gated the same way, and says so.
+# The Codex half is conditional the same way, and says so.
 if command -v codex >/dev/null 2>&1 && [ -x /usr/bin/codex ]; then
   printf 'NOTE: codex is on the minimal PATH; the gating assertion is not exercised\n'
 else

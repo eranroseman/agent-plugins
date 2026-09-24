@@ -17,11 +17,11 @@ What it ships:
   It writes the `## Agent skills` block to `AGENTS.md` and leaves `CLAUDE.md` as
   a one-line `@AGENTS.md` import, so Codex reads the same rules Claude does; it
   asks which git convention the repo uses; and the block it writes carries that
-  convention, the design ladder, and the task-reports rule. User-invoked only.
+  convention, the design ladder, and the task-reports rule. User-invocable only.
   The provenance header at the top of `SKILL.md` names the commit and every
   local change.
 - `skills/consistency-audit/` and `agents/consistency-audit-inspector.md`:
-  a first-party audit, user-invoked, that reads a repository whole for
+  a first-party audit, user-invocable only, that reads a repository whole for
   contradictions, duplication, drifted terms and stale claims, refutes every
   candidate before reporting it, and dispatches the read-only inspector as
   two independent readers per slice. On Codex, where a plugin cannot ship a

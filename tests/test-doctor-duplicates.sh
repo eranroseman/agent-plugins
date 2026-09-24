@@ -88,7 +88,7 @@ out="$(env HOME="$H2" CODEX_HOME="$H2/.codex" PATH="$BIN" /bin/bash "$DOCTOR" 2>
 printf '%s\n' "$out" | grep -q 'NOTE: Claude: 2 skill tree(s) hashed; no name resolves to more than one tree' \
   || fail "the Claude all-clear does not say how many trees it hashed:"$'\n'"$out"
 
-# The Codex all-clear is gated on the pool being complete, not on codex being
+# The Codex all-clear is conditional on the pool being complete, not on codex being
 # on PATH (#40): with codex present and `codex plugin list --json` failing,
 # the FAIL line stands and no all-clear is printed over a pool missing its
 # plugin half. A stub codex that exits 1 is that machine. The stub prints

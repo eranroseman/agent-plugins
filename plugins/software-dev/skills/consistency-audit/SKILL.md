@@ -138,7 +138,7 @@ Route every candidate that was not refuted to exactly one triage state (`triage-
 - **`ready-for-agent`** — confirmed and fully specified, nothing left to decide. Name the deliverable:
   - _repair_ — mechanical, unambiguous, one obviously correct fix
   - _record_ — the behavior is correct but nothing says why. Probe first: run the fix somewhere disposable, watch what breaks, and revert it, because reading alone misjudges load-bearing duplication in both directions. The deliverable is the missing record — a comment at the site, a glossary ruling, an ADR — in the home that owns that class of ruling, with its machine form in the same change where one exists
-  - _checker spec_ — the drift class keeps recurring. Name what fails, where it runs, and which findings it generalizes. Only when a checker is the sole remedy: if the drift could be deleted rather than gated, that is a choice, and the finding is `ready-for-human`
+  - _checker spec_ — the drift class keeps recurring. Name what fails, where it runs, and which findings it generalizes. Only when a checker is the sole remedy: if the drift could be deleted rather than guarded, that is a choice, and the finding is `ready-for-human`
 - **`ready-for-human`** — only the owner can close it: the fix requires a product or design decision, or the verdict came back `unsettled`. Finding facts is your job, never the owner's — `unsettled` means you looked and the repository is silent, not that looking was expensive. Present options with pros and cons and a recommendation; never guess
 - **`wontfix`** — will not be actioned; the reason goes on record
 

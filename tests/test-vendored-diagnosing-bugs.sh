@@ -3,7 +3,7 @@
 # skills.json declares, in every byte and file mode, except: a
 # provenance header right after the frontmatter, and line 3, the description,
 # rewritten so Codex shows it whole and it shares no trigger word with
-# systematic-debugging (spec section 6.1). It must not be gated, and it must
+# systematic-debugging (spec section 6.1). It must not be user-invocable only, and it must
 # not also be declared for skills.sh. Needs network access.
 . "$(dirname "$0")/lib.sh"
 
@@ -63,10 +63,10 @@ expected_header="$(printf '%s\n' \
 diff <(sed '3d' "$U/SKILL.md") <(sed -e '3d' -e '5,10d' "$V/SKILL.md") \
   || fail "SKILL.md changed beyond the header and the description"
 
-# Not gated, on either harness: an agent reaches for it unprompted when a bug
+# Not user-invocable only, on either CLI: an agent reaches for it unprompted when a bug
 # resists reproduction (spec section 6.1).
-if grep -q 'disable-model-invocation' "$V/SKILL.md"; then fail "diagnosing-bugs must not be gated on Claude"; fi
-if grep -q 'allow_implicit_invocation: false' "$V/agents/openai.yaml"; then fail "diagnosing-bugs must not be gated on Codex"; fi
+if grep -q 'disable-model-invocation' "$V/SKILL.md"; then fail "diagnosing-bugs must not be user-invocable only on Claude Code"; fi
+if grep -q 'allow_implicit_invocation: false' "$V/agents/openai.yaml"; then fail "diagnosing-bugs must not be user-invocable only on Codex"; fi
 
 # Vendored means not also installed bare, or the unadapted copy sits beside it.
 if jq -e '[.sources[].skills[]] | index("diagnosing-bugs")' "$REPO_ROOT/skills.json" >/dev/null 2>&1; then

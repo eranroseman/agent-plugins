@@ -29,8 +29,8 @@ Four first-party assets are the forcing function. `consistency-audit`, its inspe
 | `finding-duplicate-functions`        | Vendored fork → `software-dev`, with provenance, drift test, LICENSE notice (§7.2)                                       |
 | `rethink-audit`                      | First-party → `sensemaking`, one reference repointed (§7.3)                                                              |
 | `rethink`                            | **Deleted.** Its whole body already sits inside `rethink-audit` (§7.4)                                                   |
-| `diagnosing-bugs`                    | Adopted, vendored → `software-dev`. **Not** gated — routing is its job, not the operator's (§6.1)                        |
-| `adhd`                               | Adopted, **gated**, vendored → `sensemaking`. An expensive skill whose cost is the operator's call (§6.2)                |
+| `diagnosing-bugs`                    | Adopted, vendored → `software-dev`. **Not** user-invocable only — routing is its job, not the operator's (§6.1)          |
+| `adhd`                               | Adopted, **user-invocable only**, vendored → `sensemaking`. An expensive skill whose cost is the operator's call (§6.2)  |
 | `archify`                            | Adopted, skills.sh, pinned at `v2.16.0`. **Not** unpinnable (§6.3)                                                       |
 | `writing-clearly-and-concisely`      | A subset entry beside `sensemaking` at `path: "dist/plugins/..."` (§6.4)                                                 |
 | The duplicated obra-dev pair         | Drop the plugin, keep skills.sh — Codex's only route (§6.5)                                                              |
@@ -73,7 +73,7 @@ Three routes, in ascending cost:
 
 **A skill takes route 3 only when this marketplace must change it.** Sub-project 2's §12 declined the wholesale subset-entry route for all eighteen mattpocock skills and listed its costs; that decision stands. What it did not decline was vendoring an individual skill, which is what `brainstorming` already is: `superpowers` is a subset entry taken whole, and `brainstorming` was copied out of it because its description needed narrowing.
 
-**Gate when the decision to invoke is inherently the human's; never to paper over a routing failure.** `adhd` is gated because spending five to ten times a normal answer on divergent ideation is a cost only the operator can authorise — they are in the loop by design. `diagnosing-bugs` is not gated, because an agent should reach for it unprompted when a bug resists reproduction, and requiring the operator to notice the wrong route was taken, interrupt, and type the right name is the failure rather than the fix. The two look like the same lever and are opposite decisions.
+**Gate when the decision to invoke is inherently the human's; never to paper over a routing failure.** `adhd` is user-invocable only because spending five to ten times a normal answer on divergent ideation is a cost only the operator can authorise — they are in the loop by design. `diagnosing-bugs` is not user-invocable only, because an agent should reach for it unprompted when a bug resists reproduction, and requiring the operator to notice the wrong route was taken, interrupt, and type the right name is the failure rather than the fix. The two look like the same lever and are opposite decisions.
 
 **`user-invocable-only` is not a fourth route.** `skillOverrides: {"<skill>": "user-invocable-only"}` was verified to reach skills.sh skills on Claude Code 2.1.263, and it was considered here for `diagnosing-bugs`. It is rejected as a general instrument: it produces the same outcome as not adopting the skill at all — one that only a user who already knows it exists can reach — while charging a settings key, a desired-state entry and a lockfile entry for the privilege. Where a skill needs gating, rejection is the cheaper form of the same answer. Where it needs to fire correctly, only its description can do that.
 
@@ -89,7 +89,7 @@ Three routes, in ascending cost:
 
 **The description has two independent defects.** At 156 characters it exceeds Codex's measured 122-character truncation, so Codex sees a fragment ending mid-list — broken irrespective of any collision. And its trigger list overlaps `systematic-debugging`'s almost entirely.
 
-So: **vendored into `software-dev`**, with the description rewritten. The rewrite is the mechanism, not a workaround for one — a gated skill needs a human to notice the wrong route was taken, interrupt, and type the right name, which is enforcement by attention on every hard bug.
+So: **vendored into `software-dev`**, with the description rewritten. The rewrite is the mechanism, not a workaround for one — a user-invocable-only skill needs a human to notice the wrong route was taken, interrupt, and type the right name, which is enforcement by attention on every hard bug.
 
 This spec ships a description that fixes the truncation and states the routing clause provisionally:
 
@@ -133,13 +133,13 @@ Option E from #60 — restructuring `systematic-debugging` into a three-path cla
 
 `UditAkhourii/adhd`, MIT, v0.1.4, pushed 2026-08-29. **Not the single-file skill the tickets describe**: a TypeScript CLI — `src/engine.ts`, `src/llm.ts`, `bench/`, `EVALS.md` — plus one skill at `skills/adhd/SKILL.md`, and a `.claude-plugin/marketplace.json` of its own. Only the skill is taken: its body states the loop runs "inside Claude with no install required", so `npm install -g adhd-agent` is an optional accelerant rather than a dependency.
 
-**It is not gated, and it should be.** From its own body:
+**It is not user-invocable only, and it should be.** From its own body:
 
 > This skill is expensive. About 10 Agent calls, 30 to 90 seconds wall clock, 5 to 10x a single answer. **Do not pay that cost when a direct answer is better. Run this gate before Phase 1.**
 
-The skill defends its own cost by asking the model to talk itself out of running — prose at the bottom of the ladder. `disable-model-invocation: true` makes it structural, and it places `adhd` with the five gated escalation skills already on the roster: `wayfinder`, `handoff`, `teach`, `to-questionnaire`, `wait-what`. All five are gated upstream, verified on this machine. That is the class it belongs to.
+The skill defends its own cost by asking the model to talk itself out of running — prose at the bottom of the ladder. `disable-model-invocation: true` makes it structural, and it places `adhd` with the five user-invocable-only escalation skills already on the roster: `wayfinder`, `handoff`, `teach`, `to-questionnaire`, `wait-what`. All five are user-invocable only upstream, verified on this machine. That is the class it belongs to.
 
-**Gating dissolves two collisions, not one.** Its description claims _"brainstorm/ideate intents, or open-ended design, architecture, naming, API/SDK surface"_, which runs into `software-dev:brainstorming`, and _"fuzzy-debugging decisions"_, which runs into `systematic-debugging`. A gated skill competes for neither. The parent spec's standing instruction — that `adhd`, if adopted, is checked against `brainstorming`'s narrowed description — is discharged this way rather than by a second rewrite.
+**Gating dissolves two collisions, not one.** Its description claims _"brainstorm/ideate intents, or open-ended design, architecture, naming, API/SDK surface"_, which runs into `software-dev:brainstorming`, and _"fuzzy-debugging decisions"_, which runs into `systematic-debugging`. A user-invocable-only skill competes for neither. The parent spec's standing instruction — that `adhd`, if adopted, is checked against `brainstorming`'s narrowed description — is discharged this way rather than by a second rewrite.
 
 Its description is also **over 500 characters** against Codex's 122, so Codex sees a fragment ending inside the cognitive-frame list. On Codex the equivalent gate is `policy.allow_implicit_invocation: false`; the repository ships no `agents/` directory, so `agents/openai.yaml` is first-party.
 
@@ -340,7 +340,7 @@ Migrate, prove, then delete. The gate is the only step that requires evidence ra
 2. `sensemaking`: `rethink-audit` with its reference repointed
 3. `software-dev`: `consistency-audit` + inspector minus `permissionMode`; `finding-duplicate-functions` with provenance, drift test, LICENSE notice
 4. Delete the `rethink` stub from both locations
-5. `diagnosing-bugs` vendored into `software-dev`; `adhd` vendored into `sensemaking`, gated on both harnesses, with a first-party `agents/openai.yaml`; `archify` declared in `skills.json` at `v2.16.0`; `ARCHIFY_UPDATE_CHECK_DISABLED` documented in the plugin README and not set by `bin/setup` (§6.3); `test-skills-pin.sh` count to 19; `upstream-watch`'s prerelease filter widened
+5. `diagnosing-bugs` vendored into `software-dev`; `adhd` vendored into `sensemaking`, user-invocable only on both harnesses, with a first-party `agents/openai.yaml`; `archify` declared in `skills.json` at `v2.16.0`; `ARCHIFY_UPDATE_CHECK_DISABLED` documented in the plugin README and not set by `bin/setup` (§6.3); `test-skills-pin.sh` count to 19; `upstream-watch`'s prerelease filter widened
 6. `writing-clearly-and-concisely` added as a subset entry at `dist/plugins/…`; the `agent-toolkit` install removed
 7. The `superpowers-developing-for-claude-code` plugin uninstalled
 8. **Gate.** Measured on this machine: every migrated skill loads from its plugin on both harnesses; the eight `harness-backup` symlinks are gone; `bin/doctor` reports clean; `claude plugin list` and `codex plugin list` agree with the manifests
@@ -375,9 +375,9 @@ The two Codex cache directories hold the same five and two. `~/.agents/skills/wr
 
 `Agent(subagent_type: "software-dev:consistency-audit-inspector")` resolved and replied — Deviation D3 confirmed in production, where the bare name does not resolve and the qualified one does.
 
-**One expectation in §10 step 6 was wrong, and the gate is right.** It expects `codex exec` to list `consistency-audit` and `adhd` among the skills available to it. Neither appears. The two absent are exactly the two gated ones, and `policy.allow_implicit_invocation: false` is what keeps them out of the implicit-invocation list — both are installed and present in the Codex cache. The step should expect a gated skill not to be offered; its appearance would mean the Codex half of the gate was not working. What did list: `archify`, `sensemaking:rethink-audit`, `software-dev:diagnosing-bugs`, `software-dev:finding-duplicate-functions`, `writing-clearly-and-concisely`.
+**One expectation in §10 step 6 was wrong, and the gate is right.** It expects `codex exec` to list `consistency-audit` and `adhd` among the skills available to it. Neither appears. The two absent are exactly the two user-invocable-only ones, and `policy.allow_implicit_invocation: false` is what keeps them out of the implicit-invocation list — both are installed and present in the Codex cache. The step should expect a user-invocable-only skill not to be offered; its appearance would mean the Codex half of the gate was not working. What did list: `archify`, `sensemaking:rethink-audit`, `software-dev:diagnosing-bugs`, `software-dev:finding-duplicate-functions`, `writing-clearly-and-concisely`.
 
-**The same correction does not transfer to the Claude bullet, and the difference is the point of the two gates.** Codex's `policy.allow_implicit_invocation: false` removes a skill from the list offered to the model, which is why `consistency-audit` and `adhd` are absent above. Claude's `disable-model-invocation: true` stops the _model_ reaching for a skill but leaves the _user_ able to type it, so all three gated skills — `adhd`, `consistency-audit` and `setup-repository` — should still appear in a user's slash menu while being absent from any model-side list. §10 step 6's Claude bullet asks about the menu and is therefore correct as written; a model-side inventory is the wrong instrument for it, and that bullet is the one item of the gate no agent can self-certify. The maintainer checked the menu and confirmed it on 2026-09-06: no bare `/consistency-audit`, `/rethink` or `/rethink-audit` remains. That closes the last open item of §10's gate, and with it the plan.
+**The same correction does not transfer to the Claude bullet, and the difference is the point of the two gates.** Codex's `policy.allow_implicit_invocation: false` removes a skill from the list offered to the model, which is why `consistency-audit` and `adhd` are absent above. Claude's `disable-model-invocation: true` stops the _model_ reaching for a skill but leaves the _user_ able to type it, so all three user-invocable-only skills — `adhd`, `consistency-audit` and `setup-repository` — should still appear in a user's slash menu while being absent from any model-side list. §10 step 6's Claude bullet asks about the menu and is therefore correct as written; a model-side inventory is the wrong instrument for it, and that bullet is the one item of the gate no agent can self-certify. The maintainer checked the menu and confirmed it on 2026-09-06: no bare `/consistency-audit`, `/rethink` or `/rethink-audit` remains. That closes the last open item of §10's gate, and with it the plan.
 
 ## 11. Positions from the tickets not adopted
 

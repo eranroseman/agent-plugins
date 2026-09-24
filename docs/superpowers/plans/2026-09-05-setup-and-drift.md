@@ -18,7 +18,7 @@ Verbatim from the spec unless marked. Every task's requirements implicitly inclu
 - **Declared pins.** `obra/superpowers` stays at `b36e0829c6d0140e93cfef2ca599b1b07d4a7797`, version `6.3.0`. New: `mattpocock/skills` at tag `v1.2.3` (= `835450ef244ab7335f75d95b83e7d979eae22a6d`), `obra/superpowers-developing-for-claude-code` at tag `v0.3.1` (= `aa900d596cf32d20e1cd3700996505d8adf8d823`). Both are the latest tags, read from `git ls-remote --tags` on 2026-09-05, and both match the spec's §5 placeholders. Pinning moves content: 16 of 18 mattpocock skills change.
 - **Paths.** The pinned clone is `$HOME/.local/share/software-development/upstream/superpowers` (the path the machine already uses; `readlink -f ~/.codex/skills/writing-plans` on 2026-09-05). The symlink root is `$HOME/.agents/skills` (§7.3). The skills.sh lockfile is `$HOME/.agents/.skill-lock.json`, and the key holding a pin is `.skills.<name>.ref` (measured 2026-09-05 in a scratch `HOME`).
 - **The engine takes no path argument.** It reads the machine through `HOME` and `CODEX_HOME` (§11). One environment override exists, `SD_MARKETPLACE_SOURCE` — see Deviation D5.
-- **Prerequisites** (§7.2). `bin/setup`: fatal if `git`, `jq`, `node`, `npx` or `claude` is missing; `codex` is gated, skipped and reported. `bin/doctor`: nothing is fatal; `claude` and `codex` are gated.
+- **Prerequisites** (§7.2). `bin/setup`: fatal if `git`, `jq`, `node`, `npx` or `claude` is missing; `codex` is conditional, skipped and reported. `bin/doctor`: nothing is fatal; `claude` and `codex` are conditional.
 - **Never `--scope project`** (§7.4). It writes a checked-in `.claude/settings.json` carrying `enabledPlugins` and `extraKnownMarketplaces`.
 - **Never re-run `codex plugin marketplace add`** (§7.3): it prints "already added" and silently deletes `last_revision`. Use `codex plugin marketplace upgrade`.
 - **Never treat `config.toml` as an installation check** (§7.4): `codex plugin marketplace remove` orphans `[plugins.*]` tables silently. Verify with `codex plugin list` status.
@@ -1553,7 +1553,7 @@ INSTALLED_PLUGINS="$HOME/.claude/plugins/installed_plugins.json"
 MARKETPLACE_SOURCE="${SD_MARKETPLACE_SOURCE:-eranroseman/agent-plugins}"
 ```
 
-and this beside the other reporting helpers, since the gated halves are the first to call it:
+and this beside the other reporting helpers, since the conditional halves are the first to call it:
 
 ```bash
 skip() { printf 'SKIP: %s\n' "$*"; }
@@ -1695,7 +1695,7 @@ EOF
 
 ---
 
-### Task 7: The Codex half, gated on the binary
+### Task 7: The Codex half, conditional on the binary
 
 Measured 2026-09-05: `codex plugin list` prints a table whose first column is `<plugin>@<marketplace>` and whose status column reads `installed, enabled` or `not installed`; `codex plugin marketplace list` prints `MARKETPLACE` and `ROOT` columns. Neither reads `config.toml`, which §7.4 forbids as an installation check because `marketplace remove` orphans `[plugins.*]` tables silently.
 
@@ -2701,7 +2701,7 @@ EOF
 
 ### Task 13: Cut over, run the gates, and empty the two global files
 
-The global-file edits are last and are gated on **0.4.0 being installed on this machine**, not merely merged: the worktree-cleanup paragraph is deleted only because `hooks/working-rules.md` carries it, and the installed plugin is the thing that injects that file (§4.1).
+The global-file edits are last and are conditional on **0.4.0 being installed on this machine**, not merely merged: the worktree-cleanup paragraph is deleted only because `hooks/working-rules.md` carries it, and the installed plugin is the thing that injects that file (§4.1).
 
 **Files:**
 
