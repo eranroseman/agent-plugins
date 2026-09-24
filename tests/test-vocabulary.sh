@@ -28,7 +28,7 @@ n=0
 while IFS= read -r form; do
   n=$((n + 1))
   # shellcheck disable=SC2086  # one path per word -- no whitespace, a glob character, or a quoted path, asserted by tests/test-ownership.sh
-  found="$(grep -n -i -E "(^|[^[:alnum:]-])$form([^[:alnum:]-]|$)" -- $files || true)"
+  found="$(grep -n -i -H -E "(^|[^[:alnum:]-])$form([^[:alnum:]-]|$)" -- $files || true)"
   [ -z "$found" ] || hits="$hits"$'\n'"$(printf '%s\n' "$found" | sed "s/\$/  [$form]/")"
 done <<<"$forms"
 [ -z "$hits" ] || fail "a retired form survives in an owned file (file:line:text [form]):$hits"

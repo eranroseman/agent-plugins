@@ -56,7 +56,7 @@ skills.sh set installed at its declared refs.
 Three things it deliberately does not do. It never enables plugin auto-update
 — that is a consent decision you make once in `/plugin` under Marketplaces.
 And it never sets the telemetry variable documented in the plugin README, or
-`archify`'s own update-check variable, for the same reason. `bin/doctor`
+the update-check variable documented there, for the same reason. `bin/doctor`
 reports the operator decisions it never makes for you.
 
 ## Update

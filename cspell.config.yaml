@@ -1,7 +1,7 @@
 # Read by tests/test-spelling.sh over the explicit lists tests/lib.sh derives
 # (spec §8.1): the owned markdown outside docs/superpowers, plus the comments
-# of the shell and YAML files. The scope is
-# an argument at the call site, not an ignorePaths here.
+# of the shell and YAML files. It also spells every checked JSON file whole.
+# The scope is an argument at the call site, not an ignorePaths here.
 version: "0.2"
 # The prose was mixed (British spellings beside American ones in the same
 # skills) and everything this repository embeds is American, so a decision:
