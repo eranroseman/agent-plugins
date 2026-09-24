@@ -142,7 +142,7 @@ our_body="$(strip_regions vendored "$d/ours.md" \
   '- Section B always runs; do not test whether `triage` is installed. The label vocabulary is a tracker convention that any agent applies through `gh` or `glab`, not private configuration of the `triage` skill, so whether that skill is present does not bear on whether the repository needs one.' \
   '- Section B always runs; do not test whether `triage` is installed. The label vocabulary is a tracker convention that any agent applies through `gh` or `glab`, not private configuration of the `triage` skill, so whether that skill is present does not bear on whether the repository needs one.' \
   '**Write `AGENTS.md`, and make `CLAUDE.md` an import:**' \
-  'Never leave the block in `CLAUDE.md` alone: a Claude-only carrier leaves Codex reading nothing.' \
+  'Never leave the block in `CLAUDE.md` alone: a Claude-only instruction file leaves Codex reading nothing.' \
   '**Section D — Git convention.** Default to **merge locally**. Ask which of the three this repo uses:' \
   '### 3. Confirm and edit' \
   '```markdown' \
@@ -163,7 +163,7 @@ extract() {
 }
 
 filepick="$(extract "$V/SKILL.md" '**Write `AGENTS.md`, and make `CLAUDE.md` an import:**' \
-  'Never leave the block in `CLAUDE.md` alone: a Claude-only carrier leaves Codex reading nothing.')"
+  'Never leave the block in `CLAUDE.md` alone: a Claude-only instruction file leaves Codex reading nothing.')"
 grep -q 'exactly one line, `@AGENTS.md`' <<<"$filepick" \
   || fail "the file-pick rule does not make CLAUDE.md an @AGENTS.md import"
 

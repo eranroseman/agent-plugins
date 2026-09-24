@@ -532,7 +532,7 @@ In a fresh Claude Code session in any directory, ask:
 
 Expected: `1`, and the paragraph printed back. Run `/clear`, ask again: `1` and the paragraph. Then produce enough conversation to compact (several substantial exchanges), run `/compact`, and ask again: `1` and the paragraph. If `/compact` answers "Not enough messages to compact", the compact leg has not run; add history and retry.
 
-A count of `1` without the paragraph means the old cache is still loaded: check that `claude plugin details` reports `0.3.0` and restart. **Do not proceed to Step 3 until the paragraph comes back**, because until then `~/.claude/CLAUDE.md` is its only carrier.
+A count of `1` without the paragraph means the old cache is still loaded: check that `claude plugin details` reports `0.3.0` and restart. **Do not proceed to Step 3 until the paragraph comes back**, because until then `~/.claude/CLAUDE.md` is its only instruction file.
 
 **Observed 2026-09-05, all three legs PASS.**
 

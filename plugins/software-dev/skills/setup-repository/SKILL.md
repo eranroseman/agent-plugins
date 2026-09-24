@@ -97,7 +97,7 @@ Let them edit before writing.
 - Then write `CLAUDE.md` so that it holds exactly one line, `@AGENTS.md`.
 - If neither file exists, create both in that shape.
 
-Never leave the block in `CLAUDE.md` alone: a Claude-only carrier leaves Codex reading nothing.
+Never leave the block in `CLAUDE.md` alone: a Claude-only instruction file leaves Codex reading nothing.
 
 If an `## Agent skills` block already exists in the chosen file, update its contents in-place rather than appending a duplicate. Don't overwrite user edits to the surrounding sections.
 

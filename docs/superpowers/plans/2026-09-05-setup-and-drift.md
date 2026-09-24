@@ -2632,7 +2632,7 @@ EOF
 
 ### Task 12: Give this repository's `AGENTS.md` the rules the global files are about to lose
 
-Two rules move down a layer before their current carrier is emptied, so neither is homeless for a single commit (§4.1).
+Two rules move down a layer before their current instruction file is emptied, so neither is homeless for a single commit (§4.1).
 
 **Files:**
 
@@ -2641,7 +2641,7 @@ Two rules move down a layer before their current carrier is emptied, so neither 
 **Interfaces:**
 
 - Consumes: the block shape Task 2's vendored skill writes.
-- Produces: the repository-level carrier Task 13 depends on.
+- Produces: the repository-level instruction file Task 13 depends on.
 
 - [ ] **Step 1: Add the two rules**
 
