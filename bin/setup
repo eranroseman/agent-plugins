@@ -152,7 +152,7 @@ bash ~/.claude/plugins/marketplaces/eranroseman/bin/setup
 Update an installed machine:
 
 claude plugin marketplace update eranroseman
-codex plugin marketplace upgrade
+codex plugin marketplace upgrade eranroseman
 bash ~/.claude/plugins/marketplaces/eranroseman/bin/setup
 
 bin/setup needs git, jq, node, npx and claude, and refuses without them. codex
@@ -550,7 +550,7 @@ ensure_codex() {
         # Never re-run `marketplace add`: it prints "already added" and silently
         # deletes last_revision. upgrade is a true no-op when nothing moved, and
         # covers §9 step 1 when the human skipped it.
-        codex plugin marketplace upgrade >/dev/null 2>&1 \
+        codex plugin marketplace upgrade eranroseman >/dev/null 2>&1 \
           || bad "codex plugin marketplace upgrade failed"
       elif codex plugin marketplace add "$CODEX_MARKETPLACE_SOURCE" >/dev/null 2>&1; then
         did "added the eranroseman marketplace to Codex"

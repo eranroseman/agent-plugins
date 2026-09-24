@@ -1,8 +1,8 @@
 {
-  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
   "name": "eranroseman",
   "owner": { "name": "Eran Roseman", "url": "https://github.com/eranroseman" },
-  "description": "Eran Roseman's plugins for software development, plus the sensemaking skills they share with research-vault.",
+  "description": "One command puts the same agent skills on Claude Code and Codex, and one script tells you when a machine has drifted from them.",
   "plugins": [
     {
       "name": "software-dev",

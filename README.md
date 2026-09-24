@@ -5,11 +5,12 @@ tells you when a machine has drifted from them.
 
 ## Why
 
-Skills reach an agent by three different routes: a subset entry taken from an upstream at a pinned commit, `skills.sh`
-with its own lockfile, and skills written here. The two agent CLIs consume
-them differently — Codex has no dependency concept and no update verb, so
-anything Claude resolves automatically has to be done explicitly there. And
-upstreams move underneath all of it.
+Skills reach an agent by three different routes: a subset entry taken from an
+upstream at a pinned commit, `skills.sh` with its own lockfile, and skills
+written here. The two agent CLIs consume them differently — Codex has no
+dependency concept and no update verb, so anything Claude resolves
+automatically has to be done explicitly there. And upstreams move underneath
+all of it.
 
 Done by hand that is a dozen decisions repeated on every machine, with no way
 to answer "is this machine still what I think it is". The alternative is not a
@@ -22,22 +23,10 @@ a pin, and never moves one itself.
 
 Four marketplace entries:
 
-- `software-dev`: the glue plugin. obra/superpowers' `brainstorming`
-  skill vendored with a narrowed description, the repository scaffolder,
-  the first-party `consistency-audit` with its inspector agent, a vendored
-  `diagnosing-bugs`, a forked `finding-duplicate-functions`, plus a
-  SessionStart hook on Claude Code (Codex is offered none, by design).
-  Depends on the three entries below.
-- `sensemaking`: skills shared with `research-vault`: `rethink-audit` and
-  `adhd`. Its README states which plugin holds a skill, and why.
-- `superpowers`: obra/superpowers taken straight from upstream at a pinned
-  commit, 13 of its 14 skills. `brainstorming` is the one left out. This entry
-  is Claude Code only; Codex gets the same skills by symlink, created by
-  `bin/setup` as described in Install below.
-- `writing-clearly-and-concisely`: softaworks/agent-toolkit's one skill of
-  that name, a subset entry at a pinned commit, taken from upstream's published plugin
-  directory. Claude Code only, by the same mechanism and with the same Codex
-  symlink.
+- `software-dev`: the glue plugin, for anyone building software with an agent; its README names every skill, hook and agent it ships and where each came from. Depends on the three entries below.
+- `sensemaking`: skills for thinking work that is not code, shared with `research-vault`; its README says which plugin holds a skill, and why.
+- `superpowers`: obra/superpowers at a pinned commit, a subset entry, Claude Code only; Codex reaches the same skills by symlink, created by `bin/setup` as described in Install below.
+- `writing-clearly-and-concisely`: softaworks/agent-toolkit's one skill of that name, a subset entry at a pinned commit, Claude Code only, with the same Codex symlink.
 
 ## Install
 
@@ -68,8 +57,7 @@ Three things it deliberately does not do. It never enables plugin auto-update
 — that is a consent decision you make once in `/plugin` under Marketplaces.
 And it never sets the telemetry variable documented in the plugin README, or
 `archify`'s own update-check variable, for the same reason. `bin/doctor`
-reports the state of the first two; the plugin README covers the third by
-instruction alone, for now.
+reports the operator decisions it never makes for you.
 
 ## Update
 
@@ -78,7 +66,7 @@ script, so it is refreshed first and the script re-run from it:
 
 ```sh
 claude plugin marketplace update eranroseman
-codex plugin marketplace upgrade
+codex plugin marketplace upgrade eranroseman
 bash ~/.claude/plugins/marketplaces/eranroseman/bin/setup
 ```
 
@@ -108,3 +96,18 @@ the commit; a report cites that file rather than pasting output.
 `scripts/format` rewrites what the format checks check. CI runs the same
 script with `--no-skip`, so nothing is skipped there, uploads the result file
 as an artifact, and runs `bin/setup` end to end against a scratch `HOME`.
+
+## Layout
+
+```text
+bin/               the two commands a user runs: setup, and doctor, its check mode
+scripts/           what CI and the maintainer run: the upstream watch, the superpowers bump, the formatter
+plugins/           the two plugins, software-dev and sensemaking, each with its own README
+skills.json        the desired state for skills.sh: sources, refs, skill names
+tests/             every check; tests/run.sh runs them and tests/tools.txt pins the tools
+docs/agents/       the conventions the agents read: issue tracker, triage labels, domain docs
+docs/Professional-Editorial-Standards-2024.md   the editorial reference
+docs/superpowers/  historical artifacts: specs and plans as executed; vocabulary and paths current, content frozen
+CONTEXT.md         the vocabulary: contested terms with their retired forms, and the leading words
+AGENTS.md          the agents' instruction file; CLAUDE.md imports it
+```

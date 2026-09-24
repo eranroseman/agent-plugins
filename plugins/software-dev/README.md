@@ -50,8 +50,8 @@ an older version):
 - `superpowers@eranroseman`: obra/superpowers taken straight from upstream,
   13 of its 14 skills. `brainstorming` is the one left out.
 - `writing-clearly-and-concisely@eranroseman`: softaworks/agent-toolkit's
-  skill of that name, a subset entry at a pinned commit. `consistency-audit` uses it
-  for its report when present.
+  skill of that name, a subset entry at a pinned commit. `consistency-audit`
+  uses it for its report when present.
 
 ## Install
 
@@ -75,8 +75,7 @@ without a session-start injection: obra/superpowers removed its own Codex hook
 in v6.1.0 for that reason, and the reference machine ran two months of Codex
 sessions with superpowers and no injection. Nothing exists at the path Codex
 loads by fallback, `hooks/hooks.json`, so no hook is offered on any Codex
-build that keeps its documented fallback path and manifest order. The design
-spec in the repository records the evidence.
+build that keeps its documented fallback path and manifest order.
 
 ## Environment
 
