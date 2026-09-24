@@ -1,7 +1,7 @@
 # Roster, adoption routes, and the retirement of two repositories
 
 **Status:** approved design, 2026-09-06. Sub-project 5 of 7, carrying the former sub-project 6.
-**Scope:** which skills this marketplace carries, which plugin holds each, how each is adopted, where the four authored assets live, and the deletion of `eranroseman/harness-backup` and `eranroseman/rethink`.
+**Scope:** which skills this marketplace carries, which plugin holds each, how each is adopted, where the four first-party assets live, and the deletion of `eranroseman/harness-backup` and `eranroseman/rethink`.
 **Not in scope:** whether the text of a rule changes what an agent does. That is [#23](https://github.com/eranroseman/agent-plugins/issues/23) and [#21](https://github.com/eranroseman/agent-plugins/issues/21) — the scaffolder's three defects, the `AGENTS.md` compression question, and the `diagnosing-bugs` routing baseline. It shares one file with this spec and blocks nothing in it.
 
 ## 1. Evidence standard
@@ -16,7 +16,7 @@ Two survey passes read those tickets, 143 agents in total, each finding tagged V
 
 Sub-project 2 shipped the machine layer: a marketplace, two plugins, a `superpowers` subset entry, `bin/setup`, `bin/doctor`, and a repository scaffolder that has now been through four repositories. What it did not settle is **which skills exist and where each one lives**.
 
-Four authored assets are the forcing function. `consistency-audit`, its inspector agent, `finding-duplicate-functions` and `rethink-audit` live in `~/harness-backup/claude/`, symlinked live into both harnesses. They exist nowhere else. Until they have a home, `harness-backup` cannot be deleted, and until it is deleted the two global instruction files cannot empty.
+Four first-party assets are the forcing function. `consistency-audit`, its inspector agent, `finding-duplicate-functions` and `rethink-audit` live in `~/harness-backup/claude/`, symlinked live into both harnesses. They exist nowhere else. Until they have a home, `harness-backup` cannot be deleted, and until it is deleted the two global instruction files cannot empty.
 
 ## 3. Decisions
 
@@ -25,9 +25,9 @@ Four authored assets are the forcing function. `consistency-audit`, its inspecto
 | Which plugin holds a skill           | `sensemaking` if it is **shared** or **not software-development-specific**; `software-dev` only when both are false (§4) |
 | When a skill is copied into a plugin | Only when this marketplace must **change** it. Otherwise skills.sh, or a subset entry pinned by sha (§5)                 |
 | The eighteen skills.sh skills        | None moves. Their destinations are fixed **in advance** so a future adaptation does not relitigate placement (§4.2)      |
-| `consistency-audit` + inspector      | Authored → `software-dev`. `permissionMode` deleted (§7.1)                                                               |
+| `consistency-audit` + inspector      | First-party → `software-dev`. `permissionMode` deleted (§7.1)                                                            |
 | `finding-duplicate-functions`        | Vendored fork → `software-dev`, with provenance, drift test, LICENSE notice (§7.2)                                       |
-| `rethink-audit`                      | Authored → `sensemaking`, one reference repointed (§7.3)                                                                 |
+| `rethink-audit`                      | First-party → `sensemaking`, one reference repointed (§7.3)                                                              |
 | `rethink`                            | **Deleted.** Its whole body already sits inside `rethink-audit` (§7.4)                                                   |
 | `diagnosing-bugs`                    | Adopted, vendored → `software-dev`. **Not** gated — routing is its job, not the operator's (§6.1)                        |
 | `adhd`                               | Adopted, **gated**, vendored → `sensemaking`. An expensive skill whose cost is the operator's call (§6.2)                |
@@ -141,7 +141,7 @@ The skill defends its own cost by asking the model to talk itself out of running
 
 **Gating dissolves two collisions, not one.** Its description claims _"brainstorm/ideate intents, or open-ended design, architecture, naming, API/SDK surface"_, which runs into `software-dev:brainstorming`, and _"fuzzy-debugging decisions"_, which runs into `systematic-debugging`. A gated skill competes for neither. The parent spec's standing instruction — that `adhd`, if adopted, is checked against `brainstorming`'s narrowed description — is discharged this way rather than by a second rewrite.
 
-Its description is also **over 500 characters** against Codex's 122, so Codex sees a fragment ending inside the cognitive-frame list. On Codex the equivalent gate is `policy.allow_implicit_invocation: false`; the repository ships no `agents/` directory, so `agents/openai.yaml` is authored here.
+Its description is also **over 500 characters** against Codex's 122, so Codex sees a fragment ending inside the cognitive-frame list. On Codex the equivalent gate is `policy.allow_implicit_invocation: false`; the repository ships no `agents/` directory, so `agents/openai.yaml` is first-party.
 
 Two changes — the gate and the Codex yaml — so route 3.
 
@@ -190,7 +190,7 @@ MIT, © 2026 Leonardo Flores, `softaworks/agent-toolkit` at sha `3027f20f3181`. 
 
 The `dist` and source trees are byte-identical at this sha, and a test asserts that equality at the pin the way `test-upstream-pin.sh` asserts the thirteen directories.
 
-Three things ship with it or the decision is half-executed. **This is a migration, not a new adoption** — `writing-clearly-and-concisely@agent-toolkit` is installed on this machine right now at the identical sha, and leaving it produces two catalog entries emitting the same string. Upstream ships no plugin manifest and no version, so Claude fell back to the sha prefix `3027f20f3181`. **The entry declares `"version": "0.1.0"`, authored here.** There is nothing upstream to mirror, unlike the `superpowers` entry which carries upstream's own `6.3.0`, so this number is ours and means only "this marketplace's first release of this entry".
+Three things ship with it or the decision is half-executed. **This is a migration, not a new adoption** — `writing-clearly-and-concisely@agent-toolkit` is installed on this machine right now at the identical sha, and leaving it produces two catalog entries emitting the same string. Upstream ships no plugin manifest and no version, so Claude fell back to the sha prefix `3027f20f3181`. **The entry declares `"version": "0.1.0"`, first-party.** There is nothing upstream to mirror, unlike the `superpowers` entry which carries upstream's own `6.3.0`, so this number is ours and means only "this marketplace's first release of this entry".
 
 That makes one obligation explicit rather than implied: sub-project 2's §9 makes `version` the sole update gate, and §10 requires a pin bump to move both `sha` and `version` together. For an entry whose version cannot be inherited, forgetting the second half means the new sha never reaches an installed copy. `tests/test-upstream-pin.sh` asserts that coupling for `superpowers`; the equivalent assertion covers this entry. And **the subset entry reaches Claude only** — Codex gains the skill through `bin/setup`'s symlinks or not at all.
 
@@ -242,11 +242,11 @@ The evidence is this design's own construction. Two survey passes ran 143 agents
 
 `consistency-audit` separately implements the whole method internally — an Iron Law forbidding unrefuted findings, two independent readers, a skeptic that did not raise the candidate, a four-way verdict taxonomy, a published refuted list, and an author-adjudication gate — so there is nothing left for a second artifact to own.
 
-## 7. The four authored assets
+## 7. The four first-party assets
 
 ### 7.1 `consistency-audit` and its inspector → `software-dev`
 
-Authored. After `harness-backup` is deleted this repository is their only version, so there is no upstream, no provenance header and no drift test. They move together: the inspector is dispatched by the skill and by nothing else.
+First-party. After `harness-backup` is deleted this repository is their only version, so there is no upstream, no provenance header and no drift test. They move together: the inspector is dispatched by the skill and by nothing else.
 
 **`permissionMode: plan` is deleted from the inspector.** It guards nothing. The tool grant is `Read, Bash, WebFetch, WebSearch` — no write tool for plan mode to block — and the only write vector is Bash, which plan mode permits. Read-only is enforced where it already was: by the tool grant, and by a body that says _"Never create, edit, delete, stage, commit, switch branches, alter refs, install software, or change repository state."_ No commit in the file's history explains the field. Deleting it also dissolves a migration hazard, since Claude Code's handling of `permissionMode` for plugin-shipped agents no longer matters to anything.
 
@@ -262,7 +262,7 @@ It takes the full vendoring treatment — provenance header, a drift test agains
 
 ### 7.3 `rethink-audit` → `sensemaking`
 
-Authored, and already copied into `sensemaking` byte-identically on 2026-09-04. One adaptation: its Boundaries section names `superpowers:brainstorming`, which **resolves to nothing in this marketplace** — the `superpowers` subset entry deliberately excludes that skill, which ships as `software-dev:brainstorming`. Same dangling-reference class as `using-superpowers:30`, and the same one-line fix the SessionStart hook already makes there.
+First-party, and already copied into `sensemaking` byte-identically on 2026-09-04. One adaptation: its Boundaries section names `superpowers:brainstorming`, which **resolves to nothing in this marketplace** — the `superpowers` subset entry deliberately excludes that skill, which ships as `software-dev:brainstorming`. Same dangling-reference class as `using-superpowers:30`, and the same one-line fix the SessionStart hook already makes there.
 
 Its other four references resolve correctly: `research`, `codebase-design`, `superpowers:writing-plans`, and "put it where the repository already keeps such notes".
 
@@ -328,9 +328,9 @@ The weekly cron is not a fallback for it. Measured 2026-09-05: since the 2026-09
 
 ## 9. Retiring `eranroseman/rethink`
 
-A published marketplace: plugin v1.0.1, two skills, a `hooks/` directory never used, registered on Claude and installed on neither harness. Its copies of `rethink` and `rethink-audit` have **diverged** from the authored originals and lack the `agents/` directory those carry.
+A published marketplace: plugin v1.0.1, two skills, a `hooks/` directory never used, registered on Claude and installed on neither harness. Its copies of `rethink` and `rethink-audit` have **diverged** from the first-party originals and lack the `agents/` directory those carry.
 
-`research-vault#73` ruled on this in 2026-08 and none of it was carried out. The obligations, unchanged: de-register the marketplace, delete the repository, delete the two `harness-backup` copies, apply the adaptation. Nothing is taken from it — the authoritative copies are the authored ones in §7.
+`research-vault#73` ruled on this in 2026-08 and none of it was carried out. The obligations, unchanged: de-register the marketplace, delete the repository, delete the two `harness-backup` copies, apply the adaptation. Nothing is taken from it — the authoritative copies are the first-party ones in §7.
 
 ## 10. Sequencing and the gate
 
@@ -340,7 +340,7 @@ Migrate, prove, then delete. The gate is the only step that requires evidence ra
 2. `sensemaking`: `rethink-audit` with its reference repointed
 3. `software-dev`: `consistency-audit` + inspector minus `permissionMode`; `finding-duplicate-functions` with provenance, drift test, LICENSE notice
 4. Delete the `rethink` stub from both locations
-5. `diagnosing-bugs` vendored into `software-dev`; `adhd` vendored into `sensemaking`, gated on both harnesses, with an authored `agents/openai.yaml`; `archify` declared in `skills.json` at `v2.16.0`; `ARCHIFY_UPDATE_CHECK_DISABLED` documented in the plugin README and not set by `bin/setup` (§6.3); `test-skills-pin.sh` count to 19; `upstream-watch`'s prerelease filter widened
+5. `diagnosing-bugs` vendored into `software-dev`; `adhd` vendored into `sensemaking`, gated on both harnesses, with a first-party `agents/openai.yaml`; `archify` declared in `skills.json` at `v2.16.0`; `ARCHIFY_UPDATE_CHECK_DISABLED` documented in the plugin README and not set by `bin/setup` (§6.3); `test-skills-pin.sh` count to 19; `upstream-watch`'s prerelease filter widened
 6. `writing-clearly-and-concisely` added as a subset entry at `dist/plugins/…`; the `agent-toolkit` install removed
 7. The `superpowers-developing-for-claude-code` plugin uninstalled
 8. **Gate.** Measured on this machine: every migrated skill loads from its plugin on both harnesses; the eight `harness-backup` symlinks are gone; `bin/doctor` reports clean; `claude plugin list` and `codex plugin list` agree with the manifests

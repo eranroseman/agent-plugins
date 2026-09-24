@@ -24,7 +24,7 @@ Four marketplace entries:
 
 - `software-dev`: the glue plugin. obra/superpowers' `brainstorming`
   skill vendored with a narrowed description, the repository scaffolder,
-  the authored `consistency-audit` with its inspector agent, a vendored
+  the first-party `consistency-audit` with its inspector agent, a vendored
   `diagnosing-bugs`, a forked `finding-duplicate-functions`, plus a
   SessionStart hook on Claude Code (Codex is offered none, by design).
   Depends on the three entries below.

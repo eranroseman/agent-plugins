@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Invariants over every skill the two plugins ship, plus the shape of the
-# authored assets that have no upstream to drift from. Each is a mechanism
+# first-party assets that have no upstream to drift from. Each is a mechanism
 # for a rule that would otherwise live in prose:
 #   - a gated skill carries both gates, the field Claude reads and the yaml
 #     policy Codex reads, never one without the other;

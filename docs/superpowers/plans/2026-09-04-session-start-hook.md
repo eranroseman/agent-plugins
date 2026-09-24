@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Append one authored rule to the Claude Code SessionStart injection, move the hook file to a Claude-declared path so Codex is offered no hook, and prove both on this machine.
+**Goal:** Append one first-party rule to the Claude Code SessionStart injection, move the hook file to a Claude-declared path so Codex is offered no hook, and prove both on this machine.
 
 **Architecture:** `hooks/session-start` concatenates two files, upstream's `using-superpowers.md` (unchanged, drift-tested) and a new `working-rules.md`, into the same JSON envelope. The hook registration moves from `hooks/hooks.json` to `hooks/claude-hooks.json`, declared in `.claude-plugin/plugin.json`; nothing remains at the path Codex's fallback reads. Every static claim is a bash assertion in `tests/test-hook.sh`, run by `tests/run.sh` locally and in CI.
 
@@ -156,7 +156,7 @@ MSG
 
 ---
 
-### Task 2: Append the authored rules file to the additional context
+### Task 2: Append the first-party rules file to the additional context
 
 **Files:**
 

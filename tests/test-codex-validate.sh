@@ -41,7 +41,7 @@ for p in "$REPO_ROOT"/plugins/*/; do
   # reads the frontmatter field at all. Any other bullet from the validator
   # still fails the test.
   # Three gated skills, each carrying the field Claude reads beside the yaml
-  # policy Codex reads: the vendored scaffolder, the authored consistency
+  # policy Codex reads: the vendored scaffolder, the first-party consistency
   # audit, and the vendored adhd. tests/test-plugin-skills.sh asserts the pair.
   known="$(printf '%s\n' \
     '- skill `setup-repository` frontmatter field `disable-model-invocation` must be false' \

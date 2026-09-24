@@ -3,7 +3,7 @@
 Eran Roseman's glue plugin for software development. It vendors skills from
 three upstream packs — obra/superpowers, mattpocock/skills, and
 obra/superpowers-lab — rewrites one of those skills into a fork, and carries
-a skill and an agent authored here, each with its own provenance below.
+a first-party skill and agent, each with its own provenance below.
 
 What it ships:
 
@@ -21,7 +21,7 @@ What it ships:
   The provenance header at the top of `SKILL.md` names the commit and every
   local change.
 - `skills/consistency-audit/` and `agents/consistency-audit-inspector.md`:
-  an authored, user-invoked audit that reads a repository whole for
+  a first-party audit, user-invoked, that reads a repository whole for
   contradictions, duplication, drifted terms and stale claims, refutes every
   candidate before reporting it, and dispatches the read-only inspector as
   two independent readers per slice. On Codex, where a plugin cannot ship a

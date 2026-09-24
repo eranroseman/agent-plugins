@@ -2,7 +2,7 @@
 # finding-duplicate-functions is a rewritten fork of obra/superpowers-lab, not
 # a copy: only its two prompt templates are upstream's and those must stay
 # byte-identical at the recorded commit, so a drift there is visible rather
-# than silent. The rest is authored here and is checked for shape, not
+# than silent. The rest is first-party and is checked for shape, not
 # content. Needs network access.
 # needs: python3
 . "$(dirname "$0")/lib.sh"
@@ -47,7 +47,7 @@ expected_header="$(printf '%s\n' \
   "<!-- Forked from https://github.com/obra/superpowers-lab at commit $SHA" \
   "     path: skills/finding-duplicate-functions/" \
   "     MIT, (c) 2025 Jesse Vincent. A rewritten fork, not a copy: scripts/categorize-prompt.md and" \
-  "     scripts/find-duplicates-prompt.md are upstream's, byte for byte; everything else is authored here." \
+  "     scripts/find-duplicates-prompt.md are upstream's, byte for byte; everything else is first-party." \
   "     PROVENANCE.md records what changed and why. Edit this skill here; there is nothing to re-vendor." \
   "-->")"
 start="$(grep -n '^<!-- Forked from ' "$V/SKILL.md" | cut -d: -f1)" || true
