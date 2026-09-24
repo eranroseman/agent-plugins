@@ -1924,7 +1924,7 @@ In a scratch clone (`git clone -q --local . /tmp/ref65`), append to `README.md` 
 See `https://example.com/a?b=c` and `bin/setpu:main` and `sub/worktrees/x` and `1dd7362:upstream/skills.json`.
 ```
 
-Expected: exactly two failures, `bin/setpu:main` (class 5 no longer takes it) and `sub/worktrees/x` (no longer ignored); the URL with `=` and the revision-qualified path pass. Before the fixes the same line produced one failure, the URL, and passed the other three. Then on the tree, `bash tests/test-links-resolve.sh`: green, the namespaced count unchanged from Task 12's run (the eighty genuine tokens all match the tighter shape), the ignored count unchanged.
+Expected: exactly two failures, `bin/setpu:main` (class 5 no longer takes it) and `sub/worktrees/x` (no longer ignored); the URL with `=` and the revision-qualified path pass. Before the fixes the same line produced one failure, the URL, and passed the other three. Then on the tree, `bash tests/test-links-resolve.sh`: green, the namespaced count unchanged from Task 12's run (the eighty genuine tokens all match the tighter shape; a scratch run before hand-over printed 80); record the ignored count before and after, since anchoring can only lower it.
 
 - [ ] **Step 3: Suite and commit**
 
