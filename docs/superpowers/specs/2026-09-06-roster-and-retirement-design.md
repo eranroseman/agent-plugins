@@ -2,7 +2,7 @@
 
 **Status:** approved design, 2026-09-06. Sub-project 5 of 7, carrying the former sub-project 6.
 **Scope:** which skills this marketplace carries, which plugin holds each, how each is adopted, where the four first-party assets live, and the deletion of `eranroseman/harness-backup` and `eranroseman/rethink`.
-**Not in scope:** whether the text of a rule changes what an agent does. That is [#23](https://github.com/eranroseman/agent-plugins/issues/23) and [#21](https://github.com/eranroseman/agent-plugins/issues/21) — the scaffolder's three defects, the `AGENTS.md` compression question, and the `diagnosing-bugs` routing baseline. It shares one file with this spec and blocks nothing in it.
+**Not in scope:** whether the text of a rule changes what an agent does. That is [#23](https://github.com/eranroseman/agent-plugins/issues/23) and [#21](https://github.com/eranroseman/agent-plugins/issues/21) — the scaffolder's three defects, the `AGENTS.md` compression question, and the `diagnosing-bugs` skill-selection baseline. It shares one file with this spec and blocks nothing in it.
 
 ## 1. Evidence standard
 
@@ -29,7 +29,7 @@ Four first-party assets are the forcing function. `consistency-audit`, its inspe
 | `finding-duplicate-functions`        | Vendored fork → `software-dev`, with provenance, drift test, LICENSE notice (§7.2)                                       |
 | `rethink-audit`                      | First-party → `sensemaking`, one reference repointed (§7.3)                                                              |
 | `rethink`                            | **Deleted.** Its whole body already sits inside `rethink-audit` (§7.4)                                                   |
-| `diagnosing-bugs`                    | Adopted, vendored → `software-dev`. **Not** user-invocable only — routing is its job, not the operator's (§6.1)          |
+| `diagnosing-bugs`                    | Adopted, vendored → `software-dev`. **Not** user-invocable only — skill selection is its job, not the operator's (§6.1)  |
 | `adhd`                               | Adopted, **user-invocable only**, vendored → `sensemaking`. An expensive skill whose cost is the operator's call (§6.2)  |
 | `archify`                            | Adopted, skills.sh, pinned at `v2.16.0`. **Not** unpinnable (§6.3)                                                       |
 | `writing-clearly-and-concisely`      | A subset entry beside `sensemaking` at `path: "dist/plugins/..."` (§6.4)                                                 |
@@ -73,7 +73,7 @@ Three routes, in ascending cost:
 
 **A skill takes route 3 only when this marketplace must change it.** Sub-project 2's §12 declined the wholesale subset-entry route for all eighteen mattpocock skills and listed its costs; that decision stands. What it did not decline was vendoring an individual skill, which is what `brainstorming` already is: `superpowers` is a subset entry taken whole, and `brainstorming` was copied out of it because its description needed narrowing.
 
-**Gate when the decision to invoke is inherently the human's; never to paper over a routing failure.** `adhd` is user-invocable only because spending five to ten times a normal answer on divergent ideation is a cost only the operator can authorise — they are in the loop by design. `diagnosing-bugs` is not user-invocable only, because an agent should reach for it unprompted when a bug resists reproduction, and requiring the operator to notice the wrong route was taken, interrupt, and type the right name is the failure rather than the fix. The two look like the same lever and are opposite decisions.
+**Gate when the decision to invoke is inherently the human's; never to paper over a skill-selection failure.** `adhd` is user-invocable only because spending five to ten times a normal answer on divergent ideation is a cost only the operator can authorise — they are in the loop by design. `diagnosing-bugs` is not user-invocable only, because an agent should reach for it unprompted when a bug resists reproduction, and requiring the operator to notice the wrong route was taken, interrupt, and type the right name is the failure rather than the fix. The two look like the same lever and are opposite decisions.
 
 **`user-invocable-only` is not a fourth route.** `skillOverrides: {"<skill>": "user-invocable-only"}` was verified to reach skills.sh skills on Claude Code 2.1.263, and it was considered here for `diagnosing-bugs`. It is rejected as a general instrument: it produces the same outcome as not adopting the skill at all — one that only a user who already knows it exists can reach — while charging a settings key, a desired-state entry and a lockfile entry for the privilege. Where a skill needs gating, rejection is the cheaper form of the same answer. Where it needs to fire correctly, only its description can do that.
 
@@ -91,13 +91,13 @@ Three routes, in ascending cost:
 
 So: **vendored into `software-dev`**, with the description rewritten. The rewrite is the mechanism, not a workaround for one — a user-invocable-only skill needs a human to notice the wrong route was taken, interrupt, and type the right name, which is enforcement by attention on every hard bug.
 
-This spec ships a description that fixes the truncation and states the routing clause provisionally:
+This spec ships a description that fixes the truncation and states the skill-selection clause provisionally:
 
 > Use when a bug resists reproduction, or for a performance regression.
 
 69 characters, surviving Codex whole and disjoint from `systematic-debugging`'s 91.
 
-**The routing was measured, 2026-09-06.** Two rounds of a selection experiment: a realistic catalogue of both contested skills plus seven installed distractors, one user request, the agent naming the single skill it would invoke and never asked why — asking makes an agent justify a choice and destroys the measurement.
+**Skill selection was measured, 2026-09-06.** Two rounds of a selection experiment: a realistic catalogue of both contested skills plus seven installed distractors, one user request, the agent naming the single skill it would invoke and never asked why — asking makes an agent justify a choice and destroys the measurement.
 
 Round one, five discriminating scenarios by five replicates, returned **25/25 in both arms**. That is the shape `writing-skills` warns about: a control that never exhibits the failure means either there is nothing to fix or the scenarios are too easy. Round one tested clear cases and never used the current description's own trigger vocabulary.
 
@@ -413,7 +413,7 @@ Two claims are marked weaker than their sources suggested. Plan mode's exact Bas
 
 ## 13. Open items carried forward
 
-- The `diagnosing-bugs` routing clause is measured by proxy (§6.1); live confirmation on both harnesses belongs to [#23](https://github.com/eranroseman/agent-plugins/issues/23).
+- The `diagnosing-bugs` skill-selection clause is measured by proxy (§6.1); live confirmation on both harnesses belongs to [#23](https://github.com/eranroseman/agent-plugins/issues/23).
 - `writing-reqs` and `sourcing` are specified and unbuilt, and the **need analysis precedes them** — the research meant to close the gap widened the frame instead. [#19](https://github.com/eranroseman/agent-plugins/issues/19)'s brief is repaired to say so.
 - Prior-art search and competitive analysis sit inside `writing-reqs` and wait on the same need analysis.
 - A declared conflict list for `bin/doctor` (§6.5), since no manifest can express absence.

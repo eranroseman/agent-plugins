@@ -1589,7 +1589,7 @@ EOF
 
 Expected: `skillOverrides: None`.
 
-In `~/.claude/CLAUDE.md`, under `**Grilling.**`, delete this paragraph (keep the routing paragraph above it):
+In `~/.claude/CLAUDE.md`, under `**Grilling.**`, delete this paragraph (keep the skill-selection paragraph above it):
 
 ```markdown
 Backed by `skillOverrides: {"grilling": "name-only"}` in `settings.json` —
