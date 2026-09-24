@@ -4,7 +4,7 @@
 #   bin/setup           check, apply, re-check; non-zero if anything remains
 #   bin/setup --check   check and report only (this is what bin/doctor runs)
 #
-# Declarations are read from the checkout this script lives in, never from the
+# The desired state is read from the checkout this script lives in, never from the
 # machine:
 #   .claude-plugin/marketplace.json   every subset (git-subdir) entry: url,
 #                                     sha, version, and its skill names
@@ -14,7 +14,7 @@
 # scratch home is a complete test fixture.
 #
 # `set -e` is deliberately absent: a failing check must be reported and
-# counted, not fatal. Only a missing prerequisite or a missing declaration
+# counted, not fatal. Only a missing prerequisite or a missing desired-state file
 # exits early, with status 2.
 set -uo pipefail
 
@@ -43,7 +43,7 @@ CODEX_SKILLS="${CODEX_HOME:-$HOME/.codex}/skills"
 
 # The only override. CI points this at the checkout under test, because
 # `claude plugin marketplace add eranroseman/agent-plugins` would clone origin
-# main and test the wrong declarations.
+# main and test the wrong desired state.
 MARKETPLACE_SOURCE="${SD_MARKETPLACE_SOURCE:-eranroseman/agent-plugins}"
 
 # Codex takes a git URL rather than an owner/repo pair.
@@ -61,7 +61,7 @@ REPORTED=0
 # Checks that could not run, and the tools they wanted. Only `needs` fills
 # these, never the claude and codex gates: those skip a half that is genuinely
 # inapplicable, and a machine with neither harness can still be clean. A
-# missing reader of the declarations is a different kind of absence -- nothing
+# missing reader of the desired state is a different kind of absence -- nothing
 # was checked at all -- and it must not read as a healthy machine.
 UNANSWERED=0
 UNCHECKED=""
@@ -99,7 +99,7 @@ have() { command -v "$1" >/dev/null 2>&1; }
 # A tool a check cannot run without. require_tools has already refused in apply
 # mode, so this only ever speaks for the doctor, where nothing may be fatal and
 # no check may fall silent: without jq the sha reads empty and the doctor calls
-# the declarations malformed, then iterates an empty skill list and an empty
+# the desired state malformed, then iterates an empty skill list and an empty
 # skill set without a word. Each caller reports its own half, the way the
 # claude and codex gates already do.
 needs() {
@@ -141,7 +141,7 @@ usage: bin/setup [--check]
 bin/setup applies the machine state this repository declares, then re-checks it.
 bin/doctor is the same engine in check mode: it reports and changes nothing.
 
-Both read their declarations from the checkout the script lives in, and reach
+Both read the desired state from the checkout the script lives in, and reach
 the machine only through HOME and CODEX_HOME.
 
 Bootstrap on a new machine:
@@ -868,8 +868,8 @@ main() {
   done
 
   require_tools
-  [ -f "$MARKETPLACE" ] || die "no declarations beside this script: $MARKETPLACE is missing"
-  [ -f "$SKILLS_JSON" ] || die "no declarations beside this script: $SKILLS_JSON is missing"
+  [ -f "$MARKETPLACE" ] || die "no desired state beside this script: $MARKETPLACE is missing"
+  [ -f "$SKILLS_JSON" ] || die "no desired state beside this script: $SKILLS_JSON is missing"
 
   before=$REPORTED
   ensure_fresh_clone

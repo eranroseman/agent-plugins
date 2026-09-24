@@ -55,9 +55,9 @@ These are visible choices, not silent ones. Any of them can be vetoed; each name
 - **D2. The vendored scaffolder is seven files, not six.** Upstream v1.2.3 ships `agents/openai.yaml` (a Codex interface block carrying `allow_implicit_invocation: false`) beside `SKILL.md` and the five seed templates. Six are byte-identical; only `SKILL.md` is edited, exactly as §8 requires.
 - **D3. The stale-marketplace-clone check is skipped, not failed, when the marketplace source is a directory.** `claude plugin marketplace add /abs/path` records `"source": "directory"` and an `installLocation` equal to that path, with no clone to compare (measured 2026-09-05). CI and any local-path install hit this.
 - **D4. The doctor reports redundant Codex links generically**, by resolved path, rather than asserting the twenty §7.3 counted. The thirteen new links become redundant by the same rule the moment they exist in `$HOME/.agents/skills`.
-- **D5. One environment override, `SD_MARKETPLACE_SOURCE`.** §11 requires `bin/setup` to run end to end in CI, and `claude plugin marketplace add eranroseman/agent-plugins` in CI clones origin `main`, not the branch under test — so the branch's script would install `main`'s declarations and the test would prove nothing. CI sets `SD_MARKETPLACE_SOURCE="$GITHUB_WORKSPACE"`. It defaults to `eranroseman/agent-plugins` and nothing else in the engine is overridable.
+- **D5. One environment override, `SD_MARKETPLACE_SOURCE`.** §11 requires `bin/setup` to run end to end in CI, and `claude plugin marketplace add eranroseman/agent-plugins` in CI clones origin `main`, not the branch under test — so the branch's script would install `main`'s desired state and the test would prove nothing. CI sets `SD_MARKETPLACE_SOURCE="$GITHUB_WORKSPACE"`. It defaults to `eranroseman/agent-plugins` and nothing else in the engine is overridable.
 - **D7. `tests/test-codex-validate.sh` gains one recorded exception, and the vendored frontmatter keeps upstream's invocation gate.** Codex's plugin validator rejects `disable-model-invocation: true` on any skill under `<plugin>/skills` — `validate_plugin.py:472` requires the field to be `false` or absent, and line 425 walks every directory under `<plugin>/skills` regardless of what the manifest's `skills` key names. Measured 2026-09-05 against a scratch copy of the plugin: upstream's `true` produces ``skill `setup-matt-pocock-skills` frontmatter field `disable-model-invocation` must be false`` and nothing else; with `false`, or with the field deleted, both validators pass. **The gate is kept anyway**, because the two harnesses gate invocation by different mechanisms and each skill should carry the one its harness reads. Claude reads the frontmatter field; Codex reads `policy.allow_implicit_invocation` in `agents/openai.yaml`, and its runtime never reads the Claude field at all — `disable_model_invocation` appears in exactly one file in openai/codex at `rust-v0.153.4`, and that file is `validate_plugin.py`; the loader reads only the yaml (`codex-rs/ext/skills/src/loader/metadata.rs:53`, `codex-rs/skills/src/model.rs:23-27`, defaulting to true when absent). Upstream mattpocock treats them as a pair: at `v1.2.3`, 21 of 35 skills carry `disable-model-invocation: true` and every one of them also carries `allow_implicit_invocation: false`; the field never appears without its yaml counterpart. Flipping ours to `false` would break that invariant to satisfy a lint that conflates the two mechanisms. So the vendored copy is byte-identical in its frontmatter, and `tests/test-codex-validate.sh` tolerates exactly this one message for exactly this one skill, with the reason recorded in the test. Veto: flip the vendored field to `false` and narrow the description to compensate — both validators then pass clean, at the cost of making a skill that rewrites `AGENTS.md` and `CLAUDE.md` model-invocable on Claude.
-- **D6. Declarations are read from `dirname "$0"/..`, not from `installLocation`.** §7.1 says the script resolves `installLocation` from `known_marketplaces.json` rather than hardcoding it; that resolution is kept, but only for the doctor's stale-clone check. Reading declarations from beside the script is what makes D5 work and what makes the script and its declarations move together.
+- **D6. The desired state is read from `dirname "$0"/..`, not from `installLocation`.** §7.1 says the script resolves `installLocation` from `known_marketplaces.json` rather than hardcoding it; that resolution is kept, but only for the doctor's stale-clone check. Reading the desired state from beside the script is what makes D5 work and what makes the script and its desired state move together.
 
 ## Corrections from review, 2026-09-05 — apply these before executing Task 1
 
@@ -217,7 +217,7 @@ printf 'skills-pin: 19 declared skills, every ref a real tag, every name resolvi
 Run: `bash tests/test-skills-pin.sh`
 Expected: `FAIL: missing /home/eranr/agent-plugins/skills.json`, exit 1.
 
-- [ ] **Step 4: Write the declaration**
+- [ ] **Step 4: Write the desired state**
 
 Create `skills.json`:
 
@@ -943,7 +943,7 @@ EOF
 
 ---
 
-### Task 4: The engine skeleton — two entry points, prerequisites, declarations
+### Task 4: The engine skeleton — two entry points, prerequisites, desired state
 
 **Files:**
 
@@ -2921,7 +2921,7 @@ File an issue for anything this plan deliberately left open, and note it in the 
 
 ## Self-Review
 
-**Spec coverage.** §4.1 disposition of both global files → Tasks 12 and 13. §5 declarations → Task 1 (`skills.json`), with the `superpowers` entry unchanged. §6 upstream watch → Task 11. §7.1 bootstrap and the stale-clone rule → Tasks 4, 9, 10. §7.2 prerequisites → Task 4. §7.3 what it applies (Claude, Codex, clone, symlinks, skills.sh) → Tasks 5 to 8. §7.4 prohibitions → Global Constraints, enforced in Tasks 5 to 7. §7.5 what it cannot do → the README's closing note in Task 10. §7.6 telemetry → Task 9's report and Task 10's README paragraph. §8 scaffolding and the 0.4.0 bump → Task 2. §9 update path → Task 10's Update sections and the plugin README's auto-update steps. §10 bumping a pin → Task 3. §11 static checks → Tasks 1, 2, 4, 5, 8, 9, 10 (all six bullets: skills pin, CI end-to-end, shellcheck plus five faults, vendored scaffolder drift, the hook frame read from the clone, README ↔ `--help`). §13 gates → Task 13.
+**Spec coverage.** §4.1 disposition of both global files → Tasks 12 and 13. §5 desired state → Task 1 (`skills.json`), with the `superpowers` entry unchanged. §6 upstream watch → Task 11. §7.1 bootstrap and the stale-clone rule → Tasks 4, 9, 10. §7.2 prerequisites → Task 4. §7.3 what it applies (Claude, Codex, clone, symlinks, skills.sh) → Tasks 5 to 8. §7.4 prohibitions → Global Constraints, enforced in Tasks 5 to 7. §7.5 what it cannot do → the README's closing note in Task 10. §7.6 telemetry → Task 9's report and Task 10's README paragraph. §8 scaffolding and the 0.4.0 bump → Task 2. §9 update path → Task 10's Update sections and the plugin README's auto-update steps. §10 bumping a pin → Task 3. §11 static checks → Tasks 1, 2, 4, 5, 8, 9, 10 (all six bullets: skills pin, CI end-to-end, shellcheck plus five faults, vendored scaffolder drift, the hook frame read from the clone, README ↔ `--help`). §13 gates → Task 13.
 
 Three spec sentences are deliberately not implemented as written, each recorded as a deviation above: the eighteenth mattpocock skill (D1), the "six files" count (D2), and — discovered by running both validators against the vendored tree — the clean Codex validator pass, which becomes one recorded exception rather than a weakened invocation gate (D7).
 

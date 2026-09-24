@@ -174,7 +174,7 @@ This closes the class, not the instances. The seventh shape, found live on 2026-
 
 ### 6.2 Rung 2: `tests/test-doctor-silence.sh`
 
-One file enumerates the unreadable machines and asserts, for each, that `bin/setup --check` exits non-zero and prints no line equal to `clean`. Each fixture is a scratch checkout: a symlinked `bin/setup` beside a corrupted declaration, the shape `tests/test-doctor-faults.sh:92-119` uses today, so the real `marketplace.json` is never touched.
+One file enumerates the unreadable machines and asserts, for each, that `bin/setup --check` exits non-zero and prints no line equal to `clean`. Each fixture is a scratch checkout: a symlinked `bin/setup` beside a corrupted desired-state file, the shape `tests/test-doctor-faults.sh:92-119` uses today, so the real `marketplace.json` is never touched.
 
 1. A malformed `.claude-plugin/marketplace.json`.
 2. A well-formed one with every `git-subdir` entry removed.

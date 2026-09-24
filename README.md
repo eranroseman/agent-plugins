@@ -51,7 +51,7 @@ bash ~/.claude/plugins/marketplaces/eranroseman/bin/setup
 
 `bin/setup` requires the Claude Code CLI, plus `git`, `jq`, `node` and `npx`.
 That is structural rather than a preference: the script lives in the clone
-`claude plugin marketplace add` creates, and reads its declarations from it. A
+`claude plugin marketplace add` creates, and reads the desired state from it. A
 Claude-only machine is fully supported.
 
 Codex is optional. When `codex` is on `PATH` the same run adds the Codex
@@ -73,7 +73,7 @@ instruction alone, for now.
 
 ## Update
 
-The marketplace clone carries both the new declarations and the new copy of the
+The marketplace clone carries both the new desired state and the new copy of the
 script, so it is refreshed first and the script re-run from it:
 
 ```sh

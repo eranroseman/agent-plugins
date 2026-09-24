@@ -2,7 +2,7 @@
 # The machines the doctor cannot read (spec §6.2). For each, bin/setup --check
 # must exit non-zero and never print the line `clean`; most cases also assert
 # the line that names what could not be read. Each fixture is a scratch
-# checkout -- a symlinked bin/setup beside a corrupted declaration -- so the
+# checkout -- a symlinked bin/setup beside a corrupted desired-state file -- so the
 # real marketplace.json is never touched. Needs no network and no CLI: every
 # fixture PATH omits claude, codex, node and npx, so both harness halves report
 # skipped and nothing can reach the network.
@@ -26,7 +26,7 @@ bin_without() {
 }
 
 # A scratch checkout named $1 under $T: a symlinked bin/setup, so REPO_ROOT
-# resolves to the scratch directory, and intact copies of both declarations
+# resolves to the scratch directory, and intact copies of both desired-state files
 # for the case to corrupt. Prints its path.
 scratch_repo() {
   local r="$T/$1"
@@ -53,7 +53,7 @@ run_case() {
 saw() { printf '%s\n' "$OUT" | grep -q -- "$1"; }
 
 # A HOME whose skill root exists, so every check gets past ensure_links'
-# root guard and reaches the declaration it reads. Prints the path.
+# root guard and reaches the desired state it reads. Prints the path.
 seeded_home() {
   mkdir -p "$T/home-$1/.agents/skills" || fail "could not seed home-$1"
   printf '%s\n' "$T/home-$1"
@@ -67,12 +67,12 @@ R="$(scratch_repo malformed)"
 printf '{\n' >"$R/.claude-plugin/marketplace.json" || fail "could not corrupt the marketplace"
 run_case "malformed marketplace" "$R" "$(seeded_home 1)" "$BIN"
 saw 'no subset (git-subdir) entry could be read' \
-  || fail "malformed marketplace: ensure_clones did not report the unreadable declarations:"$'\n'"$OUT"
+  || fail "malformed marketplace: ensure_clones did not report the unreadable desired state:"$'\n'"$OUT"
 saw "the subset entries' skill list could not be read from" \
-  || fail "malformed marketplace: ensure_links did not report the unreadable declarations:"$'\n'"$OUT"
+  || fail "malformed marketplace: ensure_links did not report the unreadable desired state:"$'\n'"$OUT"
 
 # 2. Well-formed, with every git-subdir entry removed: zero subset entries
-# is a declaration defect, not a clean machine.
+# is a desired-state defect, not a clean machine.
 R="$(scratch_repo no-subset)"
 jq 'del(.plugins[] | select(.source.source? == "git-subdir"))' "$MARKETPLACE" \
   >"$R/.claude-plugin/marketplace.json" || fail "could not remove the git-subdir entries"
@@ -113,7 +113,7 @@ saw "the subset entries' skill list could not be read from" \
 
 # 5. jq off PATH. jq is not an optional harness like claude or codex, whose
 # absence makes one half genuinely inapplicable: it is the reader of this
-# repository's own declarations, so without it every check is unanswered.
+# repository's own desired state, so without it every check is unanswered.
 # The home passes the one guard that needs no jq -- a skill root that merely
 # exists, the converged-then-drifted machine the doctor is for -- so nothing
 # stands between "could not read" and a false all-clear. Moved here from
@@ -166,7 +166,7 @@ saw 'the https://github.com/obra/superpowers.git entry' \
   && fail "empty entry name: the URL was read as the name:"$'\n'"$OUT"
 
 # 10. A check that reports nothing (spec §6.1). After the loop splits and the
-# counted all-clear no declaration shape is silent any more, which is the
+# counted all-clear no desired-state shape is silent any more, which is the
 # point of them, so the silent check is manufactured: a copy of bin/setup
 # whose last line, `main "$@"`, is preceded by a redefinition of
 # ensure_fresh_clone that prints nothing. The bracket around it must name
