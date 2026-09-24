@@ -25,7 +25,7 @@ Three problems, each with evidence.
 | Decision                         | Choice                                                                                                                                                                                                                               |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Sub-projects 2 and 4             | Merged. Setup and the doctor act on one set of declarations and are one engine; the doctor is setup's dry run.                                                                                                                       |
-| mattpocock adoption              | **Keep skills.sh.** Add a tag fragment to the install so the lockfile records a ref. The curated `git-subdir` route works but buys a hypothetical at the cost of eighteen renames (§12).                                             |
+| mattpocock adoption              | **Keep skills.sh.** Add a tag fragment to the install so the lockfile records a ref. The subset-entry `git-subdir` route works but buys a hypothetical at the cost of eighteen renames (§12).                                        |
 | Where declarations live          | This repository. `superpowers` in `.claude-plugin/marketplace.json` as today; a new `skills.json` for the skills.sh set.                                                                                                             |
 | Setup and doctor form            | One bash script in this repository, two modes. Not a skill: convergence must be deterministic, and a sampled process has no fixed point.                                                                                             |
 | Where it runs from               | The Claude marketplace clone, which is a full clone of this repository at a path recorded in `known_marketplaces.json`.                                                                                                              |
@@ -47,7 +47,7 @@ This design is mostly the rule working. The `-g` rule was **eliminated**: once `
 
 Two rules did ship as prose, and the climb is recorded here so a later reader can re-attempt it rather than assume it was skipped.
 
-- **Worktree cleanup**, in the hook additional context. _Eliminate_ would mean `superpowers:finishing-a-development-branch` accepting `.claude/worktrees/` in its allowlist, or `EnterWorktree` writing somewhere it already accepts. Both are other people's repositories, and upstream states a 94% pull-request rejection rate. Configuration is not available either: measured 2026-09-06, `.claude/worktrees` is a hardcoded literal in 24 places in the Claude Code binary, `worktreeRoot` is a computed local rather than a setting, and the path appears in neither the settings nor the CLI reference. _Mechanism_ would mean vendoring that skill to patch one line, which trades a rung on this ladder for a worse rung on the adoption ladder and breaks the property that all thirteen curated skills are taken straight from upstream. Prose is genuinely last here.
+- **Worktree cleanup**, in the hook additional context. _Eliminate_ would mean `superpowers:finishing-a-development-branch` accepting `.claude/worktrees/` in its allowlist, or `EnterWorktree` writing somewhere it already accepts. Both are other people's repositories, and upstream states a 94% pull-request rejection rate. Configuration is not available either: measured 2026-09-06, `.claude/worktrees` is a hardcoded literal in 24 places in the Claude Code binary, `worktreeRoot` is a computed local rather than a setting, and the path appears in neither the settings nor the CLI reference. _Mechanism_ would mean vendoring that skill to patch one line, which trades a rung on this ladder for a worse rung on the adoption ladder and breaks the property that all thirteen subset-entry skills are taken straight from upstream. Prose is genuinely last here.
 - **Task reports**, in each repository's `AGENTS.md`. _Eliminate_ would mean `superpowers:subagent-driven-development` not deleting its workspace at Finish, or writing its reports somewhere durable by default. Upstream again. _Mechanism_ would mean a hook blocking that deletion until each Concern has landed, which is both invasive and fragile, since it would have to understand what "landed" means. Prose, placed beside the tracker declaration it depends on.
 
 ### The placement test
@@ -91,7 +91,7 @@ Two costs, accepted knowingly. Codex loses every carrier this repository control
 
 Setup and the doctor read only from here. Nothing is inferred from the machine.
 
-**`superpowers`**: the existing curated entry in `.claude-plugin/marketplace.json` carries `source.sha`, `source.ref`, `version`, and the thirteen skill names. That entry is already the single source of truth for the Codex symlink list, per the parent spec §9.2.
+**`superpowers`**: the existing subset entry in `.claude-plugin/marketplace.json` carries `source.sha`, `source.ref`, `version`, and the thirteen skill names. That entry is already the single source of truth for the Codex symlink list, per the parent spec §9.2.
 
 **`skills.json`**, new:
 
@@ -306,11 +306,11 @@ New tests, run by the existing `tests/run.sh`:
 
 `bin/doctor` itself is the local half of the former sub-project 4. It compares the machine against §5's declarations: the clone at the declared sha, each of the thirteen links resolving to its intended target, the lockfile's `ref` per source matching the declaration, the installed plugin version matching the manifest, and the marketplace clone not behind upstream's `main` as resolved by `git ls-remote` (§7.1). It also reports, without repairing, whether any of the three telemetry-disabling variables is set (§7.6) and whether the twenty redundant Codex links are still present (§7.3). It repairs only what §5 declares.
 
-## 12. mattpocock: why the curated route was not taken
+## 12. mattpocock: why the subset-entry route was not taken
 
-Measured 2026-09-05, the curated `git-subdir` route works end to end on both harnesses. It was declined on the standard in §1.
+Measured 2026-09-05, the subset-entry `git-subdir` route works end to end on both harnesses. It was declined on the standard in §1.
 
-Only one candidate problem survived as measured: no version pin, with sixteen of eighteen skills already drifted. That problem is fixable in place with a tag fragment (§7.3), verified including the in-place upgrade of an already-unpinned entry. The curated route's one genuine advantage is a forty-character sha rather than a mutable tag, since `skills add` rejects a sha; but a force-moved upstream tag is a hypothetical with no evidence behind it, while the migration's costs are certain: eighteen renames to `mattpocock-skills:<name>` on both harnesses, a namespace hostage to a field in upstream's Claude manifest, the loss of the `skillOverrides` lever sub-project 5 needs, a whole-repository clone on Codex, and forty-four symlinks removed rather than added.
+Only one candidate problem survived as measured: no version pin, with sixteen of eighteen skills already drifted. That problem is fixable in place with a tag fragment (§7.3), verified including the in-place upgrade of an already-unpinned entry. The subset-entry route's one genuine advantage is a forty-character sha rather than a mutable tag, since `skills add` rejects a sha; but a force-moved upstream tag is a hypothetical with no evidence behind it, while the migration's costs are certain: eighteen renames to `mattpocock-skills:<name>` on both harnesses, a namespace hostage to a field in upstream's Claude manifest, the loss of the `skillOverrides` lever sub-project 5 needs, a whole-repository clone on Codex, and forty-four symlinks removed rather than added.
 
 The `-g` rule's premise was also refuted: it appears in `~/.claude/CLAUDE.md`'s first commit and no littering incident exists in any repository's history.
 

@@ -1,4 +1,4 @@
-# software-dev: SessionStart hook payload and Codex posture
+# software-dev: SessionStart hook additional context and Codex posture
 
 **Status:** approved design, 2026-09-04. Sub-project 3 of 7 in the [layout and tracer spec](2026-09-04-software-development-layout-and-tracer-design.md) §11. §4.2 is read by `tests/test-hook.sh`, which diffs its fenced block against `hooks/working-rules.md` byte for byte, so the two move together.
 **Scope:** what `software-dev`'s SessionStart hook injects on Claude Code, how the additional context is assembled and tested, and whether Codex gets a hook at all.
@@ -54,7 +54,7 @@ Exactly: `cat using-superpowers.md; printf '\n'; cat working-rules.md`. `using-s
 **Worktree cleanup.** `EnterWorktree` places worktrees under `.claude/worktrees/`. `superpowers:finishing-a-development-branch` recognizes only `.worktrees/` and `worktrees/` as its own and declines to remove anything else. Once the branch is merged or abandoned, run `git worktree remove <path>` from the main checkout, then `git worktree prune`.
 ```
 
-That is the whole file, ending in exactly one newline, which §7 asserts. It carries the one rule that survived the placement test, and it holds for every installer: `EnterWorktree` is Claude Code's, and `finishing-a-development-branch` arrives through the curated `superpowers` dependency.
+That is the whole file, ending in exactly one newline, which §7 asserts. It carries the one rule that survived the placement test, and it holds for every installer: `EnterWorktree` is Claude Code's, and `finishing-a-development-branch` arrives through the subset-entry `superpowers` dependency.
 
 ### 4.3 Size
 
@@ -108,7 +108,7 @@ Gate G4 of the parent spec recorded IGNORED and left open why the source-level f
 `tests/test-hook.sh` is rewritten. Every other test is untouched, and `tests/test-json-wellformed.sh` already discovers `*.json`, so `claude-hooks.json` stays covered.
 
 1. `using-superpowers.md` byte-equal to upstream's `using-superpowers` inside upstream's frame with the line-30 edit, regenerated from the pinned clone. As today.
-2. `working-rules.md` exists, is non-empty, and ends with exactly one newline. Every `superpowers:<name>` it mentions is one of the thirteen skill names listed for the curated `superpowers` entry in `.claude-plugin/marketplace.json`. It does not mention `superpowers:brainstorming`.
+2. `working-rules.md` exists, is non-empty, and ends with exactly one newline. Every `superpowers:<name>` it mentions is one of the thirteen skill names listed for the `superpowers` subset entry in `.claude-plugin/marketplace.json`. It does not mention `superpowers:brainstorming`.
 3. The script's output is the SessionStart envelope with no extra top-level keys, and its `additionalContext`, read back with `jq -r`, diffs equal to `cat using-superpowers.md; printf '\n'; cat working-rules.md`, the comparison form today's test uses. `jq -r` restores the one newline that command substitution strips; `jq -j` with `cmp` would fail by that byte. Its length, `jq '.hookSpecificOutput.additionalContext | length'`, is under 8,000.
 4. Wiring: `hooks/claude-hooks.json` has matcher `startup|clear|compact`, one command hook running `"${CLAUDE_PLUGIN_ROOT}/hooks/session-start"`, and only `hooks` at top level. `hooks/hooks.json` does not exist. `.claude-plugin/plugin.json` has `hooks` equal to `./hooks/claude-hooks.json`. `.codex-plugin/plugin.json` has no `hooks` key and its `interface.capabilities` does not contain `Lifecycle hooks`.
 5. The encoder escapes every C0 control character, not just the common five. As today, except that the temporary directory also gets an empty `working-rules.md` beside the copied script, since the script now reads it. The expectation stays the sample alone: the appended newline is stripped by command substitution.
@@ -194,7 +194,7 @@ Cutover performed on this machine per §9. Claude Code 2.1.261 on the command li
 Observations carried forward:
 
 - **G7 was run twice for the build prompt, because the first run was confounded.** That run used `--permission-mode plan`, and the injected additional context contains "Before entering plan mode: if you haven't already brainstormed, invoke the brainstorming skill first" — which could have produced the right answer for the wrong reason. Rerun without plan mode and with edits disallowed, it invoked `brainstorming` first again. Only the clean run is the evidence.
-- **The curation is live in the routing, not just in the catalog.** The debugging prompt loaded `systematic-debugging` from `eranroseman/superpowers/6.3.0`, the curated entry, rather than from any other installed copy.
+- **The subset entry is live in the routing, not just in the catalog.** The debugging prompt loaded `systematic-debugging` from `eranroseman/superpowers/6.3.0`, the subset entry, rather than from any other installed copy.
 - **The `/compact` leg has a limit worth stating.** A standalone count of 1 cannot by itself distinguish a fresh injection from an earlier one surviving compaction, and unlike the tracer there is no additional context difference to discriminate with, since both would be 0.3.0. The reading rests on compaction replacing history with a summary whose own mentions of both strings sit inline in backticks rather than as standalone lines, which the session reported. Before compaction the two counts were `2 and 1`; after, `1 and 1`, the dropped one being a `cat` of `working-rules.md` in that session's history.
 - **The plugin's advertised context cost understates it by an order of magnitude.** `claude plugin details` reports "Always-on: ~118 tok" and labels the hook "harness-only — no model context cost". That is true of the hook definition, but the additional context it injects is about 3,700 characters, roughly 950 tokens, on every startup, `/clear` and `/compact`. The inventory figure is not the number to reason about when deciding what the additional context may carry.
 - **Two Claude Code builds share this machine**, 2.1.261 on the command line and 2.1.259 in the VS Code extension. They share `~/.claude` and agreed throughout, but a future gate that behaves oddly should check which binary ran it before assuming a defect.

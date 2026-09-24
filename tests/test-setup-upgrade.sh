@@ -40,7 +40,7 @@ env HOME="$W/home" claude plugin marketplace update eranroseman >/dev/null 2>&1 
 CLONE="$W/home/.local/share/software-dev/upstream/superpowers"
 mkdir -p "$(dirname "$CLONE")" || fail "could not create the upstream root"
 cp -a "$(fetch_upstream)" "$CLONE" || fail "could not seed the pinned clone"
-# Every other curated entry's clone, the same way, so bin/setup has nothing
+# Every other subset entry's clone, the same way, so bin/setup has nothing
 # to fetch: the CI end-to-end job is where the real clone is exercised.
 while IFS="$(printf '\t')" read -r name url sha; do
   [ -n "$name" ] || continue

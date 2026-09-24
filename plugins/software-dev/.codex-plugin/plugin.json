@@ -10,7 +10,7 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Software Development",
-    "shortDescription": "Curated software-dev skills",
+    "shortDescription": "Software-development skills for Claude Code and Codex",
     "longDescription": "Narrowed brainstorming front door over the superpowers spine and mattpocock's engineering skills, plus the repository scaffolder, a refuted-before-reported consistency audit, a reproduction-first debugging loop, and a Python duplicate-function finder.",
     "developerName": "Eran Roseman",
     "category": "Developer Tools",

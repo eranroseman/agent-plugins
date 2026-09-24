@@ -6,7 +6,7 @@
 #
 # Declarations are read from the checkout this script lives in, never from the
 # machine:
-#   .claude-plugin/marketplace.json   every curated (git-subdir) entry: url,
+#   .claude-plugin/marketplace.json   every subset (git-subdir) entry: url,
 #                                     sha, version, and its skill names
 #   skills.json                       the skills.sh set: repo, ref, names
 #
@@ -32,7 +32,7 @@ SKILLS_JSON="$REPO_ROOT/skills.json"
 # Each later task adds the variables its own checks need, beside them, rather
 # than here: a variable declared before anything reads it is a shellcheck
 # SC2034 warning, and shellcheck must exit 0 from Task 4 onward.
-# One pinned clone per curated (git-subdir) marketplace entry, named after it:
+# One pinned clone per subset (git-subdir) marketplace entry, named after it:
 #   $UPSTREAM_ROOT/superpowers, $UPSTREAM_ROOT/writing-clearly-and-concisely
 UPSTREAM_ROOT="$HOME/.local/share/software-dev/upstream"
 SKILL_ROOT="$HOME/.agents/skills"
@@ -175,9 +175,9 @@ require_tools() {
   [ -z "$missing" ] || die "bin/setup needs these on PATH:$missing (bin/doctor needs none)"
 }
 
-# Every curated entry: a git-subdir source pinned by sha. One line each,
+# Every subset entry: a git-subdir source pinned by sha. One line each,
 # tab-separated: name, url, ref, sha, path, version.
-curated_entries() {
+subset_entries() {
   jq -r '.plugins[] | select(.source.source? == "git-subdir")
          | [.name, .source.url, .source.ref, .source.sha, .source.path, .version] | @tsv' "$MARKETPLACE"
 }
@@ -206,14 +206,14 @@ split_tsv() {
 
 ensure_clones() {
   local name url sha dir have n=0 line F
-  needs jq "the curated entries cannot be read, so no pinned clone is checked" || return
+  needs jq "the subset entries cannot be read, so no pinned clone is checked" || return
   while IFS= read -r line; do
     [ -n "$line" ] || continue
     n=$((n + 1))
     split_tsv "$line"
     name="${F[0]}" url="${F[1]}" sha="${F[3]}"
     if [ -z "$name" ] || [ -z "$url" ]; then
-      bad "a curated entry is malformed: name='$name' url='$url'"
+      bad "a subset entry is malformed: name='$name' url='$url'"
       continue
     fi
     dir="$(clone_dir "$name")"
@@ -265,8 +265,8 @@ ensure_clones() {
     else
       bad "pinned clone $name is at ${have:-an unknown revision}, declared $sha"
     fi
-  done < <(curated_entries)
-  [ "$n" -gt 0 ] || bad "no curated (git-subdir) entry could be read from $MARKETPLACE"
+  done < <(subset_entries)
+  [ "$n" -gt 0 ] || bad "no subset (git-subdir) entry could be read from $MARKETPLACE"
 }
 
 ensure_links() {
@@ -280,12 +280,12 @@ ensure_links() {
     bad "the skill root is missing: $SKILL_ROOT"
     return
   fi
-  # After the skill root, which needs no jq: without the curated list the loop
-  # below iterates nothing and reports nothing at all.
-  needs jq "the curated skill list cannot be read, so no link is checked" || return
+  # After the skill root, which needs no jq: without the subset entries' list
+  # the loop below iterates nothing and reports nothing at all.
+  needs jq "the subset entries' skill list cannot be read, so no link is checked" || return
 
   # A non-zero jq exit means the program aborted partway through -- most often
-  # a curated entry with no `skills` array, or a non-string element in one --
+  # a subset entry with no `skills` array, or a non-string element in one --
   # and whatever it printed before aborting is a partial list, not the full
   # one. Row count cannot stand in for this: if the *first* entry is the bad
   # one the loop below simply never runs, but a later entry being bad still
@@ -295,15 +295,15 @@ ensure_links() {
   lines="$(jq -r '.plugins[] | select(.source.source? == "git-subdir") as $p
                   | $p.skills[] | [$p.name, $p.source.path, (. | sub("^\\./"; ""))] | @tsv' "$MARKETPLACE")" \
     || {
-      bad "the curated skill list could not be read from $MARKETPLACE"
+      bad "the subset entries' skill list could not be read from $MARKETPLACE"
       return
     }
   [ -n "$lines" ] || {
-    bad "no curated skill is declared in $MARKETPLACE"
+    bad "no subset entry declares a skill in $MARKETPLACE"
     return
   }
 
-  # Every skill of every curated entry: the link target is the skill directory
+  # Every skill of every subset entry: the link target is the skill directory
   # inside that entry's pinned clone, under the entry's source.path, and the
   # link is named after the directory's basename.
   while IFS= read -r line; do
@@ -311,7 +311,7 @@ ensure_links() {
     split_tsv "$line"
     entry="${F[0]}" epath="${F[1]}" skill="${F[2]}"
     if [ -z "$entry" ] || [ -z "$epath" ] || [ -z "$skill" ]; then
-      bad "a curated skill line is malformed: entry='$entry' path='$epath' skill='$skill'"
+      bad "a subset entry's skill line is malformed: entry='$entry' path='$epath' skill='$skill'"
       continue
     fi
     name="$(basename "$skill")"
@@ -479,7 +479,7 @@ ensure_claude() {
   else
     bad "sensemaking@eranroseman is ${have:-not installed}, declared $want"
   fi
-  # Every curated entry, by its declared version. superpowers arrives as a
+  # Every subset entry, by its declared version. superpowers arrives as a
   # dependency of the first install; an entry declared after a machine was set
   # up does not -- measured 2026-09-06 on claude 2.1.263, `claude plugin update
   # software-dev` moved the parent from 0.6.0 to 0.7.0 and left its new
@@ -490,7 +490,7 @@ ensure_claude() {
     split_tsv "$line"
     name="${F[0]}" want="${F[5]}"
     if [ -z "$name" ] || [ -z "$want" ]; then
-      bad "a curated entry is malformed: name='$name' version='$want'"
+      bad "a subset entry is malformed: name='$name' version='$want'"
       continue
     fi
     have="$(installed_version "$name")"
@@ -513,7 +513,7 @@ ensure_claude() {
     else
       bad "$name@eranroseman is ${have:-not installed}, declared $want"
     fi
-  done < <(curated_entries)
+  done < <(subset_entries)
 }
 
 codex_plugin_version() {
@@ -733,7 +733,7 @@ report_only() {
 # its user skill root, the shared root, and the install path of each of its
 # plugins. Three rules, each earned from a measured false positive on a clean
 # machine (spec section 6.6): compare content, not path, so the thirteen
-# curated links into the pinned clone are not thirteen findings; take only
+# subset-entry links into the pinned clone are not thirteen findings; take only
 # the current version of each installed plugin, which the install registry
 # names, so a plugin bump does not manufacture duplicates of its own skills;
 # and report a Claude plugin cache whose marketplace is no longer registered

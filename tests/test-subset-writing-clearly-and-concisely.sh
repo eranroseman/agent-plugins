@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The curated writing-clearly-and-concisely entry points at a real
+# The writing-clearly-and-concisely subset entry points at a real
 # softaworks/agent-toolkit sha, uses upstream's own published plugin shape
 # under dist/ rather than the whole skills/ tree, lists exactly its one skill,
 # and carries a version this repository authors, since upstream ships none.
@@ -42,4 +42,4 @@ diff -r "$UP/dist/plugins/$NAME/skills/$NAME" "$UP/skills/$NAME" \
 [ "$(sed -n 2p "$UP/skills/$NAME/SKILL.md")" = "name: $NAME" ] || fail "upstream skill name changed"
 grep -q 'Copyright (c) 2026 Leonardo Flores' "$UP/LICENSE" || fail "upstream LICENSE holder changed; re-check the marketplace description"
 
-printf 'curated-writing: dist == source at %s, version %s, one skill, a software-dev dependency\n' "$SHA" "$VERSION"
+printf 'subset-writing: dist == source at %s, version %s, one skill, a software-dev dependency\n' "$SHA" "$VERSION"

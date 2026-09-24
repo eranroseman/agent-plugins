@@ -37,7 +37,7 @@ skill "$C/delta" "delta on claude"
 skill "$X/delta" "delta on codex"
 
 # A git-subdir cache whose skills sit at the plugin root, not under skills/.
-skill "$H/.claude/plugins/cache/mkt/subdir/1.0.0/epsilon" "epsilon from the curated entry"
+skill "$H/.claude/plugins/cache/mkt/subdir/1.0.0/epsilon" "epsilon from the subset entry"
 skill "$C/epsilon" "epsilon from a user copy"
 
 cat >"$H/.claude/plugins/installed_plugins.json" <<JSON

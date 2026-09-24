@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# The curated superpowers entry must point at a real upstream sha, list exactly
+# The superpowers subset entry must point at a real upstream sha, list exactly
 # the 13 skill directories that exist there, omit brainstorming, and carry the
 # version upstream declares at that sha. Needs network access.
 . "$(dirname "$0")/lib.sh"

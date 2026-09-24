@@ -66,21 +66,21 @@ BIN="$(bin_without)"
 R="$(scratch_repo malformed)"
 printf '{\n' >"$R/.claude-plugin/marketplace.json" || fail "could not corrupt the marketplace"
 run_case "malformed marketplace" "$R" "$(seeded_home 1)" "$BIN"
-saw 'no curated (git-subdir) entry could be read' \
+saw 'no subset (git-subdir) entry could be read' \
   || fail "malformed marketplace: ensure_clones did not report the unreadable declarations:"$'\n'"$OUT"
-saw 'the curated skill list could not be read from' \
+saw "the subset entries' skill list could not be read from" \
   || fail "malformed marketplace: ensure_links did not report the unreadable declarations:"$'\n'"$OUT"
 
-# 2. Well-formed, with every git-subdir entry removed: zero curated entries
+# 2. Well-formed, with every git-subdir entry removed: zero subset entries
 # is a declaration defect, not a clean machine.
-R="$(scratch_repo no-curated)"
+R="$(scratch_repo no-subset)"
 jq 'del(.plugins[] | select(.source.source? == "git-subdir"))' "$MARKETPLACE" \
   >"$R/.claude-plugin/marketplace.json" || fail "could not remove the git-subdir entries"
-run_case "no curated entries" "$R" "$(seeded_home 2)" "$BIN"
-saw 'no curated (git-subdir) entry could be read' \
-  || fail "no curated entries: the zero-entry guard did not fire:"$'\n'"$OUT"
-saw 'no curated skill is declared' \
-  || fail "no curated entries: the zero-skill guard did not fire:"$'\n'"$OUT"
+run_case "no subset entries" "$R" "$(seeded_home 2)" "$BIN"
+saw 'no subset (git-subdir) entry could be read' \
+  || fail "no subset entries: the zero-entry guard did not fire:"$'\n'"$OUT"
+saw "no subset entry declares a skill" \
+  || fail "no subset entries: the zero-skill guard did not fire:"$'\n'"$OUT"
 
 # 3. The first git-subdir entry without `.skills`: the jq program that feeds
 # ensure_links aborts before printing a single row (exit 5, zero rows). The
@@ -94,7 +94,7 @@ R="$(scratch_repo first-no-skills)"
 jq --arg n "$first" 'del(.plugins[] | select(.name == $n) | .skills)' "$MARKETPLACE" \
   >"$R/.claude-plugin/marketplace.json" || fail "could not strip .skills from $first"
 run_case "first entry without .skills" "$R" "$(seeded_home 3)" "$BIN"
-saw 'the curated skill list could not be read from' \
+saw "the subset entries' skill list could not be read from" \
   || fail "first entry without .skills: the unreadable list was not reported:"$'\n'"$OUT"
 
 # 4. The second git-subdir entry without `.skills`: jq aborts after the first
@@ -108,7 +108,7 @@ R="$(scratch_repo second-no-skills)"
 jq --arg n "$second" 'del(.plugins[] | select(.name == $n) | .skills)' "$MARKETPLACE" \
   >"$R/.claude-plugin/marketplace.json" || fail "could not strip .skills from $second"
 run_case "second entry without .skills" "$R" "$(seeded_home 4)" "$BIN"
-saw 'the curated skill list could not be read from' \
+saw "the subset entries' skill list could not be read from" \
   || fail "second entry without .skills: the partial list was not reported:"$'\n'"$OUT"
 
 # 5. jq off PATH. jq is not an optional harness like claude or codex, whose
@@ -160,7 +160,7 @@ R="$(scratch_repo empty-entry-name)"
 jq '(.plugins[] | select(.name == "superpowers") | .name) = ""' "$MARKETPLACE" \
   >"$R/.claude-plugin/marketplace.json" || fail "could not blank the entry name"
 run_case "empty entry name" "$R" "$(seeded_home 9)" "$BIN"
-saw "a curated entry is malformed: name=''" \
+saw "a subset entry is malformed: name=''" \
   || fail "empty entry name: ensure_clones did not name the empty field:"$'\n'"$OUT"
 saw 'the https://github.com/obra/superpowers.git entry' \
   && fail "empty entry name: the URL was read as the name:"$'\n'"$OUT"

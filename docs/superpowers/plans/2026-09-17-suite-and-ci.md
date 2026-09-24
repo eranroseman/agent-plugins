@@ -1619,7 +1619,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 - [ ] **Step 1: Write the extraction and the diff**
 
-In `tests/test-hook.sh`, replace lines 40–46 (from `# (1b) the authored rules file` through the `superpowers:brainstorming` check, keeping the `[ -s … ]` line and the curated-list loop at 47–52) with:
+In `tests/test-hook.sh`, replace lines 40–46 (from `# (1b) the authored rules file` through the `superpowers:brainstorming` check, keeping the `[ -s … ]` line and the subset-entry list loop at 47–52) with:
 
 ````bash
 # (1b) the authored rules file is the block the hook design's §4.2 shows,
@@ -1862,7 +1862,7 @@ Expected: `0` — no tab-IFS `read` remains in the engine.
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `bash tests/test-doctor-silence.sh && bash tests/test-doctor-faults.sh && bash tests/test-doctor-duplicates.sh && bash tests/test-setup-doctor.sh && bash tests/test-lint-shell.sh`
-Expected: `doctor-silence: 9 unreadable machines, none reported clean` and the other four success lines. Where `claude` is present, also `bash tests/test-setup-upgrade.sh` (the curated-version loop drives it).
+Expected: `doctor-silence: 9 unreadable machines, none reported clean` and the other four success lines. Where `claude` is present, also `bash tests/test-setup-upgrade.sh` (the subset-entry version loop drives it).
 
 - [ ] **Step 5: Commit**
 

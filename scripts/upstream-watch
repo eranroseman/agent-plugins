@@ -45,7 +45,7 @@ report ""
 report "Generated $(date -u '+%Y-%m-%d %H:%M UTC'). This issue is updated in place."
 report ""
 
-# 1. Each curated entry: the pinned sha against the tip of its declared ref.
+# 1. Each subset entry: the pinned sha against the tip of its declared ref.
 # superpowers also lists its newest tag and names its bump script; the other
 # entries have no version to mirror, so a bump edits sha and version together
 # by hand (spec section 6.4).
@@ -64,7 +64,7 @@ while IFS="$(printf '\t')" read -r name url ref sha; do
       report "- Bump with \`scripts/bump-superpowers $head_sha\`, then read the diff to"
       report "  \`hooks/using-superpowers.md\` and \`skills/brainstorming/\` before merging."
     else
-      report "- Bump by editing \`.claude-plugin/marketplace.json\`: move \`sha\` and \`version\` together, then update the pinned pair in \`tests/test-curated-$name.sh\`."
+      report "- Bump by editing \`.claude-plugin/marketplace.json\`: move \`sha\` and \`version\` together, then update the pinned pair in \`tests/test-subset-$name.sh\`."
     fi
     DRIFT=1
   fi

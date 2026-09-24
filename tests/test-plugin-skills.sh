@@ -7,7 +7,7 @@
 #   - every <plugin>:<skill> reference in a SKILL.md resolves to something an
 #     install actually gets, so a repointed or vendored skill cannot leave a
 #     dangling name behind (the class of superpowers:brainstorming, which the
-#     curated entry excludes);
+#     subset entry excludes);
 #   - the rethink stub exists in neither plugin.
 #   - consistency-audit ships with its inspector, the inspector carries no
 #     permissionMode, and the skill names the inspector by the name a plugin
@@ -15,7 +15,7 @@
 # Needs no network.
 . "$(dirname "$0")/lib.sh"
 
-curated="$(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$MARKETPLACE" | sed 's#^\./##')"
+subset="$(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$MARKETPLACE" | sed 's#^\./##')"
 checked=0
 
 for skill in "$REPO_ROOT"/plugins/*/skills/*/; do
@@ -40,8 +40,8 @@ for skill in "$REPO_ROOT"/plugins/*/skills/*/; do
     s="${ref#*:}"
     case "$p" in
       superpowers)
-        printf '%s\n' "$curated" | grep -qxF -- "$s" \
-          || fail "$plugin:$name names $ref, which the curated superpowers entry does not list"
+        printf '%s\n' "$subset" | grep -qxF -- "$s" \
+          || fail "$plugin:$name names $ref, which the superpowers subset entry does not list"
         ;;
       software-dev | sensemaking)
         # A skill, or a plugin agent, which resolves by the same prefix.

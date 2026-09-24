@@ -4,7 +4,7 @@
 
 **Goal:** Give the four authored assets a plugin home, adopt three skills by the route each earns, curate one, drop one duplicated route, teach `bin/doctor` to see one skill name reaching two different skills, prove all of it on this machine, then delete `eranroseman/harness-backup` and `eranroseman/rethink` and empty both global instruction files.
 
-**Architecture:** Nothing new is invented; every change lands in a mechanism sub-project 2 already ships. Skills that must change are vendored into a plugin with a provenance header, a drift test and a LICENSE notice, exactly as `brainstorming` and `setup-repository` are. A skill that needs no change is declared in `skills.json` (`archify`) or curated as a second `git-subdir` marketplace entry (`writing-clearly-and-concisely`), and `bin/setup` stops being superpowers-specific: it iterates every curated entry for its pinned clone, its symlinks, and its installed version. `bin/doctor` gains one derived, report-only check that hashes every route a harness loads a skill by. The machine is converged by the same `bin/setup`, proved by the same `bin/doctor`, and only then are the two repositories deleted, which is what makes the last paragraph of both global files false and lets them empty.
+**Architecture:** Nothing new is invented; every change lands in a mechanism sub-project 2 already ships. Skills that must change are vendored into a plugin with a provenance header, a drift test and a LICENSE notice, exactly as `brainstorming` and `setup-repository` are. A skill that needs no change is declared in `skills.json` (`archify`) or included as a subset entry, a second `git-subdir` marketplace entry (`writing-clearly-and-concisely`), and `bin/setup` stops being superpowers-specific: it iterates every subset entry for its pinned clone, its symlinks, and its installed version. `bin/doctor` gains one derived, report-only check that hashes every route a harness loads a skill by. The machine is converged by the same `bin/setup`, proved by the same `bin/doctor`, and only then are the two repositories deleted, which is what makes the last paragraph of both global files false and lets them empty.
 
 **Tech Stack:** bash (no `set -e` in the engine), jq, git, `sha256sum`, Claude Code CLI 2.1.263, codex-cli 0.147.0, `npx skills` (skills.sh), shellcheck, `gh`, GitHub Actions.
 
@@ -19,9 +19,9 @@ Verbatim from the spec unless marked. Every task's requirements implicitly inclu
 - **Versions.** Both `software-dev` manifests move `0.6.0` → `0.7.0`; both `sensemaking` manifests move `0.1.0` → `0.2.0` (Task 11). `tests/test-hook.sh` pins `software-dev`'s version in two assertions and moves with it.
 - **Declared pins**, every one read from its source on 2026-09-06. `obra/superpowers` stays at `b36e0829c6d0140e93cfef2ca599b1b07d4a7797`, version `6.3.0`. `mattpocock/skills` stays at tag `v1.2.3`, which peels to commit `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`. `obra/superpowers-developing-for-claude-code` stays at `v0.3.1`. New: `tt-a1i/archify` at tag `v2.16.0` (tag object `fe2c0da92389bb35e9d71a9c7ae000c1083f2c37`, commit `c826e6c3a7abad19c0f3cd1ca57207d54b1ad8de`, the newest of its nineteen tags, one `SKILL.md` in the tree at `archify/SKILL.md`; the skill's own metadata reads `version: "2.16"`). `softaworks/agent-toolkit` at `3027f20f3181758385a1bb8c022d4041dfb4de84`, which is also its `main`, with an authored version `0.1.0`. `UditAkhourii/adhd` at commit `16dc239ff186b869372e75095cfa58fc0ee89927` (Deviation D2). `obra/superpowers-lab` at `51111f74f24058117752d9aa917cb19859f8ec86`, its `main`, where `finding-duplicate-functions`' two prompt templates are byte-identical to the fork's.
 - **Descriptions.** `diagnosing-bugs`: `Use when a bug resists reproduction, or for a performance regression.` — 69 characters, verbatim from §6.1. `adhd`: `Parallel divergent ideation under five isolated cognitive frames, scored, clustered, deepened. Costs 5 to 10x one answer.` — 121 characters (Deviation D12). Codex truncates at 122 (§6.5); every vendored description is asserted under that by its drift test.
-- **Paths.** Pinned clones live under `$HOME/.local/share/software-dev/upstream/<entry name>`: `superpowers` (unchanged) and `writing-clearly-and-concisely` (new). The symlink root is `$HOME/.agents/skills`; a curated skill's link target is `<clone>/<source.path>/<skill>`, so `…/upstream/superpowers/skills/writing-plans` and `…/upstream/writing-clearly-and-concisely/dist/plugins/writing-clearly-and-concisely/skills/writing-clearly-and-concisely`.
+- **Paths.** Pinned clones live under `$HOME/.local/share/software-dev/upstream/<entry name>`: `superpowers` (unchanged) and `writing-clearly-and-concisely` (new). The symlink root is `$HOME/.agents/skills`; a subset-entry skill's link target is `<clone>/<source.path>/<skill>`, so `…/upstream/superpowers/skills/writing-plans` and `…/upstream/writing-clearly-and-concisely/dist/plugins/writing-clearly-and-concisely/skills/writing-clearly-and-concisely`.
 - **Which plugin holds a skill** (§4.1): `sensemaking` when the skill is shared by more than one product or is not about software development; `software-dev` only when both are false.
-- **How a skill is adopted** (§5): skills.sh, then a curated entry, then vendoring; a skill is vendored **only when this marketplace must change it**, and a vendored skill is dropped from `skills.json` or it installs twice. `test-skills-pin.sh` asserts the negative for every vendored mattpocock skill.
+- **How a skill is adopted** (§5): skills.sh, then a subset entry, then vendoring; a skill is vendored **only when this marketplace must change it**, and a vendored skill is dropped from `skills.json` or it installs twice. `test-skills-pin.sh` asserts the negative for every vendored mattpocock skill.
 - **When a skill is gated** (§5): when the decision to invoke is inherently the human's; never to paper over a routing failure. `adhd` and `consistency-audit` are gated; `diagnosing-bugs` and `finding-duplicate-functions` are not. A gated skill carries **both** gates: `disable-model-invocation: true` in `SKILL.md` for Claude and `policy.allow_implicit_invocation: false` in `agents/openai.yaml` for Codex (sub-project 2 plan, Deviation D7). `tests/test-plugin-skills.sh` asserts the pair on every plugin skill.
 - **Report, never repair** (§6.6). Duplicates and residue are `NOTE:` lines, not `FAIL:` (Deviation D6). Removing another marketplace's plugin is not the script's business.
 - **Engine rules inherited from sub-project 2**, all still binding: never `--scope project` (§7.4); never re-run `codex plugin marketplace add` (§7.3); never delete a squatting file or link, move it aside (§7.4); setup never hand-edits a configuration file (§7.6), which is why `ARCHIFY_UPDATE_CHECK_DISABLED` is documented and not set (§6.3, Deviation D1); never chain `git clone … && git checkout …`; never compare `HEAD` against `origin/main`.
@@ -39,7 +39,7 @@ None of the expected outputs below are predictions. On 2026-09-06 the whole repo
 
 Measured, and load-bearing:
 
-- **`claude plugin update` does not install a newly declared dependency.** In a scratch `HOME` on claude 2.1.263: install `software-dev` 0.6.0 from a directory marketplace, declare the `writing-clearly-and-concisely` entry and add it to `dependencies`, bump to 0.7.0, `claude plugin marketplace update eranroseman`, `claude plugin update software-dev@eranroseman` → "updated from 0.6.0 to 0.7.0", and `installed_plugins.json` still lists three plugins. `claude plugin install writing-clearly-and-concisely@eranroseman --scope user` then installs it at `0.1.0`, into `cache/eranroseman/writing-clearly-and-concisely/0.1.0/skills/writing-clearly-and-concisely/`, 216 KB, and `claude plugin details` lists one skill. This is why Task 9's `ensure_claude` installs a missing curated entry by name (Deviation D5).
+- **`claude plugin update` does not install a newly declared dependency.** In a scratch `HOME` on claude 2.1.263: install `software-dev` 0.6.0 from a directory marketplace, declare the `writing-clearly-and-concisely` entry and add it to `dependencies`, bump to 0.7.0, `claude plugin marketplace update eranroseman`, `claude plugin update software-dev@eranroseman` → "updated from 0.6.0 to 0.7.0", and `installed_plugins.json` still lists three plugins. `claude plugin install writing-clearly-and-concisely@eranroseman --scope user` then installs it at `0.1.0`, into `cache/eranroseman/writing-clearly-and-concisely/0.1.0/skills/writing-clearly-and-concisely/`, 216 KB, and `claude plugin details` lists one skill. This is why Task 9's `ensure_claude` installs a missing subset entry by name (Deviation D5).
 - **`claude plugin update` does move an auto-installed dependency.** Same scratch `HOME`: `sensemaking` was installed as a dependency (`"auto": true` in the registry), the copy's manifest was bumped to `0.2.0`, `marketplace update`, then `claude plugin update sensemaking@eranroseman` → "updated from 0.1.0 to 0.2.0". Task 9's `sensemaking` block rests on this, and the upgrade fixture now exercises it on every run.
 - **`claude plugin marketplace remove` leaves the cache behind, every version of it.** Same scratch `HOME`: after `uninstall software-dev@eranroseman` and `marketplace remove eranroseman`, `cache/eranroseman/` still held `sensemaking/0.1.0`, `sensemaking/0.2.0`, `software-dev/0.6.0` and `superpowers/6.3.0`. Issue #25's `superpowers-dev` residue is this mechanism, and Task 12's two marketplace removals will produce two more, which Task 12 removes before the gate.
 - **A plugin agent is not reachable by its bare name.** `Agent(subagent_type: "cavecrew-investigator")` on this machine fails with `Agent type 'cavecrew-investigator' not found. Available agents: caveman:cavecrew-builder, caveman:cavecrew-investigator, …`. The inspector becomes `software-dev:consistency-audit-inspector` and the skill dispatches it by that name (Deviation D3).
@@ -60,11 +60,11 @@ Visible choices, not silent ones. Each names what changes if it is vetoed.
 - **D2. `adhd` is pinned at commit `16dc239ff186b869372e75095cfa58fc0ee89927`, not at tag `v0.1.4`.** The tag predates the text the spec quotes and the plugin manifest the spec describes (see the measurements above). The provenance header says so. Veto: pin the tag and re-vendor its older `SKILL.md`, whose extra trigger section is the collision the gate exists to dissolve.
 - **D3. `consistency-audit` changes in three places, not one.** §7.1 names one change, deleting `permissionMode`, and separately requires the skill to "state that degradation in its own text". Two more are forced by measurement: the two dispatch references become `software-dev:consistency-audit-inspector`, because the bare name does not resolve for a plugin agent, and one bullet is added under "Reading the corpus" stating the Codex degradation. `tests/test-plugin-skills.sh` pins all three. Veto on the name: keep the bare name and the skill dispatches nothing on Claude.
 - **D4. The two hand-copied agent files are removed at the cutover.** `~/.claude/agents/consistency-audit-inspector.md` and `~/.codex/agents/consistency-audit-inspector.md` are byte-identical copies of the backup's file, not symlinks, so §8.3's blast radius omits them and the deletion leaves them behind. On Claude the copy would sit beside the plugin's agent under two names. Task 12 removes both after the plugin loads, with the user's go. Veto: keep the Codex copy, accepting a hand-maintained file that no declaration describes.
-- **D5. `writing-clearly-and-concisely` is a declared dependency of `software-dev`, `bin/setup` installs a missing curated entry by name, and the Codex `agent-toolkit` plugin and marketplace go too.** §6.4 says "curated beside `sensemaking`" and "Codex gains the skill through `bin/setup`'s symlinks or not at all". Beside `sensemaking` means: in `dependencies`, so a fresh install pulls it; and since `claude plugin update` does not install a new dependency (measured), the engine installs it on an existing machine. On Codex the same skill is installed today from the `agent-toolkit` marketplace at an unpinned `local` version; once the pinned symlink exists that copy is the second route the spec's rule forbids, so Task 12 removes it in the documented order. Veto: drop the dependency and install the entry only by hand, or keep the Codex plugin and accept an unpinned duplicate the doctor will report the day upstream moves.
+- **D5. `writing-clearly-and-concisely` is a declared dependency of `software-dev`, `bin/setup` installs a missing subset entry by name, and the Codex `agent-toolkit` plugin and marketplace go too.** §6.4 says "curated beside `sensemaking`" and "Codex gains the skill through `bin/setup`'s symlinks or not at all". Beside `sensemaking` means: in `dependencies`, so a fresh install pulls it; and since `claude plugin update` does not install a new dependency (measured), the engine installs it on an existing machine. On Codex the same skill is installed today from the `agent-toolkit` marketplace at an unpinned `local` version; once the pinned symlink exists that copy is the second route the spec's rule forbids, so Task 12 removes it in the documented order. Veto: drop the dependency and install the entry only by hand, or keep the Codex plugin and accept an unpinned duplicate the doctor will report the day upstream moves.
 - **D6. Duplicate findings and unregistered caches are `NOTE:` lines.** A `FAIL:` would make "`bin/doctor` reports clean" unreachable: §6.6 itself names the vendored `brainstorming` against upstream's copy as a survivor "by design". So the check reports and the gate in Task 12 enumerates the exact `NOTE:` lines a correct machine prints and rejects any other. Veto: make them `FAIL:` and teach the check to read each marketplace entry's `skills` allowlist so the by-design pair is excluded.
 - **D7. Pools are per harness.** §6.6 says "one name resolving to two different trees"; the first implementation pooled both harnesses and fired seven times on `caveman`, whose two copies are different upstream versions — a different, milder thing than the D1 incident, where one session held two skills under one name. The Claude pool is `~/.claude/skills`, `~/.agents/skills` and each Claude plugin's install path; the Codex pool is `~/.codex/skills`, `~/.agents/skills` and each Codex plugin's cache directory. Veto: one pool, and seven standing notes on this machine.
 - **D8. The unregistered-cache rule is Claude-only.** §6.6 measured it on Claude. Codex's cache holds `openai-curated-remote`, which no `codex plugin marketplace list` line names and which is the CLI's own; the rule would misfire there on every machine. Veto: extend it to Codex with an allowlist for the built-in pair.
-- **D9. `scripts/upstream-watch` watches every `git-subdir` entry, and gains a `--newest-stable-tag` mode.** The spec asks only that the prerelease filter widen. A second curated entry is a second declared pin, and sub-project 2 §6 says the watch "compares the declared pins"; leaving one out would be the one silent gap. The stdin mode exists so the filter is asserted in `tests/test-setup-doctor.sh` without the network. Veto: hardcode superpowers and drop the mode.
+- **D9. `scripts/upstream-watch` watches every `git-subdir` entry, and gains a `--newest-stable-tag` mode.** The spec asks only that the prerelease filter widen. A second subset entry is a second declared pin, and sub-project 2 §6 says the watch "compares the declared pins"; leaving one out would be the one silent gap. The stdin mode exists so the filter is asserted in `tests/test-setup-doctor.sh` without the network. Veto: hardcode superpowers and drop the mode.
 - **D10. The `setup-matt-pocock-skills` note in `report_only` stays.** §6.6 reads as if the derived check replaces it; it cannot, because that case is a rename and a by-name check never sees it.
 - **D11. `harness-backup`'s historical spec is archived to `docs/archive/2026-08-08-harness-update-design.md` in this repository**, with a two-line provenance note, because this repository holds the mechanisms that replaced the detector it designed. §8.2 says "archived" and names no destination. Veto: research-vault's `docs/`.
 - **D12. `adhd`'s description is rewritten here.** §6.2 gates it and §6.5 says the truncation is "fixed incidentally" for skills adapted anyway. The text in Global Constraints describes and never triggers: it drops "brainstorm/ideate intents", "open-ended design, architecture" and "fuzzy-debugging decisions", the three claims that collide with `software-dev:brainstorming` and `systematic-debugging`.
@@ -252,7 +252,7 @@ EOF
 **Interfaces:**
 
 - Consumes: nothing.
-- Produces: `tests/test-plugin-skills.sh`, which every later task that adds a plugin skill must keep green. Task 3 appends its consistency-audit block. Its qualified-reference check resolves `superpowers:<s>` against the curated list, and `software-dev:<s>` / `sensemaking:<s>` against `plugins/<p>/skills/<s>/SKILL.md` **or** `plugins/<p>/agents/<s>.md`.
+- Produces: `tests/test-plugin-skills.sh`, which every later task that adds a plugin skill must keep green. Task 3 appends its consistency-audit block. Its qualified-reference check resolves `superpowers:<s>` against the subset-entry list, and `software-dev:<s>` / `sensemaking:<s>` against `plugins/<p>/skills/<s>/SKILL.md` **or** `plugins/<p>/agents/<s>.md`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -320,7 +320,7 @@ printf 'plugin-skills: %s skills checked; gates paired, references resolve, reth
 - [ ] **Step 2: Run it to verify it fails**
 
 Run: `bash tests/test-plugin-skills.sh`
-Expected: `FAIL: sensemaking:rethink-audit names superpowers:brainstorming, which the curated superpowers entry does not list`, exit 1. (Line 82 of the skill names the excluded skill; the SessionStart hook makes the same repoint at `using-superpowers:30`.)
+Expected: `FAIL: sensemaking:rethink-audit names superpowers:brainstorming, which the superpowers subset entry does not list`, exit 1. (Line 82 of the skill names the excluded skill; the SessionStart hook makes the same repoint at `using-superpowers:30`.)
 
 - [ ] **Step 3: Repoint the one reference**
 
@@ -1145,14 +1145,14 @@ EOF
 
 - Modify: `skills.json` (a third source)
 - Modify: `tests/test-skills-pin.sh` (18 → 19)
-- Modify: `scripts/upstream-watch` (the stable-tag filter, the `--newest-stable-tag` mode, every curated entry)
+- Modify: `scripts/upstream-watch` (the stable-tag filter, the `--newest-stable-tag` mode, every subset entry)
 - Modify: `tests/test-setup-doctor.sh` (the filter assertion)
 - Modify: `plugins/software-dev/README.md` (the `## Environment` section)
 
 **Interfaces:**
 
 - Consumes: nothing.
-- Produces: `scripts/upstream-watch --newest-stable-tag` reading tag names on stdin and printing the newest stable one; the curated-entry loop Task 8's second entry will be picked up by.
+- Produces: `scripts/upstream-watch --newest-stable-tag` reading tag names on stdin and printing the newest stable one; the subset-entry loop Task 8's second entry will be picked up by.
 
 - [ ] **Step 1: Make the pin test demand nineteen**
 
@@ -1211,7 +1211,7 @@ In `tests/test-setup-doctor.sh`, inside the `if command -v shellcheck` branch, d
 Run: `bash tests/test-setup-doctor.sh`
 Expected: `FAIL: upstream-watch --newest-stable-tag picked '<the last line of a full watch report>', expected v2.16.0`, exit 1. The old script ignores its argument and runs the whole network watch, so `got` is that report's closing line, typically `Everything matches. No action.`; either way not `v2.16.0`.
 
-- [ ] **Step 4: Widen the filter and watch every curated entry**
+- [ ] **Step 4: Widen the filter and watch every subset entry**
 
 In `scripts/upstream-watch`, directly after the line `report() { printf '%s\n' "$*"; }`, insert:
 
@@ -1346,16 +1346,16 @@ EOF
 
 - Modify: `.claude-plugin/marketplace.json` (a fourth entry)
 - Modify: `plugins/software-dev/.claude-plugin/plugin.json` (a third dependency)
-- Create: `tests/test-curated-writing.sh`
+- Create: `tests/test-subset-writing.sh`
 
 **Interfaces:**
 
 - Consumes: `fetch_pinned`.
-- Produces: the `writing-clearly-and-concisely` entry, `git-subdir` at `3027f20f…`, version `0.1.0`, path `dist/plugins/writing-clearly-and-concisely`, one skill. Task 9's engine reads it through `curated_entries`.
+- Produces: the `writing-clearly-and-concisely` entry, `git-subdir` at `3027f20f…`, version `0.1.0`, path `dist/plugins/writing-clearly-and-concisely`, one skill. Task 9's engine reads it through `subset_entries`.
 
 - [ ] **Step 1: Write the failing test**
 
-Create `tests/test-curated-writing.sh`:
+Create `tests/test-subset-writing.sh`:
 
 ```bash
 #!/usr/bin/env bash
@@ -1407,7 +1407,7 @@ printf 'curated-writing: dist == source at %s, version %s, one skill, a software
 
 - [ ] **Step 2: Run it to verify it fails**
 
-Run: `bash tests/test-curated-writing.sh`
+Run: `bash tests/test-subset-writing.sh`
 Expected: `FAIL: source.source must be git-subdir`, exit 1 (the entry does not exist, so every `jq` selection is empty).
 
 - [ ] **Step 3: Declare the entry and the dependency**
@@ -1448,8 +1448,8 @@ to
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
-Run: `bash tests/test-curated-writing.sh && bash tests/test-references-resolve.sh && bash tests/test-claude-validate.sh && bash tests/test-codex-marketplace.sh && bash tests/test-json-wellformed.sh`
-Expected: `curated-writing: dist == source at 3027f20f3181758385a1bb8c022d4041dfb4de84, version 0.1.0, one skill, a software-dev dependency`; `references-resolve: 2 string-source path(s) resolve, 3 dependency name(s) resolve`; `✔ Validation passed` three times; `codex-marketplace: 2 local plugins, manifests match, no superpowers entry` (the new entry has an object source, so the Codex side stays at two); `json: … files well-formed`; exit 0.
+Run: `bash tests/test-subset-writing.sh && bash tests/test-references-resolve.sh && bash tests/test-claude-validate.sh && bash tests/test-codex-marketplace.sh && bash tests/test-json-wellformed.sh`
+Expected: `subset-writing: dist == source at 3027f20f3181758385a1bb8c022d4041dfb4de84, version 0.1.0, one skill, a software-dev dependency`; `references-resolve: 2 string-source path(s) resolve, 3 dependency name(s) resolve`; `✔ Validation passed` three times; `codex-marketplace: 2 local plugins, manifests match, no superpowers entry` (the new entry has an object source, so the Codex side stays at two); `json: … files well-formed`; exit 0.
 
 - [ ] **Step 5: Commit**
 
@@ -1476,18 +1476,18 @@ EOF
 
 ---
 
-### Task 9: One engine for every curated entry
+### Task 9: One engine for every subset entry
 
 **Files:**
 
-- Modify: `bin/setup` (header comment; `UPSTREAM_ROOT`; `curated_entries`, `clone_dir`; `ensure_clones` replacing `ensure_clone`; `ensure_links`; `ensure_claude`; `main`)
+- Modify: `bin/setup` (header comment; `UPSTREAM_ROOT`; `subset_entries`, `clone_dir`; `ensure_clones` replacing `ensure_clone`; `ensure_links`; `ensure_claude`; `main`)
 - Modify: `tests/test-doctor-faults.sh` (a seeded second clone; one pattern)
 - Modify: `tests/test-setup-doctor.sh` (the upgrade fixture seeds the second clone)
 
 **Interfaces:**
 
 - Consumes: Task 8's entry; `fetch_pinned`.
-- Produces: `curated_entries` (tab-separated `name url ref sha path version`, one line per `git-subdir` entry) and `clone_dir <name>`; both used by Task 10. `ensure_clones`, `ensure_links` and `ensure_claude` report `pinned clone <name> is at …`, `link <name>`, `<name>@eranroseman <version> installed`.
+- Produces: `subset_entries` (tab-separated `name url ref sha path version`, one line per `git-subdir` entry) and `clone_dir <name>`; both used by Task 10. `ensure_clones`, `ensure_links` and `ensure_claude` report `pinned clone <name> is at …`, `link <name>`, `<name>@eranroseman <version> installed`.
 
 - [ ] **Step 1: Make the fault fixture demand the generalised messages and seed the second clone**
 
@@ -1776,7 +1776,7 @@ ensure_links() {
 }
 ```
 
-(f) In `ensure_claude()`, replace everything from the comment `# The two dependencies install and enable themselves; verify rather than act.` to the function's closing `}` with the two blocks below, in this order. The first moves `sensemaking` to its declared version, which nothing did before: a parent's update does not carry a dependency (sub-project 2's plan, B2), so without it the `0.2.0` bump in Task 11 would never reach a Claude that already holds `0.1.0`, and `adhd` would never load. The second handles every curated entry.
+(f) In `ensure_claude()`, replace everything from the comment `# The two dependencies install and enable themselves; verify rather than act.` to the function's closing `}` with the two blocks below, in this order. The first moves `sensemaking` to its declared version, which nothing did before: a parent's update does not carry a dependency (sub-project 2's plan, B2), so without it the `0.2.0` bump in Task 11 would never reach a Claude that already holds `0.1.0`, and `adhd` would never load. The second handles every subset entry.
 
 ```bash
   # sensemaking installs itself as a dependency of the first install, but a
@@ -2105,7 +2105,7 @@ NOTE: Codex: no skill name resolves to more than one tree
 NOTE: plugin cache for an unregistered marketplace: /home/eranr/.claude/plugins/cache/superpowers-dev (left alone; remove it by hand)
 ```
 
-The `brainstorming` pair is the survivor §6.6 names as by design: the curated `superpowers` cache holds upstream's copy on disk because `git-subdir` copies the whole subdirectory, and the vendored one differs by exactly the narrowed description. The `superpowers-dev` residue is issue #25; Task 12 removes it.
+The `brainstorming` pair is the survivor §6.6 names as by design: the subset-entry `superpowers` cache holds upstream's copy on disk because `git-subdir` copies the whole subdirectory, and the vendored one differs by exactly the narrowed description. The `superpowers-dev` residue is issue #25; Task 12 removes it.
 
 - [ ] **Step 5: Commit**
 
@@ -2250,7 +2250,7 @@ And in `## License`, replace the sentence with: ``MIT. The vendored `skills/brai
 - [ ] **Step 4: Run the whole suite**
 
 Run: `bash tests/run.sh`
-Expected: eighteen `PASS` lines — `test-claude-validate`, `test-codex-marketplace`, `test-codex-validate`, `test-curated-writing`, `test-doctor-duplicates`, `test-doctor-faults`, `test-hook`, `test-json-wellformed`, `test-plugin-skills`, `test-references-resolve`, `test-setup-doctor`, `test-skills-pin`, `test-upstream-pin`, `test-vendored-adhd`, `test-vendored-brainstorming`, `test-vendored-diagnosing-bugs`, `test-vendored-duplicates`, `test-vendored-scaffolder` — exit 0.
+Expected: eighteen `PASS` lines — `test-claude-validate`, `test-codex-marketplace`, `test-codex-validate`, `test-subset-writing`, `test-doctor-duplicates`, `test-doctor-faults`, `test-hook`, `test-json-wellformed`, `test-plugin-skills`, `test-references-resolve`, `test-setup-doctor`, `test-skills-pin`, `test-upstream-pin`, `test-vendored-adhd`, `test-vendored-brainstorming`, `test-vendored-diagnosing-bugs`, `test-vendored-duplicates`, `test-vendored-scaffolder` — exit 0.
 
 - [ ] **Step 5: Commit, push the branch, and watch CI**
 

@@ -5,7 +5,7 @@ tells you when a machine has drifted from them.
 
 ## Why
 
-Skills reach an agent by three different routes: a curated upstream, a separate
+Skills reach an agent by three different routes: a subset entry taken from an upstream at a pinned commit, a separate
 installer with its own lockfile, and skills written here. Two harnesses consume
 them differently — Codex has no dependency concept and no update verb, so
 anything Claude resolves automatically has to be done explicitly there. And
@@ -35,7 +35,7 @@ Four marketplace entries:
   is Claude Code only; Codex gets the same skills by symlink, created by
   `bin/setup` as described in Install below.
 - `writing-clearly-and-concisely`: softaworks/agent-toolkit's one skill of
-  that name, curated at a pinned commit from upstream's published plugin
+  that name, a subset entry at a pinned commit, taken from upstream's published plugin
   directory. Claude Code only, by the same mechanism and with the same Codex
   symlink.
 
@@ -59,7 +59,7 @@ marketplace and installs both local plugins there. When it is not, that half
 is reported as skipped and nothing else changes.
 
 What the run leaves behind: both plugins installed on each harness present, a
-pinned clone per curated entry — obra/superpowers and softaworks/agent-toolkit
+pinned clone per subset entry — obra/superpowers and softaworks/agent-toolkit
 — fourteen symlinks into them under `~/.agents/skills` (Codex's documented
 user skill root, created whether or not Codex is present), and the declared
 skills.sh set installed at its declared refs.

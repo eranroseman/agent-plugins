@@ -46,11 +46,11 @@ if grep -q 'superpowers:brainstorming' "$H/using-superpowers.md"; then fail "a s
 # dangling name in every session. Cross-checked against the marketplace,
 # which no copy of the file could do.
 [ -s "$H/working-rules.md" ] || fail "working-rules.md is empty"
-curated="$(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$MARKETPLACE" | sed 's#^\./##')"
+subset="$(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$MARKETPLACE" | sed 's#^\./##')"
 while IFS= read -r name; do
   [ -z "$name" ] && continue
-  printf '%s\n' "$curated" | grep -qxF -- "$name" \
-    || fail "working-rules.md names superpowers:$name, which the curated entry does not list"
+  printf '%s\n' "$subset" | grep -qxF -- "$name" \
+    || fail "working-rules.md names superpowers:$name, which the subset entry does not list"
 done < <(grep -o 'superpowers:[a-z-]*' "$H/working-rules.md" | sed 's/^superpowers://' | sort -u)
 
 # (2) envelope round-trip

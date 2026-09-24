@@ -50,14 +50,14 @@ an older version):
 - `superpowers@eranroseman`: obra/superpowers taken straight from upstream,
   13 of its 14 skills. `brainstorming` is the one left out.
 - `writing-clearly-and-concisely@eranroseman`: softaworks/agent-toolkit's
-  skill of that name, curated at a pinned commit. `consistency-audit` uses it
+  skill of that name, a subset entry at a pinned commit. `consistency-audit` uses it
   for its report when present.
 
 ## Install
 
 Installed by the same script as the rest of the marketplace, not by adding
 this plugin on its own — Codex has no dependency concept, so a manual `codex
-plugin add` here would skip the fourteen curated symlinks entirely. See
+plugin add` here would skip the fourteen subset-entry symlinks entirely. See
 the repository README's `## Install` section for the full picture; its
 two-command bootstrap
 
@@ -132,7 +132,7 @@ auto-update off, so it is a choice you make once:
 With it on, Claude Code refreshes the marketplace and updates installed plugins
 after a session starts, with a random delay of up to ten minutes, then either
 prompts for `/reload-plugins` or loads the new version at the next launch. The
-marketplace pins both curated entries — `superpowers` and
+marketplace pins both subset entries — `superpowers` and
 `writing-clearly-and-concisely` — at a fixed sha, so auto-update delivers this
 repository's releases and never drags in either upstream's HEAD.
 

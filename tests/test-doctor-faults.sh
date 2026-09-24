@@ -25,7 +25,7 @@ while IFS= read -r s; do
   mkdir -p "$CLONE/skills/$s"
 done < <(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$MARKETPLACE" | sed 's#^\./##')
 
-# Every other curated entry gets the same treatment: a clone with no origin,
+# Every other subset entry gets the same treatment: a clone with no origin,
 # at a sha that cannot be the declared one, carrying its skill directories so
 # the links have targets. Without it, apply mode would clone the real upstream
 # over the network into this scratch HOME on every run.

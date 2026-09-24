@@ -18,7 +18,7 @@
     },
     {
       "name": "superpowers",
-      "description": "obra/superpowers, curated: the process spine without brainstorming.",
+      "description": "obra/superpowers, a subset entry: the process spine without brainstorming.",
       "category": "development",
       "source": {
         "source": "git-subdir",
@@ -47,7 +47,7 @@
     },
     {
       "name": "writing-clearly-and-concisely",
-      "description": "softaworks/agent-toolkit, curated: one skill, Strunk's rules for prose humans read.",
+      "description": "softaworks/agent-toolkit, a subset entry: one skill, Strunk's rules for prose humans read.",
       "category": "documentation",
       "source": {
         "source": "git-subdir",
