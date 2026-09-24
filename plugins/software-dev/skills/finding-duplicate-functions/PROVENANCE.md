@@ -47,7 +47,7 @@ nothing here watches it.
 In `software-dev`, since 2026-09-06: its subject is software and only that
 product needs it (the placement rule in `plugins/sensemaking/README.md`).
 It was custodied in `harness-backup` before that, under that repository's
-rule of holding what no installer reproduces; that repository is retired.
+rule of holding what no tool reproduces; that repository is retired.
 
 `tests/test-vendored-duplicates.sh` holds the two carried templates
 byte-identical to upstream at the commit above, so a drift there is a

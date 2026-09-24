@@ -54,7 +54,7 @@ Two rules did ship as prose, and the climb is recorded here so a later reader ca
 
 Once a rule survives §4.0, this decides its home.
 
-- True for **every installer** of this plugin, with evidence of the problem, and depending on nothing beyond the plugin and its declared dependencies: the SessionStart hook additional context. Claude only, since a Codex plugin manifest has no instructions component and the [hook spec](2026-09-04-session-start-hook-design.md) §6 ships Codex no hook.
+- True for **every user** of this plugin, with evidence of the problem, and depending on nothing beyond the plugin and its declared dependencies: the SessionStart hook additional context. Claude only, since a Codex plugin manifest has no instructions component and the [hook spec](2026-09-04-session-start-hook-design.md) §6 ships Codex no hook.
 - True for **this repository**: the repository's own `AGENTS.md`, written by the setup skill in §8.
 - True only for **this machine**: a global instruction file, `~/.claude/CLAUDE.md` or `~/.codex/AGENTS.md`.
 

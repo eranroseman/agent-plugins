@@ -5,8 +5,8 @@ tells you when a machine has drifted from them.
 
 ## Why
 
-Skills reach an agent by three different routes: a subset entry taken from an upstream at a pinned commit, a separate
-installer with its own lockfile, and skills written here. Two harnesses consume
+Skills reach an agent by three different routes: a subset entry taken from an upstream at a pinned commit, `skills.sh`
+with its own lockfile, and skills written here. Two harnesses consume
 them differently — Codex has no dependency concept and no update verb, so
 anything Claude resolves automatically has to be done explicitly there. And
 upstreams move underneath all of it.
