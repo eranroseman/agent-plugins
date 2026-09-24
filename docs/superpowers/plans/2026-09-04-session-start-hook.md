@@ -1,4 +1,4 @@
-# SessionStart Hook Payload and Codex Posture Implementation Plan
+# SessionStart Hook Additional Context and Codex Posture Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -156,7 +156,7 @@ MSG
 
 ---
 
-### Task 2: Append the authored rules file to the payload
+### Task 2: Append the authored rules file to the additional context
 
 **Files:**
 
@@ -506,7 +506,7 @@ Expected: the `validate` workflow concludes `success`. If it fails, read the fai
 
 ### Task 6: Claude Code cutover, G3 rerun, G7 baseline — COMPLETE, both gates PASS
 
-> **Amended 2026-09-05.** The version shipped is **0.3.0**, not 0.2.0. The payload still carries exactly one rule, worktree cleanup: a task-reports rule was admitted and withdrawn the same day, because its destination clause is repository-specific and it belongs beside each repository's tracker declaration instead (hook spec §10, [setup and drift spec](../specs/2026-09-05-setup-and-drift-design.md) §8). So one paragraph leaves `~/.claude/CLAUDE.md`, not two, and the task-reports paragraph stays in **both** global files until the scaffolding skill ships. And the verification step moved **before** the deletion, so you prove the hook carries the rule before you delete its only other copy.
+> **Amended 2026-09-05.** The version shipped is **0.3.0**, not 0.2.0. The additional context still carries exactly one rule, worktree cleanup: a task-reports rule was admitted and withdrawn the same day, because its destination clause is repository-specific and it belongs beside each repository's tracker declaration instead (hook spec §10, [setup and drift spec](../specs/2026-09-05-setup-and-drift-design.md) §8). So one paragraph leaves `~/.claude/CLAUDE.md`, not two, and the task-reports paragraph stays in **both** global files until the scaffolding skill ships. And the verification step moved **before** the deletion, so you prove the hook carries the rule before you delete its only other copy.
 >
 > **Do not dispatch an implementer for this task.** It restarts Claude Code and edits files under `~`. The controller hands the steps below to the user and records what they report.
 
@@ -540,7 +540,7 @@ A count of `1` without the paragraph means the old cache is still loaded: check 
 - **After `/clear`:** the question was asked without the trailing period, so the literal answer was `0`, and the session volunteered the near-miss itself: "`You have superpowers.` (trailing period) in SessionStart hook block". The injection was present; the zero was a wording artifact.
 - **After `/compact`:** asked as two counts, `# software-development: working rules` and `You have superpowers.` including the period. Answer `1 and 1`. Before compaction it was `2 and 1`, the extra heading being a `cat` of `working-rules.md` in that session's history, which compaction dropped.
 
-**One limit worth recording rather than glossing.** A count of `1` after `/compact` cannot by itself distinguish a fresh injection from an old one surviving compaction, and unlike the tracer there is no payload difference to discriminate with, since both would be 0.3.0. The reading rests on two things: compaction replaces history with a summary, and the session reported that the summary's own mentions of both strings "sit inline in backticks, not standalone lines", so the single standalone occurrence is a live injection rather than preserved text. That is the same inline-versus-standalone trap the tracer hit, handled correctly here.
+**One limit worth recording rather than glossing.** A count of `1` after `/compact` cannot by itself distinguish a fresh injection from an old one surviving compaction, and unlike the tracer there is no additional context difference to discriminate with, since both would be 0.3.0. The reading rests on two things: compaction replaces history with a summary, and the session reported that the summary's own mentions of both strings "sit inline in backticks, not standalone lines", so the single standalone occurrence is a live injection rather than preserved text. That is the same inline-versus-standalone trap the tracer hit, handled correctly here.
 
 - [x] **Step 3: Move the worktree rule out of the user file** — done 2026-09-05, after G3 passed
 
@@ -566,7 +566,7 @@ Two fresh sessions in a scratch directory that has a git repository and no `docs
 
 Record pass or fail per prompt, with the skill actually invoked. A fail is a finding, not a defect (spec §8).
 
-**Observed:** prompt 1 invoked `Skill(software-development:brainstorming)` as its first tool call, prompt 2 invoked `Skill(superpowers:systematic-debugging)`. Prompt 1 was run twice: the first used `--permission-mode plan`, which the payload itself biases toward brainstorming, so it was rerun without plan mode and with edits disallowed. Only the clean run counts. Full record in spec §13.
+**Observed:** prompt 1 invoked `Skill(software-development:brainstorming)` as its first tool call, prompt 2 invoked `Skill(superpowers:systematic-debugging)`. Prompt 1 was run twice: the first used `--permission-mode plan`, which the additional context itself biases toward brainstorming, so it was rerun without plan mode and with edits disallowed. Only the clean run counts. Full record in spec §13.
 
 - [x] **Step 5: Report** — recorded directly in spec §13
 

@@ -20,7 +20,7 @@
 - Vendored `brainstorming` keeps `name: brainstorming`. Only the `description` line and a provenance header change; every other byte, and every file mode, matches upstream at the pinned sha.
 - `rethink-audit` is copied byte-for-byte from `~/harness-backup/claude/skills/rethink-audit/`. Task 2 Step 3 verifies the copy once, by md5, at copy time. No test repeats that check: the source is machine-local, and sub-project 5 rewrites the file.
 - Hook output envelope is exactly `{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"…"}}`.
-- Hook payload is upstream `skills/using-superpowers/SKILL.md` at the pinned sha, inside upstream's `<EXTREMELY_IMPORTANT>` frame, with exactly one edit: line 30, `superpowers:brainstorming` → `software-development:brainstorming`.
+- Hook additional context is upstream `skills/using-superpowers/SKILL.md` at the pinned sha, inside upstream's `<EXTREMELY_IMPORTANT>` frame, with exactly one edit: line 30, `superpowers:brainstorming` → `software-development:brainstorming`.
 - `superpowers` has no Codex marketplace entry; on Codex it arrives by symlinks from a clone pinned to the same sha.
 - Commit messages are plain prose and end with the executing agent's attribution trailer (`Co-Authored-By: <agent name> <noreply@anthropic.com>`). The commit commands below show the plan author's trailer; substitute your own.
 - All work happens on branch `tracer-bullet` cut from `main`; Tasks 9 to 11 run only after that branch is merged and pushed.
@@ -1042,7 +1042,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 **Interfaces:**
 
 - Consumes: `tests/lib.sh` (`fetch_upstream`, `fail`); upstream `skills/using-superpowers/SKILL.md` at the pinned sha.
-- Produces: an executable `hooks/session-start` that takes no arguments, reads `hooks/using-superpowers.md` next to itself, and prints one JSON object on stdout: `{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"<payload>"}}`. Every C0 control character in the payload is escaped, not only the common five, so a future payload cannot silently break the envelope. `hooks/hooks.json` wires it for `startup|clear|compact`. Sub-project 3 replaces only `using-superpowers.md`.
+- Produces: an executable `hooks/session-start` that takes no arguments, reads `hooks/using-superpowers.md` next to itself, and prints one JSON object on stdout: `{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"<additional context>"}}`. Every C0 control character in the additional context is escaped, not only the common five, so a future additional context cannot silently break the envelope. `hooks/hooks.json` wires it for `startup|clear|compact`. Sub-project 3 replaces only `using-superpowers.md`.
 
 - [ ] **Step 1: Write the failing test**
 

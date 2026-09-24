@@ -9,7 +9,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-payload="$(cat "${SCRIPT_DIR}/using-superpowers.md" && printf '\n' && cat "${SCRIPT_DIR}/working-rules.md")"
+context="$(cat "${SCRIPT_DIR}/using-superpowers.md" && printf '\n' && cat "${SCRIPT_DIR}/working-rules.md")"
 
 # JSON-escape with bash parameter substitution: one pass per character class.
 # Backslash first, so later passes do not double-escape it.
@@ -35,4 +35,4 @@ escape_for_json() {
 # printf rather than a heredoc: bash 5.3+ heredocs can hang inside hooks
 # (https://github.com/obra/superpowers/issues/571).
 printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"%s"}}\n' \
-  "$(escape_for_json "$payload")"
+  "$(escape_for_json "$context")"

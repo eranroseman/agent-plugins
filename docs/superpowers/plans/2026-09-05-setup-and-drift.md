@@ -39,7 +39,7 @@ These are not predictions. Each was run on 2026-09-05 against the real upstreams
 
 - The pinned refs, read from `git ls-remote --tags`; the scaffolder's seven files, at that tag; the lockfile's `ref` key, from a real `npx skills add "mattpocock/skills#v1.2.3" --skill wait-what -g -y` in a scratch `HOME`.
 - `claude plugin marketplace add /abs/path` and `claude plugin install … -y --scope user` end to end in a scratch `HOME`, including the two auto-installed dependencies and every file the CLI wrote.
-- The payload recipe and the brainstorming re-vendor recipe, each reproducing the shipped file byte-for-byte.
+- The additional context recipe and the brainstorming re-vendor recipe, each reproducing the shipped file byte-for-byte.
 - Both validators against a plugin tree carrying the vendored scaffolder, which is how Deviation D7 was found rather than guessed.
 - The adapted `SKILL.md` built by Task 2's Steps 3 to 6, with Task 2's drift test run against it: it passes, and the Codex-validator exception matches exactly one bullet.
 - `bin/setup` assembled from Tasks 4 to 9 (475 lines), plus `bin/doctor`, `scripts/bump-superpowers` and `scripts/upstream-watch`: `bash -n` and `shellcheck` clean on all four.
@@ -687,7 +687,7 @@ EOF
 
 ---
 
-### Task 3: Give the payload one build recipe, in `scripts/bump-superpowers`
+### Task 3: Give the additional context one build recipe, in `scripts/bump-superpowers`
 
 Today the recipe that turns upstream's `using-superpowers` into `hooks/using-superpowers.md` exists only inside `tests/test-hook.sh`, and it transcribes upstream's `<EXTREMELY_IMPORTANT>` frame rather than reading it. A bump that changed the frame would leave the suite green while the injection diverged (§10). This task moves the recipe into the bump script and makes the test call it.
 
@@ -701,7 +701,7 @@ The extraction was verified on 2026-09-05 against the current `using-superpowers
 **Interfaces:**
 
 - Consumes: `tests/lib.sh`'s `fetch_upstream` and `upstream_sha` (unchanged).
-- Produces: `scripts/bump-superpowers --emit-using-superpowers <clone-dir>`, which prints the payload to stdout and is the only copy of the recipe. Task 4's `tests/test-setup-doctor.sh` shellchecks this file too.
+- Produces: `scripts/bump-superpowers --emit-using-superpowers <clone-dir>`, which prints the additional context to stdout and is the only copy of the recipe. Task 4's `tests/test-setup-doctor.sh` shellchecks this file too.
 
 - [ ] **Step 1: Write the failing assertion**
 
@@ -891,7 +891,7 @@ bash tests/run.sh
 
 Expected: the hook test's summary line, then ten `PASS` lines.
 
-- [ ] **Step 5: Prove the script's own output against the shipped payload**
+- [ ] **Step 5: Prove the script's own output against the shipped additional context**
 
 ```bash
 diff <(bash scripts/bump-superpowers --emit-using-superpowers \
