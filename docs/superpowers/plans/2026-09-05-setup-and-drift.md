@@ -14,9 +14,9 @@
 
 Verbatim from the spec unless marked. Every task's requirements implicitly include this section.
 
-- **Versions.** Both `software-development` manifests move `0.3.0` → `0.4.0` (§8). `sensemaking` stays `0.1.0`. `tests/test-hook.sh` pins the version in two assertions and moves with it.
+- **Versions.** Both `software-dev` manifests move `0.3.0` → `0.4.0` (§8). `sensemaking` stays `0.1.0`. `tests/test-hook.sh` pins the version in two assertions and moves with it.
 - **Declared pins.** `obra/superpowers` stays at `b36e0829c6d0140e93cfef2ca599b1b07d4a7797`, version `6.3.0`. New: `mattpocock/skills` at tag `v1.2.3` (= `835450ef244ab7335f75d95b83e7d979eae22a6d`), `obra/superpowers-developing-for-claude-code` at tag `v0.3.1` (= `aa900d596cf32d20e1cd3700996505d8adf8d823`). Both are the latest tags, read from `git ls-remote --tags` on 2026-09-05, and both match the spec's §5 placeholders. Pinning moves content: 16 of 18 mattpocock skills change.
-- **Paths.** The pinned clone is `$HOME/.local/share/software-development/upstream/superpowers` (the path the machine already uses; `readlink -f ~/.codex/skills/writing-plans` on 2026-09-05). The symlink root is `$HOME/.agents/skills` (§7.3). The skills.sh lockfile is `$HOME/.agents/.skill-lock.json`, and the key holding a pin is `.skills.<name>.ref` (measured 2026-09-05 in a scratch `HOME`).
+- **Paths.** The pinned clone is `$HOME/.local/share/software-dev/upstream/superpowers` (the path the machine already uses; `readlink -f ~/.codex/skills/writing-plans` on 2026-09-05). The symlink root is `$HOME/.agents/skills` (§7.3). The skills.sh lockfile is `$HOME/.agents/.skill-lock.json`, and the key holding a pin is `.skills.<name>.ref` (measured 2026-09-05 in a scratch `HOME`).
 - **The engine takes no path argument.** It reads the machine through `HOME` and `CODEX_HOME` (§11). One environment override exists, `SD_MARKETPLACE_SOURCE` — see Deviation D5.
 - **Prerequisites** (§7.2). `bin/setup`: fatal if `git`, `jq`, `node`, `npx` or `claude` is missing; `codex` is conditional, skipped and reported. `bin/doctor`: nothing is fatal; `claude` and `codex` are conditional.
 - **Never `--scope project`** (§7.4). It writes a checked-in `.claude/settings.json` carrying `enabledPlugins` and `extraKnownMarketplaces`.
@@ -52,11 +52,11 @@ Two defects were found that way and are already fixed in the text below: `readli
 These are visible choices, not silent ones. Any of them can be vetoed; each names what changes if it is.
 
 - **D1. `skills.json` lists 17 mattpocock skills, not 18.** `setup-matt-pocock-skills` is dropped because Task 2 vendors an adapted copy under the same name. Installing both puts the unadapted skill — the one whose file-pick rule writes `CLAUDE.md` and leaves Codex reading nothing (§8) — one invocation away from the adapted one. Veto: add the name back to the array and delete the negative assertion in `tests/test-skills-pin.sh`.
-- **D2. The vendored scaffolder is seven files, not six.** Upstream v1.2.3 ships `agents/openai.yaml` (a Codex interface block carrying `allow_implicit_invocation: false`) beside `SKILL.md` and the five seed templates. Six are byte-identical; only `SKILL.md` is edited, exactly as §8 requires.
+- **D2. The vendored scaffolder is seven files, not six.** Upstream v1.2.3 ships `skills/setup-repository/agents/openai.yaml` (a Codex interface block carrying `allow_implicit_invocation: false`) beside `SKILL.md` and the five seed templates. Six are byte-identical; only `SKILL.md` is edited, exactly as §8 requires.
 - **D3. The stale-marketplace-clone check is skipped, not failed, when the marketplace source is a directory.** `claude plugin marketplace add /abs/path` records `"source": "directory"` and an `installLocation` equal to that path, with no clone to compare (measured 2026-09-05). CI and any local-path install hit this.
 - **D4. The doctor reports redundant Codex links generically**, by resolved path, rather than asserting the twenty §7.3 counted. The thirteen new links become redundant by the same rule the moment they exist in `$HOME/.agents/skills`.
 - **D5. One environment override, `SD_MARKETPLACE_SOURCE`.** §11 requires `bin/setup` to run end to end in CI, and `claude plugin marketplace add eranroseman/agent-plugins` in CI clones origin `main`, not the branch under test — so the branch's script would install `main`'s desired state and the test would prove nothing. CI sets `SD_MARKETPLACE_SOURCE="$GITHUB_WORKSPACE"`. It defaults to `eranroseman/agent-plugins` and nothing else in the engine is overridable.
-- **D7. `tests/test-codex-validate.sh` gains one recorded exception, and the vendored frontmatter keeps upstream's invocation gate.** Codex's plugin validator rejects `disable-model-invocation: true` on any skill under `<plugin>/skills` — `validate_plugin.py:472` requires the field to be `false` or absent, and line 425 walks every directory under `<plugin>/skills` regardless of what the manifest's `skills` key names. Measured 2026-09-05 against a scratch copy of the plugin: upstream's `true` produces ``skill `setup-matt-pocock-skills` frontmatter field `disable-model-invocation` must be false`` and nothing else; with `false`, or with the field deleted, both validators pass. **The gate is kept anyway**, because the two CLIs gate invocation by different mechanisms and each skill should carry the one its CLI reads. Claude reads the frontmatter field; Codex reads `policy.allow_implicit_invocation` in `agents/openai.yaml`, and its runtime never reads the Claude field at all — `disable_model_invocation` appears in exactly one file in openai/codex at `rust-v0.153.4`, and that file is `validate_plugin.py`; the loader reads only the yaml (`codex-rs/ext/skills/src/loader/metadata.rs:53`, `codex-rs/skills/src/model.rs:23-27`, defaulting to true when absent). Upstream mattpocock treats them as a pair: at `v1.2.3`, 21 of 35 skills carry `disable-model-invocation: true` and every one of them also carries `allow_implicit_invocation: false`; the field never appears without its yaml counterpart. Flipping ours to `false` would break that invariant to satisfy a lint that conflates the two mechanisms. So the vendored copy is byte-identical in its frontmatter, and `tests/test-codex-validate.sh` tolerates exactly this one message for exactly this one skill, with the reason recorded in the test. Veto: flip the vendored field to `false` and narrow the description to compensate — both validators then pass clean, at the cost of making a skill that rewrites `AGENTS.md` and `CLAUDE.md` model-invocable on Claude.
+- **D7. `tests/test-codex-validate.sh` gains one recorded exception, and the vendored frontmatter keeps upstream's invocation gate.** Codex's plugin validator rejects `disable-model-invocation: true` on any skill under `<plugin>/skills` — `validate_plugin.py:472` requires the field to be `false` or absent, and line 425 walks every directory under `<plugin>/skills` regardless of what the manifest's `skills` key names. Measured 2026-09-05 against a scratch copy of the plugin: upstream's `true` produces ``skill `setup-matt-pocock-skills` frontmatter field `disable-model-invocation` must be false`` and nothing else; with `false`, or with the field deleted, both validators pass. **The gate is kept anyway**, because the two CLIs gate invocation by different mechanisms and each skill should carry the one its CLI reads. Claude reads the frontmatter field; Codex reads `policy.allow_implicit_invocation` in `skills/setup-repository/agents/openai.yaml`, and its runtime never reads the Claude field at all — `disable_model_invocation` appears in exactly one file in openai/codex at `rust-v0.153.4`, and that file is `validate_plugin.py`; the loader reads only the yaml (`openai/codex:codex-rs/ext/skills/src/loader/metadata.rs:53`, `openai/codex:codex-rs/skills/src/model.rs:23-27`, defaulting to true when absent). Upstream mattpocock treats them as a pair: at `v1.2.3`, 21 of 35 skills carry `disable-model-invocation: true` and every one of them also carries `allow_implicit_invocation: false`; the field never appears without its yaml counterpart. Flipping ours to `false` would break that invariant to satisfy a lint that conflates the two mechanisms. So the vendored copy is byte-identical in its frontmatter, and `tests/test-codex-validate.sh` tolerates exactly this one message for exactly this one skill, with the reason recorded in the test. Veto: flip the vendored field to `false` and narrow the description to compensate — both validators then pass clean, at the cost of making a skill that rewrites `AGENTS.md` and `CLAUDE.md` model-invocable on Claude.
 - **D6. The desired state is read from `dirname "$0"/..`, not from `installLocation`.** §7.1 says the script resolves `installLocation` from `known_marketplaces.json` rather than hardcoding it; that resolution is kept, but only for the doctor's stale-clone check. Reading the desired state from beside the script is what makes D5 work and what makes the script and its desired state move together.
 
 ## Corrections from review, 2026-09-05 — apply these before executing Task 1
@@ -84,7 +84,7 @@ Independent corroboration for the second: `~/.claude/plugins/installed_plugins.j
 
 `ensure_claude` (Task 6 Step 3) reaches for the plugin with `claude plugin install`. Measured on 2.1.261, and observed live in this repository's own cutover on 2026-09-05: on an already-installed plugin, `install` prints "already installed", exits 0, and does **not** move the version. Only `claude plugin update <plugin> -y --scope user` does; that is what moved this machine from 0.1.0 to 0.3.0. `update` on a _not_-installed plugin exits 1, so the apply branch has to split on presence.
 
-The same gap has a Codex twin. `ensure_codex` (Task 7 Step 3) compares presence only, and `codex plugin add` is Codex's _only_ upgrade verb, so an installed plugin never moves. This machine holds `~/.codex/plugins/cache/eranroseman/software-development/0.3.0`, so after the 0.3.0 to 0.4.0 bump Codex would silently stay behind and never receive the vendored scaffolder. Spec §9 step 3 calls for exactly this re-add.
+The same gap has a Codex twin. `ensure_codex` (Task 7 Step 3) compares presence only, and `codex plugin add` is Codex's _only_ upgrade verb, so an installed plugin never moves. This machine holds `~/.codex/plugins/cache/eranroseman/software-dev/0.3.0`, so after the 0.3.0 to 0.4.0 bump Codex would silently stay behind and never receive the vendored scaffolder. Spec §9 step 3 calls for exactly this re-add.
 
 A dependency is not carried by its parent's update, measured, so `superpowers@eranroseman` needs the same treatment when a §10 pin bump moves its declared version.
 
@@ -114,7 +114,7 @@ bin/doctor                       Task 4: three lines, exec bin/setup --check
 scripts/bump-superpowers         Task 3: sha bump; owns the payload build recipe
 scripts/upstream-watch           Task 11: pin comparison, run by the workflow, runnable by hand
 skills.json                      Task 1: the skills.sh declaration
-plugins/software-development/
+plugins/software-dev/
 ├── .claude-plugin/plugin.json   Task 2: version 0.4.0
 ├── .codex-plugin/plugin.json    Task 2: version 0.4.0
 ├── LICENSE                      Task 2: a third provenance block for mattpocock/skills
@@ -278,18 +278,18 @@ EOF
 
 **Files:**
 
-- Create: `plugins/software-development/skills/setup-matt-pocock-skills/SKILL.md`
-- Create: `plugins/software-development/skills/setup-matt-pocock-skills/agents/openai.yaml`
-- Create: `plugins/software-development/skills/setup-matt-pocock-skills/domain.md`
-- Create: `plugins/software-development/skills/setup-matt-pocock-skills/issue-tracker-github.md`
-- Create: `plugins/software-development/skills/setup-matt-pocock-skills/issue-tracker-gitlab.md`
-- Create: `plugins/software-development/skills/setup-matt-pocock-skills/issue-tracker-local.md`
-- Create: `plugins/software-development/skills/setup-matt-pocock-skills/triage-labels.md`
+- Create: `plugins/software-development/skills/setup-matt-pocock-skills/SKILL.md` (now `plugins/software-dev/skills/setup-repository/SKILL.md`)
+- Create: `plugins/software-development/skills/setup-matt-pocock-skills/agents/openai.yaml` (now `plugins/software-dev/skills/setup-repository/agents/openai.yaml`)
+- Create: `plugins/software-development/skills/setup-matt-pocock-skills/domain.md` (now `plugins/software-dev/skills/setup-repository/domain.md`)
+- Create: `plugins/software-development/skills/setup-matt-pocock-skills/issue-tracker-github.md` (now `plugins/software-dev/skills/setup-repository/issue-tracker-github.md`)
+- Create: `plugins/software-development/skills/setup-matt-pocock-skills/issue-tracker-gitlab.md` (now `plugins/software-dev/skills/setup-repository/issue-tracker-gitlab.md`)
+- Create: `plugins/software-development/skills/setup-matt-pocock-skills/issue-tracker-local.md` (now `plugins/software-dev/skills/setup-repository/issue-tracker-local.md`)
+- Create: `plugins/software-development/skills/setup-matt-pocock-skills/triage-labels.md` (now `plugins/software-dev/skills/setup-repository/triage-labels.md`)
 - Create: `tests/test-vendored-scaffolder.sh`
-- Modify: `plugins/software-development/.claude-plugin/plugin.json` (version)
-- Modify: `plugins/software-development/.codex-plugin/plugin.json` (version)
-- Modify: `plugins/software-development/LICENSE` (append a third provenance block)
-- Modify: `plugins/software-development/README.md` (the "What it ships" list)
+- Modify: `plugins/software-dev/.claude-plugin/plugin.json` (version)
+- Modify: `plugins/software-dev/.codex-plugin/plugin.json` (version)
+- Modify: `plugins/software-dev/LICENSE` (append a third provenance block)
+- Modify: `plugins/software-dev/README.md` (the "What it ships" list)
 - Modify: `tests/test-hook.sh` (two version assertions)
 - Modify: `tests/test-codex-validate.sh` (one recorded exception, Deviation D7)
 
@@ -403,7 +403,7 @@ grep -q '### Task reports' "$V/SKILL.md" || fail "the block carries no Task repo
 grep -q '.superpowers/sdd/' "$V/SKILL.md" || fail "the task-reports rule lost its subject"
 
 # The LICENSE's third provenance notice names the same ref and commit.
-grep -q "at tag $REF, commit $SHA" "$REPO_ROOT/plugins/software-development/LICENSE" \
+grep -q "at tag $REF, commit $SHA" "$REPO_ROOT/plugins/software-dev/LICENSE" \
   || fail "LICENSE provenance does not name $REF / $SHA"
 
 printf 'vendored-scaffolder: matches mattpocock/skills %s except header + two regions\n' "$REF"
@@ -430,11 +430,11 @@ rm -rf "$d"
 find plugins/software-development/skills/setup-matt-pocock-skills -type f | sort
 ```
 
-Expected: seven paths — `SKILL.md`, `agents/openai.yaml`, `domain.md`, `issue-tracker-github.md`, `issue-tracker-gitlab.md`, `issue-tracker-local.md`, `triage-labels.md`.
+Expected: seven paths — `SKILL.md`, `skills/setup-repository/agents/openai.yaml`, `domain.md`, `issue-tracker-github.md`, `issue-tracker-gitlab.md`, `issue-tracker-local.md`, `triage-labels.md`.
 
 - [ ] **Step 4: Insert the provenance header**
 
-In `plugins/software-development/skills/setup-matt-pocock-skills/SKILL.md`, immediately after line 5 (the closing `---` of the frontmatter) and before the blank line that follows, insert:
+In `plugins/software-development/skills/setup-matt-pocock-skills/SKILL.md` (now `plugins/software-dev/skills/setup-repository/SKILL.md`), immediately after line 5 (the closing `---` of the frontmatter) and before the blank line that follows, insert:
 
 ```text
 <!-- Vendored from https://github.com/mattpocock/skills at tag v1.2.3, commit 835450ef244ab7335f75d95b83e7d979eae22a6d
@@ -528,12 +528,12 @@ recorded no tracker, since the rule points at one.
 
 ```bash
 cd /home/eranr/agent-plugins
-for f in plugins/software-development/.claude-plugin/plugin.json \
-         plugins/software-development/.codex-plugin/plugin.json; do
+for f in plugins/software-dev/.claude-plugin/plugin.json \
+         plugins/software-dev/.codex-plugin/plugin.json; do
   tmp="$(mktemp)"
   jq '.version = "0.4.0"' "$f" > "$tmp" && mv "$tmp" "$f"
 done
-grep -h '"version"' plugins/software-development/.*-plugin/plugin.json
+grep -h '"version"' plugins/software-dev/.*-plugin/plugin.json
 ```
 
 Expected: two `"version": "0.4.0",` lines.
@@ -547,7 +547,7 @@ In `tests/test-hook.sh`, change both version assertions from `0.3.0` to `0.4.0`:
 
 - [ ] **Step 8: Append the third LICENSE block**
 
-Append to `plugins/software-development/LICENSE`:
+Append to `plugins/software-dev/LICENSE`:
 
 ```text
 
@@ -584,7 +584,7 @@ SOFTWARE.
 
 - [ ] **Step 9: Name the skill in the plugin README**
 
-In `plugins/software-development/README.md`, in the "What it ships" list, after the `skills/brainstorming/` bullet, insert:
+In `plugins/software-dev/README.md`, in the "What it ships" list, after the `skills/brainstorming/` bullet, insert:
 
 ```markdown
 - `skills/setup-matt-pocock-skills/`: mattpocock/skills' repository scaffolder,
@@ -604,7 +604,7 @@ Plugin validation failed:
 - skill `setup-matt-pocock-skills` frontmatter field `disable-model-invocation` must be false
 ```
 
-That is the lint conflating two mechanisms, not a defect in the skill: Codex's runtime never reads the Claude field (it appears in exactly one file in openai/codex at `rust-v0.153.4`, and that file is the validator), and this skill carries Codex's own gate in `agents/openai.yaml`. So the test tolerates that one bullet, for that one skill, and nothing else.
+That is the lint conflating two mechanisms, not a defect in the skill: Codex's runtime never reads the Claude field (it appears in exactly one file in openai/codex at `rust-v0.153.4`, and that file is the validator), and this skill carries Codex's own gate in `skills/setup-repository/agents/openai.yaml`. So the test tolerates that one bullet, for that one skill, and nothing else.
 
 In `tests/test-codex-validate.sh`, replace the loop body:
 
@@ -648,7 +648,7 @@ Confirm the exception is narrow rather than blanket:
 
 ```bash
 python3 "${CODEX_PLUGIN_VALIDATOR:-$HOME/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py}" \
-  plugins/software-development; echo "raw validator exit=$?"
+  plugins/software-dev; echo "raw validator exit=$?"
 ```
 
 Expected: the one bullet above and a non-zero exit. If a second bullet appears, the test will fail on it, which is the point.
@@ -656,7 +656,7 @@ Expected: the one bullet above and a non-zero exit. If a second bullet appears, 
 - [ ] **Step 12: Commit**
 
 ```bash
-git add plugins/software-development tests/test-vendored-scaffolder.sh tests/test-hook.sh \
+git add plugins/software-dev tests/test-vendored-scaffolder.sh tests/test-hook.sh \
         tests/test-codex-validate.sh
 git commit -m "$(cat <<'EOF'
 Vendor the repository scaffolder, adapted, and ship 0.4.0
@@ -719,7 +719,7 @@ expected="$(mktemp)"
 bash "$REPO_ROOT/scripts/bump-superpowers" --emit-using-superpowers "$UP" > "$expected" \
   || fail "scripts/bump-superpowers --emit-using-superpowers failed"
 diff "$expected" "$H/using-superpowers.md" || fail "using-superpowers.md != the recipe's output for the pinned clone"
-[ "$(grep -c 'software-development:brainstorming' "$H/using-superpowers.md")" -eq 1 ] || fail "expected exactly one software-development:brainstorming"
+[ "$(grep -c 'software-dev:brainstorming' "$H/using-superpowers.md")" -eq 1 ] || fail "expected exactly one software-dev:brainstorming"
 if grep -q 'superpowers:brainstorming' "$H/using-superpowers.md"; then fail "a superpowers:brainstorming reference survived"; fi
 ```
 
@@ -749,7 +749,7 @@ set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 MARKETPLACE="$REPO_ROOT/.claude-plugin/marketplace.json"
-PLUGIN="$REPO_ROOT/plugins/software-development"
+PLUGIN="$REPO_ROOT/plugins/software-dev"
 UPSTREAM_URL="https://github.com/obra/superpowers.git"
 
 die() { printf 'ERROR: %s\n' "$*" >&2; exit 2; }
@@ -778,7 +778,7 @@ emit_using_superpowers() {
   pre="${tmpl%%\$\{using_superpowers_escaped\}*}"
   post="${tmpl#*\$\{using_superpowers_escaped\}}"
   printf '%b' "$pre"
-  printf '%s' "$(sed '30s/superpowers:brainstorming/software-development:brainstorming/' "$src")"
+  printf '%s' "$(sed '30s/superpowers:brainstorming/software-dev:brainstorming/' "$src")"
   printf '%b\n' "$post"
 }
 
@@ -871,8 +871,8 @@ revendor_brainstorming "$work" "$new_sha"
 
 printf '\nBumped %s -> %s, version %s. Review the diff:\n' "$old_sha" "$new_sha" "$new_version"
 printf '  git diff -- %s %s\n' \
-  "plugins/software-development/hooks/using-superpowers.md" \
-  "plugins/software-development/skills/brainstorming"
+  "plugins/software-dev/hooks/using-superpowers.md" \
+  "plugins/software-dev/skills/brainstorming"
 printf 'Then run: bash tests/run.sh\n'
 ```
 
@@ -895,24 +895,24 @@ Expected: the hook test's summary line, then ten `PASS` lines.
 
 ```bash
 diff <(bash scripts/bump-superpowers --emit-using-superpowers \
-        "$HOME/.local/share/software-development/upstream/superpowers") \
-     plugins/software-development/hooks/using-superpowers.md && echo "recipe reproduces using-superpowers.md"
+        "$HOME/.local/share/software-dev/upstream/superpowers") \
+     plugins/software-dev/hooks/using-superpowers.md && echo "recipe reproduces using-superpowers.md"
 ```
 
-Expected: `recipe reproduces using-superpowers.md`, exit 0. If the pinned clone is absent on this machine, use `UPSTREAM_DIR=/tmp/software-development-upstream-superpowers bash tests/test-hook.sh` instead, which fetches it.
+Expected: `recipe reproduces using-superpowers.md`, exit 0. If the pinned clone is absent on this machine, use `UPSTREAM_DIR=/tmp/software-dev-upstream-superpowers bash tests/test-hook.sh` instead, which fetches it.
 
 Both regenerated artifacts were verified against the shipped files on 2026-09-05 before this plan was written, so a mismatch here means the script was mistyped, not that the recipe is wrong. Prove the second one the same way, by running the bump against the sha already pinned — the script refuses, so check the re-vendor by hand instead:
 
 ```bash
-UP="$HOME/.local/share/software-development/upstream/superpowers"
+UP="$HOME/.local/share/software-dev/upstream/superpowers"
 SHA="$(jq -r '.plugins[] | select(.name == "superpowers") | .source.sha' .claude-plugin/marketplace.json)"
 tmp="$(mktemp)"
 { sed -n '1,2p' "$UP/skills/brainstorming/SKILL.md"
-  sed -n 3p plugins/software-development/skills/brainstorming/SKILL.md
+  sed -n 3p plugins/software-dev/skills/brainstorming/SKILL.md
   sed -n '4p' "$UP/skills/brainstorming/SKILL.md"
-  sed -n '5,9p' plugins/software-development/skills/brainstorming/SKILL.md
+  sed -n '5,9p' plugins/software-dev/skills/brainstorming/SKILL.md
   sed -n '5,$p' "$UP/skills/brainstorming/SKILL.md"; } > "$tmp"
-diff "$tmp" plugins/software-development/skills/brainstorming/SKILL.md \
+diff "$tmp" plugins/software-dev/skills/brainstorming/SKILL.md \
   && echo "the re-vendor shape matches the shipped skill"
 rm -f "$tmp"
 ```
@@ -1047,7 +1047,7 @@ SKILLS_JSON="$REPO_ROOT/skills.json"
 # Each later task adds the variables its own checks need, beside them, rather
 # than here: a variable declared before anything reads it is a shellcheck
 # SC2034 warning, and shellcheck must exit 0 from Task 4 onward.
-CLONE_DIR="$HOME/.local/share/software-development/upstream/superpowers"
+CLONE_DIR="$HOME/.local/share/software-dev/upstream/superpowers"
 
 MODE=apply
 FAILURES=0
@@ -1232,7 +1232,7 @@ SETUP="$REPO_ROOT/bin/setup"
 H="$(mktemp -d)"
 trap 'rm -rf "$H"' EXIT
 
-CLONE="$H/.local/share/software-development/upstream/superpowers"
+CLONE="$H/.local/share/software-dev/upstream/superpowers"
 SKILLS="$H/.agents/skills"
 mkdir -p "$CLONE" "$SKILLS" || fail "could not seed $H"
 
@@ -1288,12 +1288,12 @@ if [ ! -x "$BIN/claude" ]; then
   exit 0
 fi
 mkdir -p "$H/.claude/plugins"
-sd="$(jq -r .version "$REPO_ROOT/plugins/software-development/.claude-plugin/plugin.json")"
+sd="$(jq -r .version "$REPO_ROOT/plugins/software-dev/.claude-plugin/plugin.json")"
 sm="$(jq -r .version "$REPO_ROOT/plugins/sensemaking/.claude-plugin/plugin.json")"
 sp="$(jq -r '.plugins[] | select(.name == "superpowers") | .version' "$MARKETPLACE")"
 cat > "$H/.claude/plugins/installed_plugins.json" <<JSON
 {"version":2,"plugins":{
-  "software-development@eranroseman":[{"scope":"user","version":"$sd"}],
+  "software-dev@eranroseman":[{"scope":"user","version":"$sd"}],
   "sensemaking@eranroseman":[{"scope":"user","version":"$sm"}],
   "superpowers@eranroseman":[{"scope":"user","version":"$sp"}]}}
 JSON
@@ -1517,7 +1517,7 @@ EOF
 - Consumes: Task 4's helpers, `MARKETPLACE_SOURCE`.
 - Produces: nothing other tasks read. The CI job is the automated half of gate S1.
 
-Measured in a scratch `HOME` on 2026-09-05: `claude plugin marketplace add /abs/path` records `"source": {"source": "directory", "path": …}` and an `installLocation` equal to that path; `claude plugin install software-development@eranroseman -y --scope user` then reports `(+ 2 dependencies: sensemaking, superpowers)` and writes all three into `installed_plugins.json` with `"auto": true` on the two dependencies, and all three into `settings.json`'s `enabledPlugins`.
+Measured in a scratch `HOME` on 2026-09-05: `claude plugin marketplace add /abs/path` records `"source": {"source": "directory", "path": …}` and an `installLocation` equal to that path; `claude plugin install software-dev@eranroseman -y --scope user` then reports `(+ 2 dependencies: sensemaking, superpowers)` and writes all three into `installed_plugins.json` with `"auto": true` on the two dependencies, and all three into `settings.json`'s `enabledPlugins`.
 
 - [ ] **Step 1: Write the failing assertion**
 
@@ -1563,7 +1563,7 @@ then replace the `ensure_claude` stub:
 
 ```bash
 plugin_version() {
-  jq -r '.version' "$REPO_ROOT/plugins/software-development/.claude-plugin/plugin.json"
+  jq -r '.version' "$REPO_ROOT/plugins/software-dev/.claude-plugin/plugin.json"
 }
 
 installed_version() {
@@ -1580,7 +1580,7 @@ ensure_claude() {
   want="$(plugin_version)"
   [ -n "$want" ] || { bad "could not read the declared plugin version"; return; }
 
-  installed_sd="$(installed_version software-development)"
+  installed_sd="$(installed_version software-dev)"
   if [ "$installed_sd" != "$want" ] && applying; then
     # Adding is a clean no-op on re-run, but only add when the marketplace is
     # unknown: an existing entry may point at a different source than ours.
@@ -1594,18 +1594,18 @@ ensure_claude() {
     fi
     # --scope user, never --scope project: project scope writes a checked-in
     # .claude/settings.json carrying enabledPlugins and extraKnownMarketplaces.
-    if claude plugin install software-development@eranroseman -y --scope user >/dev/null 2>&1; then
-      did "installed software-development@eranroseman (with sensemaking and superpowers)"
+    if claude plugin install software-dev@eranroseman -y --scope user >/dev/null 2>&1; then
+      did "installed software-dev@eranroseman (with sensemaking and superpowers)"
     else
-      bad "claude plugin install software-development@eranroseman failed"
+      bad "claude plugin install software-dev@eranroseman failed"
     fi
   fi
 
-  installed_sd="$(installed_version software-development)"
+  installed_sd="$(installed_version software-dev)"
   if [ "$installed_sd" = "$want" ]; then
-    ok "software-development@eranroseman $want installed"
+    ok "software-dev@eranroseman $want installed"
   else
-    bad "software-development@eranroseman is ${installed_sd:-not installed}, declared $want"
+    bad "software-dev@eranroseman is ${installed_sd:-not installed}, declared $want"
   fi
 
   # The two dependencies install and enable themselves; verify rather than act.
@@ -1753,7 +1753,7 @@ ensure_codex() {
   fi
   CODEX_LIST="$(codex plugin list 2>/dev/null)" || { bad "codex plugin list failed"; return; }
 
-  for p in software-development sensemaking; do
+  for p in software-dev sensemaking; do
     if codex_plugin_installed "$p"; then
       ok "codex plugin $p present"
       continue
@@ -1816,7 +1816,7 @@ C="$(mktemp -d)"
 CODEX_HOME="$C" HOME="$HOME" bash bin/doctor 2>&1 | grep -i codex
 ```
 
-Expected: `FAIL: codex plugin software-development is not installed` and the same for `sensemaking`, because the scratch `CODEX_HOME` has neither. Do not run `bin/setup` with a scratch `CODEX_HOME` here — Task 13's gate S1 does that deliberately, with the whole fixture in place.
+Expected: `FAIL: codex plugin software-dev is not installed` and the same for `sensemaking`, because the scratch `CODEX_HOME` has neither. Do not run `bin/setup` with a scratch `CODEX_HOME` here — Task 13's gate S1 does that deliberately, with the whole fixture in place.
 
 ```bash
 rm -rf "$C"
@@ -2167,7 +2167,7 @@ The repository README's Codex section still carries the four-ways-broken clone-a
 **Files:**
 
 - Modify: `README.md`
-- Modify: `plugins/software-development/README.md`
+- Modify: `plugins/software-dev/README.md`
 - Modify: `tests/test-setup-doctor.sh`
 
 **Interfaces:**
@@ -2296,7 +2296,7 @@ And append to `## Design`:
 
 - [ ] **Step 5: Update the plugin README's Environment section**
 
-In `plugins/software-development/README.md`, replace the final paragraph of `## Environment` (`If you never accept the Visual Companion offer, the request never happens.`) with:
+In `plugins/software-dev/README.md`, replace the final paragraph of `## Environment` (`If you never accept the Visual Companion offer, the request never happens.`) with:
 
 ```markdown
 Setting it prevents exactly one thing: the `<img>` tag on the Visual Companion's
@@ -2342,7 +2342,7 @@ Expected: the setup-doctor summary line, then twelve `PASS` lines. If the block-
 - [ ] **Step 7: Commit**
 
 ```bash
-git add README.md plugins/software-development/README.md tests/test-setup-doctor.sh
+git add README.md plugins/software-dev/README.md tests/test-setup-doctor.sh
 git commit -m "$(cat <<'EOF'
 Rewrite both READMEs around the script, and hold them to its usage text
 
@@ -2363,7 +2363,7 @@ EOF
 
 ### Task 11: Watch both upstreams from CI
 
-Three properties are inherited from `harness-backup/bin/harness-drift-check.py`, each earned from a real failure there (§6): resolve with `git ls-remote` rather than comparing `HEAD` against `origin/*`, because shallow clones with stale tracking refs report "current" forever; update one issue in place rather than filing a new one per run; and make a failed run loud, so a dead detector does not look like a healthy repository.
+Three properties are inherited from `eranroseman/harness-backup:bin/harness-drift-check.py`, each earned from a real failure there (§6): resolve with `git ls-remote` rather than comparing `HEAD` against `origin/*`, because shallow clones with stale tracking refs report "current" forever; update one issue in place rather than filing a new one per run; and make a failed run loud, so a dead detector does not look like a healthy repository.
 
 The two Codex constants were verified on 2026-09-05 at both `rust-v0.147.0` and the then-latest stable tag `rust-v0.153.4`: `DEFAULT_HOOKS_CONFIG_FILE` is `"hooks/hooks.json"` and `.codex-plugin/plugin.json` is first in `DISCOVERABLE_PLUGIN_MANIFEST_PATHS`. The watch is green on day one.
 
@@ -2806,7 +2806,7 @@ Record the result per state. There is no fallback if this fails: composition is 
 Turn auto-update on for `eranroseman` in `/plugin` under Marketplaces, then note the date and the installed version:
 
 ```bash
-jq -r '.plugins["software-development@eranroseman"][0].version' \
+jq -r '.plugins["software-dev@eranroseman"][0].version' \
   ~/.claude/plugins/installed_plugins.json
 ```
 
@@ -2817,7 +2817,7 @@ S3 is observed rather than run: it passes when a later published release reaches
 Only after Step 2 shows 0.4.0 installed. Verify first:
 
 ```bash
-jq -r '.plugins["software-development@eranroseman"][0].version' \
+jq -r '.plugins["software-dev@eranroseman"][0].version' \
   ~/.claude/plugins/installed_plugins.json
 ```
 

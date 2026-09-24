@@ -131,7 +131,7 @@ Option E from #60 — restructuring `systematic-debugging` into a three-path cla
 
 ### 6.2 `adhd` — adopt, gate, vendor into `sensemaking`
 
-`UditAkhourii/adhd`, MIT, v0.1.4, pushed 2026-08-29. **Not the single-file skill the tickets describe**: a TypeScript CLI — `src/engine.ts`, `src/llm.ts`, `bench/`, `EVALS.md` — plus one skill at `skills/adhd/SKILL.md`, and a `.claude-plugin/marketplace.json` of its own. Only the skill is taken: its body states the loop runs "inside Claude with no install required", so `npm install -g adhd-agent` is an optional accelerant rather than a dependency.
+`UditAkhourii/adhd`, MIT, v0.1.4, pushed 2026-08-29. **Not the single-file skill the tickets describe**: a TypeScript CLI — `UditAkhourii/adhd:src/engine.ts`, `UditAkhourii/adhd:src/llm.ts`, `UditAkhourii/adhd:bench/`, `EVALS.md` — plus one skill at `UditAkhourii/adhd:skills/adhd/SKILL.md`, and a `UditAkhourii/adhd:.claude-plugin/marketplace.json` of its own. Only the skill is taken: its body states the loop runs "inside Claude with no install required", so `npm install -g adhd-agent` is an optional accelerant rather than a dependency.
 
 **It is not user-invocable only, and it should be.** From its own body:
 
@@ -141,7 +141,7 @@ The skill defends its own cost by asking the model to talk itself out of running
 
 **Gating dissolves two collisions, not one.** Its description claims _"brainstorm/ideate intents, or open-ended design, architecture, naming, API/SDK surface"_, which runs into `software-dev:brainstorming`, and _"fuzzy-debugging decisions"_, which runs into `systematic-debugging`. A user-invocable-only skill competes for neither. The parent spec's standing instruction — that `adhd`, if adopted, is checked against `brainstorming`'s narrowed description — is discharged this way rather than by a second rewrite.
 
-Its description is also **over 500 characters** against Codex's 122, so Codex sees a fragment ending inside the cognitive-frame list. On Codex the equivalent gate is `policy.allow_implicit_invocation: false`; the repository ships no `agents/` directory, so `agents/openai.yaml` is first-party.
+Its description is also **over 500 characters** against Codex's 122, so Codex sees a fragment ending inside the cognitive-frame list. On Codex the equivalent gate is `policy.allow_implicit_invocation: false`; the repository ships no `agents/` directory, so `skills/adhd/agents/openai.yaml` is first-party.
 
 Two changes — the gate and the Codex yaml — so route 3.
 
@@ -166,7 +166,7 @@ Three edits follow:
 **The disposition is a README instruction, and the ladder requires saying why.** Higher rungs, in order, and why each was not taken:
 
 - _Do not adopt it_ — eliminates the behaviour by losing the capability.
-- _Vendor and strip the update-awareness section_ — an adaptation, so route 3. It forks a maintained project and takes ownership of a 137-line skill plus `bin/`, `scripts/`, `assets/` and `test/`, to remove a notification.
+- _Vendor and strip the update-awareness section_ — an adaptation, so route 3. It forks a maintained project and takes ownership of a 137-line skill plus `tt-a1i/archify:bin/`, `tt-a1i/archify:scripts/`, `tt-a1i/archify:assets/` and `tt-a1i/archify:test/`, to remove a notification.
 - _`bin/setup` sets `ARCHIFY_UPDATE_CHECK_DISABLED=1`_ — contradicts §7.6 of sub-project 2, which deliberately does not set the telemetry variable because a network-behaviour decision belongs to the operator. The same reasoning applies here and was not re-litigated.
 - _`bin/doctor` reports the variable's state_ — available, cheap, and the shape of the existing telemetry note. Deferred as not yet worth a check.
 
@@ -232,7 +232,7 @@ So the check is: hash each route's `SKILL.md`, take only current plugin versions
 
 **Prior-art search** is not closable as solved-by-`research`, which the earlier draft of this spec assumed. `research` is twelve lines with no corpus routing, citation graph, screening or gate. But `research-vault#82` is stale on all three of its load-bearing premises: its blocker closed 2026-09-04, its structural question was overtaken when prior-art search became **R26, a phase inside a specified-but-unbuilt `writing-reqs` skill**, and its landscape survey omits the upstream the author vendored three days before writing it — now live vault-side as `find-sources`. It is replaced by a narrower item on [#10](https://github.com/eranroseman/agent-plugins/issues/10).
 
-**The requirements skills are not deferred, because the need is not established.** The work was specified as `writing-reqs` (39 requirements) and `sourcing` (19), both unconfirmed, in `research-vault/docs/superpowers/reqs/`. The research that was meant to close a perceived gap **widened the frame instead** and left the author unconvinced that a skill is the right answer to it.
+**The requirements skills are not deferred, because the need is not established.** The work was specified as `writing-reqs` (39 requirements) and `sourcing` (19), both unconfirmed, in `eranroseman/research-vault:docs/superpowers/reqs/`. The research that was meant to close a perceived gap **widened the frame instead** and left the author unconvinced that a skill is the right answer to it.
 
 "Deferred" would be the wrong word to leave in the record: it invites a later session to treat the specification as approved work waiting for a slot. **The need analysis is the work**, and it precedes any decision about `writing-reqs`, its prior-art phase, or competitive analysis. [#19](https://github.com/eranroseman/agent-plugins/issues/19) is the durable home; its body currently attributes #72's language to #81 and is repaired to say this instead.
 
@@ -294,7 +294,7 @@ Twenty-one tracked files.
 
 **Twelve move here** — the four skills and the inspector agent, per §7.
 
-**Six are dead or derived.** `bin/harness-drift-check.py` is superseded on both halves: `.github/workflows/upstream-watch.yml` covers the upstream half and `bin/doctor` the local one. `agents/.skill-lock.json` is derived from `skills.json`. `claude/CLAUDE.md` and `codex/AGENTS.md` go empty at §10 step 8. `.drift-state.json` and `.drift-cron.log` die with the detector.
+**Six are dead or derived.** `eranroseman/harness-backup:bin/harness-drift-check.py` is superseded on both halves: `.github/workflows/upstream-watch.yml` covers the upstream half and `bin/doctor` the local one. `~/.agents/.skill-lock.json` is derived from `skills.json`. `eranroseman/harness-backup:claude/CLAUDE.md` and `eranroseman/harness-backup:codex/AGENTS.md` go empty at §10 step 8. `.drift-state.json` and `.drift-cron.log` die with the detector.
 
 **Two cannot come here, and are deleted with their history.** `claude/settings.json` (16 commits) and `codex/config.toml` (14) are personal machine state: `model`, `theme`, `effortLevel`, a statusline pointing into a plugin cache, nine `[projects.*]` trust entries naming absolute paths on this machine, a GitKraken MCP server. **`agent-plugins` is a public marketplace**; publishing either file ships a directory layout and editor preferences to anyone who clones it. Sub-project 2's §7.4 already forbids `--scope project` for exactly this reason, and folding the backups in would do by hand what that rule forbids by script.
 
@@ -340,7 +340,7 @@ Migrate, prove, then delete. The gate is the only step that requires evidence ra
 2. `sensemaking`: `rethink-audit` with its reference repointed
 3. `software-dev`: `consistency-audit` + inspector minus `permissionMode`; `finding-duplicate-functions` with provenance, drift test, LICENSE notice
 4. Delete the `rethink` stub from both locations
-5. `diagnosing-bugs` vendored into `software-dev`; `adhd` vendored into `sensemaking`, user-invocable only on both CLIs, with a first-party `agents/openai.yaml`; `archify` declared in `skills.json` at `v2.16.0`; `ARCHIFY_UPDATE_CHECK_DISABLED` documented in the plugin README and not set by `bin/setup` (§6.3); `test-skills-pin.sh` count to 19; `upstream-watch`'s prerelease filter widened
+5. `diagnosing-bugs` vendored into `software-dev`; `adhd` vendored into `sensemaking`, user-invocable only on both CLIs, with a first-party `skills/adhd/agents/openai.yaml`; `archify` declared in `skills.json` at `v2.16.0`; `ARCHIFY_UPDATE_CHECK_DISABLED` documented in the plugin README and not set by `bin/setup` (§6.3); `test-skills-pin.sh` count to 19; `upstream-watch`'s prerelease filter widened
 6. `writing-clearly-and-concisely` added as a subset entry at `dist/plugins/…`; the `agent-toolkit` install removed
 7. The `superpowers-developing-for-claude-code` plugin uninstalled
 8. **Gate.** Measured on this machine: every migrated skill loads from its plugin on both CLIs; the eight `harness-backup` symlinks are gone; `bin/doctor` reports clean; `claude plugin list` and `codex plugin list` agree with the manifests
@@ -357,7 +357,7 @@ Executed 2026-09-06 and 2026-09-07. The gate in this section was reached and pas
 - **The release.** `software-dev` 0.7.0 and `sensemaking` 0.2.0 merged to `main` at `dd1ed5e`, with `validate` and `setup-e2e` green. `setup-e2e` built a machine from nothing and its `bin/doctor` printed `clean`.
 - **Convergence.** `bin/setup` produced exactly the seven `DID:` lines this section predicts, then `clean`, exit 0.
 - **The gate.** `bin/doctor` printed the five `NOTE:` lines enumerated above and `clean`, exit 0. The redundant-Codex-link count held at 18, confirming that the four links removed at the cutover pointed into `~/harness-backup` and were never counted. The `brainstorming` note carried `software-dev/0.7.0` and both hashes as measured in the prototype, `74edf03ea6d2` and `4a2033c06acf`.
-- **Ordering changed.** §10 sequences the two retirements as `harness-backup` then the global files. That is reversed in execution: the only copies of `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md` were `harness-backup/claude/CLAUDE.md` and `harness-backup/codex/AGENTS.md`, so deleting the backup first would have removed the parachute before the jump. The files were emptied, both CLIs confirmed working, and only then was the backup removed.
+- **Ordering changed.** §10 sequences the two retirements as `harness-backup` then the global files. That is reversed in execution: the only copies of `~/.claude/CLAUDE.md` and `~/.codex/AGENTS.md` were `eranroseman/harness-backup:claude/CLAUDE.md` and `eranroseman/harness-backup:codex/AGENTS.md`, so deleting the backup first would have removed the parachute before the jump. The files were emptied, both CLIs confirmed working, and only then was the backup removed.
 - **Deletions.** Both repositories were deleted through GitHub's web UI by the owner. The automation's token carries no `delete_repo` scope, and granting one would have left a standing capability to delete any repository the owner holds — declined as disproportionate to a fifteen-second manual action.
 - **Duplicate detection in production.** The check added for §6.6 reported, on a real machine, the four hand-copied skills this plan set out to remove, and after their removal reported only the `brainstorming` pair §6.6 names as a survivor by design. Note ordering is not deterministic: CI and the local machine emitted the two paths in opposite orders, which the gate's wording already tolerates.
 - **Carried forward.** [#25](https://github.com/eranroseman/agent-plugins/issues/25) was reframed rather than closed: `claude plugin marketplace remove` leaves the cache behind every time, so clearing the instances does not close the class. The durable forms are `bin/setup` clearing an orphaned cache, or `bin/doctor` reporting one as a fault rather than a note.

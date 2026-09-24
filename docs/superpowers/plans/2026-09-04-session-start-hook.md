@@ -18,8 +18,8 @@
 - After Task 1 no file named `hooks/hooks.json` exists anywhere under `plugins/`. The Claude manifest declares `"hooks": "./hooks/claude-hooks.json"` with the leading `./`; `claude plugin validate --strict` rejects the path without it.
 - The Codex manifest never gains a `hooks` key in any form. Its `interface.capabilities` is `["Instructions"]`.
 - Matcher stays `startup|clear|compact`.
-- Both `software-development` manifests move from `0.1.0` to `0.2.0`. `sensemaking` stays `0.1.0`. _(Tasks 1 to 5 shipped 0.2.0 and the references below record that. A later change, the task-reports rule, moved the shipped version to **0.3.0** before the cutover ran; Tasks 6 to 8 are written against 0.3.0.)_
-- The strings `bridge rules` and `Lifecycle hooks` appear in neither `software-development` manifest nor `.claude-plugin/marketplace.json` after Task 3.
+- Both `software-dev` manifests move from `0.1.0` to `0.2.0`. `sensemaking` stays `0.1.0`. _(Tasks 1 to 5 shipped 0.2.0 and the references below record that. A later change, the task-reports rule, moved the shipped version to **0.3.0** before the cutover ran; Tasks 6 to 8 are written against 0.3.0.)_
+- The strings `bridge rules` and `Lifecycle hooks` appear in neither `software-dev` manifest nor `.claude-plugin/marketplace.json` after Task 3.
 - `additionalContext` length, `jq '.hookSpecificOutput.additionalContext | length'`, stays under 8,000.
 - Test scripts call `grep` with plain patterns only (no `.{0,n}` quantifiers); `grep` on this machine may resolve to ugrep.
 - All work happens on branch `session-start-hook` cut from `main`. Tasks 6 to 8 run only after that branch is merged and pushed.
@@ -28,7 +28,7 @@
 ## File Structure
 
 ```text
-plugins/software-development/
+plugins/software-dev/
 ├── .claude-plugin/plugin.json      Task 1: version 0.2.0, "hooks": "./hooks/claude-hooks.json"
 ├── .codex-plugin/plugin.json       Task 1: version 0.2.0, capabilities ["Instructions"]; Task 3: longDescription
 ├── hooks/claude-hooks.json         Task 1: renamed from hooks.json, content unchanged
@@ -36,7 +36,7 @@ plugins/software-development/
 ├── hooks/using-superpowers.md      unchanged
 ├── hooks/working-rules.md          Task 2: new, §4.2 text
 └── README.md                       Task 3: hook and Codex paragraphs
-.claude-plugin/marketplace.json     Task 3: software-development description
+.claude-plugin/marketplace.json     Task 3: software-dev description
 README.md                           Task 3: line 7
 tests/test-hook.sh                  Tasks 1, 2, 3: assertions
 docs/superpowers/specs/2026-09-04-software-development-layout-and-tracer-design.md   Task 4: three one-line notes
@@ -50,9 +50,9 @@ docs/superpowers/specs/2026-09-04-session-start-hook-design.md                  
 **Files:**
 
 - Modify: `tests/test-hook.sh` (the file-existence checks near the top, and section "(3) wiring")
-- Rename: `plugins/software-development/hooks/hooks.json` → `plugins/software-development/hooks/claude-hooks.json`
-- Modify: `plugins/software-development/.claude-plugin/plugin.json`
-- Modify: `plugins/software-development/.codex-plugin/plugin.json`
+- Rename: `plugins/software-development/hooks/hooks.json` → `plugins/software-dev/hooks/claude-hooks.json`
+- Modify: `plugins/software-dev/.claude-plugin/plugin.json`
+- Modify: `plugins/software-dev/.codex-plugin/plugin.json`
 
 **Interfaces:**
 
@@ -87,7 +87,7 @@ Then replace the whole `# (3) wiring` block (four `[ ... ] || fail` lines) with:
 ```bash
 # (3) wiring: the Claude manifest declares the hook file, and nothing sits at
 # the path Codex loads by fallback when its manifest has no hooks key.
-PLUGIN="$REPO_ROOT/plugins/software-development"
+PLUGIN="$REPO_ROOT/plugins/software-dev"
 HJ="$H/claude-hooks.json"
 [ ! -e "$H/hooks.json" ] || fail "hooks/hooks.json must not exist: Codex loads that path by fallback"
 [ "$(jq -r '.hooks.SessionStart[0].matcher' "$HJ")" = 'startup|clear|compact' ] || fail "matcher"
@@ -104,7 +104,7 @@ HJ="$H/claude-hooks.json"
 - [ ] **Step 3: Run the test to verify it fails**
 
 Run: `bash tests/test-hook.sh`
-Expected: `FAIL: missing /home/eranr/agent-plugins/plugins/software-development/hooks/claude-hooks.json`, exit 1.
+Expected: `FAIL: missing /home/eranr/agent-plugins/plugins/software-dev/hooks/claude-hooks.json`, exit 1.
 
 - [ ] **Step 4: Rename the hook file and edit both manifests**
 
@@ -112,7 +112,7 @@ Expected: `FAIL: missing /home/eranr/agent-plugins/plugins/software-development/
 git mv plugins/software-development/hooks/hooks.json plugins/software-development/hooks/claude-hooks.json
 ```
 
-Replace the whole of `plugins/software-development/.claude-plugin/plugin.json` with:
+Replace the whole of `plugins/software-dev/.claude-plugin/plugin.json` with:
 
 ```json
 {
@@ -129,7 +129,7 @@ Replace the whole of `plugins/software-development/.claude-plugin/plugin.json` w
 }
 ```
 
-In `plugins/software-development/.codex-plugin/plugin.json` change exactly two values: `"version": "0.1.0"` becomes `"version": "0.2.0"`, and `"capabilities": ["Instructions", "Lifecycle hooks"]` becomes `"capabilities": ["Instructions"]`. Leave `longDescription` alone; Task 3 changes it.
+In `plugins/software-dev/.codex-plugin/plugin.json` change exactly two values: `"version": "0.1.0"` becomes `"version": "0.2.0"`, and `"capabilities": ["Instructions", "Lifecycle hooks"]` becomes `"capabilities": ["Instructions"]`. Leave `longDescription` alone; Task 3 changes it.
 
 - [ ] **Step 5: Run the hook test and both validators**
 
@@ -139,7 +139,7 @@ Expected: four success lines, exit 0. If `claude plugin validate --strict` repor
 - [ ] **Step 6: Commit**
 
 ```bash
-git add tests/test-hook.sh plugins/software-development
+git add tests/test-hook.sh plugins/software-dev
 git commit -m "$(cat <<'MSG'
 Declare the SessionStart hook in the Claude manifest and vacate Codex's fallback path
 
@@ -161,8 +161,8 @@ MSG
 **Files:**
 
 - Modify: `tests/test-hook.sh` (top-of-file checks, section "(1)" gains a rules block after it, section "(2) envelope round-trip", section "(4)" control characters)
-- Create: `plugins/software-development/hooks/working-rules.md`
-- Modify: `plugins/software-development/hooks/session-start` (header comment and the `payload=` line only)
+- Create: `plugins/software-dev/hooks/working-rules.md`
+- Modify: `plugins/software-dev/hooks/session-start` (header comment and the `payload=` line only)
 
 **Interfaces:**
 
@@ -214,26 +214,26 @@ In the `# (4)` control-character block, after the line `printf '%s' "$sample" > 
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `bash tests/test-hook.sh`
-Expected: `FAIL: missing /home/eranr/agent-plugins/plugins/software-development/hooks/working-rules.md`, exit 1.
+Expected: `FAIL: missing /home/eranr/agent-plugins/plugins/software-dev/hooks/working-rules.md`, exit 1.
 
 - [ ] **Step 3: Create the rules file**
 
-Write `plugins/software-development/hooks/working-rules.md` with exactly this content (three lines of text, one blank line between heading and paragraph, one trailing newline):
+Write `plugins/software-dev/hooks/working-rules.md` with exactly this content (three lines of text, one blank line between heading and paragraph, one trailing newline):
 
 ```markdown
-# software-development: working rules
+# software-dev: working rules
 
 **Worktree cleanup.** `EnterWorktree` places worktrees under `.claude/worktrees/`. `superpowers:finishing-a-development-branch` recognises only `.worktrees/` and `worktrees/` as its own and declines to remove anything else. Once the branch is merged or abandoned, run `git worktree remove <path>` from the main checkout, then `git worktree prune`.
 ```
 
-Check: `tail -c 2 plugins/software-development/hooks/working-rules.md | wc -l` prints `1`.
+Check: `tail -c 2 plugins/software-dev/hooks/working-rules.md | wc -l` prints `1`.
 
 - [ ] **Step 4: Make the script read both files**
 
-In `plugins/software-development/hooks/session-start`, replace the header comment (lines 2 to 6, everything before `set -euo pipefail`) with:
+In `plugins/software-dev/hooks/session-start`, replace the header comment (lines 2 to 6, everything before `set -euo pipefail`) with:
 
 ```bash
-# SessionStart hook for the software-development plugin, Claude Code only.
+# SessionStart hook for the software-dev plugin, Claude Code only.
 #
 # Reads hooks/using-superpowers.md and hooks/working-rules.md (next to this script),
 # joins them with one blank line, and prints the result as the
@@ -261,12 +261,12 @@ Nothing else in the script changes.
 Run: `bash tests/test-hook.sh`
 Expected: `hook: payload exact, envelope round-trips, wiring correct, control characters escaped`, exit 0.
 
-Then confirm the size the spec records: `CLAUDE_PLUGIN_ROOT=plugins/software-development plugins/software-development/hooks/session-start | jq '.hookSpecificOutput.additionalContext | length'` prints `3718`.
+Then confirm the size the spec records: `CLAUDE_PLUGIN_ROOT=plugins/software-dev plugins/software-dev/hooks/session-start | jq '.hookSpecificOutput.additionalContext | length'` prints `3718`.
 
 - [ ] **Step 6: Commit**
 
 ```bash
-git add tests/test-hook.sh plugins/software-development/hooks
+git add tests/test-hook.sh plugins/software-dev/hooks
 git commit -m "$(cat <<'MSG'
 Append the plugin's working rules to the SessionStart payload
 
@@ -287,9 +287,9 @@ MSG
 **Files:**
 
 - Modify: `tests/test-hook.sh` (end of section "(3) wiring")
-- Modify: `.claude-plugin/marketplace.json` (the `software-development` entry's `description`)
-- Modify: `plugins/software-development/.codex-plugin/plugin.json` (`interface.longDescription`)
-- Modify: `plugins/software-development/README.md`
+- Modify: `.claude-plugin/marketplace.json` (the `software-dev` entry's `description`)
+- Modify: `plugins/software-dev/.codex-plugin/plugin.json` (`interface.longDescription`)
+- Modify: `plugins/software-dev/README.md`
 - Modify: `README.md` (line 7)
 
 **Interfaces:**
@@ -310,17 +310,17 @@ done
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `bash tests/test-hook.sh`
-Expected: `FAIL: /home/eranr/agent-plugins/plugins/software-development/.codex-plugin/plugin.json still advertises bridge rules`, exit 1.
+Expected: `FAIL: /home/eranr/agent-plugins/plugins/software-dev/.codex-plugin/plugin.json still advertises bridge rules`, exit 1.
 
 - [ ] **Step 3: Change the two catalog strings**
 
-In `.claude-plugin/marketplace.json`, the `software-development` entry's `description` becomes:
+In `.claude-plugin/marketplace.json`, the `software-dev` entry's `description` becomes:
 
 ```json
 "description": "Glue over superpowers and mattpocock/skills: narrowed brainstorming, plus a SessionStart hook on Claude Code.",
 ```
 
-In `plugins/software-development/.codex-plugin/plugin.json`, `interface.longDescription` becomes:
+In `plugins/software-dev/.codex-plugin/plugin.json`, `interface.longDescription` becomes:
 
 ```json
 "longDescription": "Narrowed brainstorming front door over the superpowers spine and mattpocock's engineering skills.",
@@ -328,10 +328,10 @@ In `plugins/software-development/.codex-plugin/plugin.json`, `interface.longDesc
 
 - [ ] **Step 4: Rewrite the plugin README**
 
-Replace the whole of `plugins/software-development/README.md` with:
+Replace the whole of `plugins/software-dev/README.md` with:
 
 ```markdown
-# software-development
+# software-dev
 
 The glue plugin of Eran Roseman's software-development harness. It is a thin
 layer over two upstream skill packs, not a home for copies of them.
@@ -346,7 +346,7 @@ What it ships:
 - `hooks/session-start`, Claude Code only: a SessionStart hook that injects
   `hooks/using-superpowers.md`, upstream's `using-superpowers` text with its one
   `superpowers:brainstorming` reference repointed at
-  `software-development:brainstorming`, followed by `hooks/working-rules.md`,
+  `software-dev:brainstorming`, followed by `hooks/working-rules.md`,
   this plugin's own working rules. The Claude manifest declares the hook as
   `hooks/claude-hooks.json`.
 
@@ -361,13 +361,13 @@ What it depends on (Claude Code installs both automatically):
 Claude Code:
 
     claude plugin marketplace add eranroseman/agent-plugins
-    claude plugin install software-development@eranroseman
+    claude plugin install software-dev@eranroseman
 
 Codex (no dependency concept; superpowers arrives by symlink, see the
 repository README):
 
     codex plugin marketplace add https://github.com/eranroseman/agent-plugins.git
-    codex plugin add software-development@eranroseman
+    codex plugin add software-dev@eranroseman
     codex plugin add sensemaking@eranroseman
 
 Codex gets the skills and no hook, by design. Codex follows the skills
@@ -406,7 +406,7 @@ Expected: eight `PASS` lines, exit 0.
 - [ ] **Step 7: Commit**
 
 ```bash
-git add tests/test-hook.sh .claude-plugin/marketplace.json plugins/software-development README.md
+git add tests/test-hook.sh .claude-plugin/marketplace.json plugins/software-dev README.md
 git commit -m "$(cat <<'MSG'
 Stop advertising bridge rules and state the Codex posture in the READMEs
 
@@ -518,8 +518,8 @@ Expected: the `validate` workflow concludes `success`. If it fails, read the fai
 
 ```bash
 claude plugin marketplace update eranroseman
-claude plugin update software-development@eranroseman
-claude plugin details software-development@eranroseman
+claude plugin update software-dev@eranroseman
+claude plugin details software-dev@eranroseman
 ```
 
 Expected in the details output: version `0.3.0`, `Hooks (1) SessionStart`. Quit every Claude Code instance and start a new one.
@@ -554,19 +554,19 @@ cp ~/.claude/CLAUDE.md ~/.claude/settings.json claude/
 cp ~/.codex/AGENTS.md ~/.codex/config.toml codex/
 cp ~/.agents/.skill-lock.json agents/
 git status
-git add -A && git commit -m "Move the worktree cleanup rule into the software-development hook payload"
+git add -A && git commit -m "Move the worktree cleanup rule into the software-dev hook payload"
 ```
 
 - [x] **Step 4: G7 baseline** — PASS on both prompts, 2026-09-05, run headless by the agent
 
 Two fresh sessions in a scratch directory that has a git repository and no `docs/superpowers/`:
 
-1. Prompt: `Let's build a small CLI that prints the current git branch.` Record the first skill the session invokes. Expected: `software-development:brainstorming`.
+1. Prompt: `Let's build a small CLI that prints the current git branch.` Record the first skill the session invokes. Expected: `software-dev:brainstorming`.
 2. Prompt: `Fix this bug: the tests fail with "AssertionError" in the branch printer.` Record the first skill invoked. Expected: `superpowers:systematic-debugging`.
 
 Record pass or fail per prompt, with the skill actually invoked. A fail is a finding, not a defect (spec §8).
 
-**Observed:** prompt 1 invoked `Skill(software-development:brainstorming)` as its first tool call, prompt 2 invoked `Skill(superpowers:systematic-debugging)`. Prompt 1 was run twice: the first used `--permission-mode plan`, which the additional context itself biases toward brainstorming, so it was rerun without plan mode and with edits disallowed. Only the clean run counts. Full record in spec §13.
+**Observed:** prompt 1 invoked `Skill(software-dev:brainstorming)` as its first tool call, prompt 2 invoked `Skill(superpowers:systematic-debugging)`. Prompt 1 was run twice: the first used `--permission-mode plan`, which the additional context itself biases toward brainstorming, so it was rerun without plan mode and with edits disallowed. Only the clean run counts. Full record in spec §13.
 
 - [x] **Step 5: Report** — recorded directly in spec §13
 
@@ -582,21 +582,21 @@ Report to the controller: the three G3 counts and whether each carried the workt
 
 ```bash
 codex plugin marketplace upgrade
-codex plugin remove software-development@eranroseman
-codex plugin add software-development@eranroseman
-ls ~/.codex/plugins/cache/eranroseman/software-development/
-ls ~/.codex/plugins/cache/eranroseman/software-development/0.3.0/hooks/
+codex plugin remove software-dev@eranroseman
+codex plugin add software-dev@eranroseman
+ls ~/.codex/plugins/cache/eranroseman/software-dev/
+ls ~/.codex/plugins/cache/eranroseman/software-dev/0.3.0/hooks/
 ```
 
 Expected: the cache directory `0.3.0` exists; its `hooks/` listing shows `claude-hooks.json`, `using-superpowers.md`, `working-rules.md`, `session-start`, and no `hooks.json`. No trust prompt appears on `add`.
 
 - [x] **Step 2: G6** — PASS, 2026-09-05
 
-Start a Codex session in any trusted directory and run `/hooks`. Expected: no entry for `software-development@eranroseman`. Then:
+Start a Codex session in any trusted directory and run `/hooks`. Expected: no entry for `software-dev@eranroseman`. Then:
 
 ```bash
-grep -c 'software-development@eranroseman' ~/.codex/config.toml   # expected: 1, the [plugins] entry only
-grep -A1 'hooks.state."software-development' ~/.codex/config.toml  # expected: no output
+grep -c 'software-dev@eranroseman' ~/.codex/config.toml   # expected: 1, the [plugins] entry only
+grep -A1 'hooks.state."software-dev' ~/.codex/config.toml  # expected: no output
 ```
 
 Note for the record whether the session showed any injection from this plugin (expected none; not discriminating, spec §8).
@@ -607,13 +607,13 @@ Observed, real machine, codex-cli 0.147.0:
 
 - `codex plugin marketplace upgrade` moved the snapshot from `1ea3f72` to `84b0b75`. `remove` then `add` reported success; **no trust prompt appeared**.
 - Cache holds `0.3.0` only. Its `hooks/` listing is `claude-hooks.json`, `working-rules.md`, `using-superpowers.md`, `session-start`. **No `hooks.json` anywhere under the plugin cache.**
-- `[hooks.state]` holds four entries, all `ponytail@ponytail`; none for `software-development@eranroseman`.
+- `[hooks.state]` holds four entries, all `ponytail@ponytail`; none for `software-dev@eranroseman`.
 - `config.toml` diff against a pre-run snapshot: only `last_updated` and `last_revision` for the marketplace, plus the two `[plugins.*]` tables swapping order because `remove` then `add` re-appends. Nothing else.
 - `sensemaking@eranroseman` still installed at `0.1.0`, one config entry.
 - All 13 superpowers symlinks resolve; none dangling.
 - The Codex copy of `working-rules.md` carries the worktree rule and nothing else, matching the shipped 0.3.0.
 
-- `/hooks` in a Codex session, run by the user: **"Enabled hooks: ponytail SessionStart, ponytail UserPromptSubmit, ponytail SubagentStart. All three are trusted."** No entry for `software-development@eranroseman`, consistent with the three `[hooks.state]` entries in `config.toml`.
+- `/hooks` in a Codex session, run by the user: **"Enabled hooks: ponytail SessionStart, ponytail UserPromptSubmit, ponytail SubagentStart. All three are trusted."** No entry for `software-dev@eranroseman`, consistent with the three `[hooks.state]` entries in `config.toml`.
 
 **G6 PASSES on every leg.** The plugin ships `claude-hooks.json`, `using-superpowers.md`, `working-rules.md` and `session-start` into the Codex cache, and Codex registers nothing, which is the design's central claim about Codex.
 
@@ -637,7 +637,7 @@ At the end of the hook spec add, filling every `<…>` from the reports (no fiel
 ```markdown
 ## 13. Cutover results, <date>
 
-Cutover performed on this machine per §9. Claude Code <version>, codex-cli <version>. `claude plugin details software-development@eranroseman` reported version 0.3.0 and one SessionStart hook.
+Cutover performed on this machine per §9. Claude Code <version>, codex-cli <version>. `claude plugin details software-dev@eranroseman` reported version 0.3.0 and one SessionStart hook.
 
 | Gate | Result | Evidence |
 | --- | --- | --- |

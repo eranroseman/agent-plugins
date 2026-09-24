@@ -594,7 +594,7 @@ Replace `N` with the count from Step 7.
 git mv upstream/skills.json skills.json && [ ! -e upstream ] && echo "upstream/ gone"
 ```
 
-Expected: `upstream/ gone`. Then `bash tests/test-skills-pin.sh` fails with `FAIL: missing /…/upstream/skills.json` and `bash tests/test-doctor-silence.sh` fails at `could not copy skills.json`: the readers are red.
+Expected: `upstream/ gone` (the manifest is `skills.json` now). Then `bash tests/test-skills-pin.sh` fails with `FAIL: missing /…/upstream/skills.json` and `bash tests/test-doctor-silence.sh` fails at `could not copy skills.json`: the readers are red.
 
 - [ ] **Step 2: The readers**
 

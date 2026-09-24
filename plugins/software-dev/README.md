@@ -106,7 +106,7 @@ never accept it, the request never happens.
 
 `archify`, installed through skills.sh at a pinned tag, runs a version check
 once per authoring session: after the first candidate diagram it runs its
-packaged `scripts/check-update.mjs`, which fetches a small manifest from
+packaged `tt-a1i/archify:scripts/check-update.mjs`, which fetches a small manifest from
 `https://tt-a1i.github.io/archify/skill-updates/archify/stable.json`, and if
 a newer release exists it shows one notice and continues. The skill's own
 text rules the rest: if the command cannot run it continues without a word,

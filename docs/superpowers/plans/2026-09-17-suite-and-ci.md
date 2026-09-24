@@ -358,7 +358,13 @@ printf 'links-resolve: %s relative link(s) across %s owned document(s) resolve\n
 - [ ] **Step 2: Run it to verify it fails on the three plan links**
 
 Run: `bash tests/test-links-resolve.sh`
-Expected: `FAIL: docs/superpowers/plans/2026-09-04-session-start-hook.md links [2026-09-04-session-start-hook-design.md], which does not exist (looked at docs/superpowers/plans/2026-09-04-session-start-hook-design.md)`. The spec sits in `../specs/`; lines 500 and 657 of the same plan already link it that way.
+Expected:
+
+```text
+FAIL: docs/superpowers/plans/2026-09-04-session-start-hook.md links [2026-09-04-session-start-hook-design.md], which does not exist (looked at docs/superpowers/plans/2026-09-04-session-start-hook-design.md)
+```
+
+The spec sits in `../specs/`; lines 500 and 657 of the same plan already link it that way.
 
 - [ ] **Step 3: Fix the three paths**
 
@@ -2448,7 +2454,7 @@ Expected: the success line — both sides of the §4.2 coupling moved together.
 
 - [ ] **Step 3: Fill the dictionary**
 
-Run, from the repository root, the same scope `tests/test-spelling.sh` uses (the vendored `agents/openai.yaml` files are excluded by the derivation, so never list a word that only they carry):
+Run, from the repository root, the same scope `tests/test-spelling.sh` uses (the vendored `skills/*/agents/openai.yaml` files are excluded by the derivation, so never list a word that only they carry):
 
 ```bash
 bash -c '. tests/lib.sh; cd "$REPO_ROOT"; cspell --no-progress --words-only --unique $(checked "*.md" ":(exclude)docs/superpowers" ":(exclude)docs/research" ":(exclude)docs/archive") $(checked_shell) $(checked "*.yml" "*.yaml")' | sort -f

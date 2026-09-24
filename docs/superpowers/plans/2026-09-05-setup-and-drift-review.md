@@ -12,16 +12,16 @@ Not every fix here has been applied to the plan. The two blockers and the twelve
 
 lenses: coverage, danger (2 finding(s))
 
-ISSUE: Task 6 Step 3's `ensure_claude` gives the Claude half only one apply verb — `claude plugin install software-development@eranroseman -y --scope user` — and `claude plugin update` appears nowhere in the plan. Measured on claude 2.1.261 against both a directory-source and a github-source marketplace: `install` on an already-installed plugin prints "already installed", exits 0, and leaves the old version on disk regardless of what the refreshed catalog declares; only `claude plugin update <plugin>@<marketplace>` moves it, and update does not cascade to dependencies. The plan's evidence bullet (line 41) measured only a fresh install in an empty scratch HOME, which is the one case where install is the right verb.
+ISSUE: Task 6 Step 3's `ensure_claude` gives the Claude half only one apply verb — `claude plugin install software-dev@eranroseman -y --scope user` — and `claude plugin update` appears nowhere in the plan. Measured on claude 2.1.261 against both a directory-source and a github-source marketplace: `install` on an already-installed plugin prints "already installed", exits 0, and leaves the old version on disk regardless of what the refreshed catalog declares; only `claude plugin update <plugin>@<marketplace>` moves it, and update does not cascade to dependencies. The plan's evidence bullet (line 41) measured only a fresh install in an empty scratch HOME, which is the one case where install is the right verb.
 
-On this machine (installed 0.3.0, plan declares 0.4.0), Task 13 Step 2 therefore prints a false `DID: installed software-development@eranroseman`, then `FAIL: software-development@eranroseman is 0.3.0, declared 0.4.0`; the `--- re-checking ---` pass exits 1 and Step 8's `Expected: 0.4.0` gate never opens, leaving Steps 8-13 unreachable and the machine converged on everything except the plugin. Nothing in the plan can detect this: the CI e2e job always starts from an empty HOME, and `tests/test-doctor-faults.sh` seeds installed_plugins.json with the declared versions on purpose. The shipped engine consequently cannot do the job spec §9 step 2 assigns it — re-running `bin/setup` from the refreshed clone as the Claude update path whenever auto-update is off — for any machine with an older version installed, and the same gap makes the `superpowers@eranroseman` version check (lines 1553-1560) unrepairable after any `scripts/bump-superpowers` run.
+On this machine (installed 0.3.0, plan declares 0.4.0), Task 13 Step 2 therefore prints a false `DID: installed software-dev@eranroseman`, then `FAIL: software-dev@eranroseman is 0.3.0, declared 0.4.0`; the `--- re-checking ---` pass exits 1 and Step 8's `Expected: 0.4.0` gate never opens, leaving Steps 8-13 unreachable and the machine converged on everything except the plugin. Nothing in the plan can detect this: the CI e2e job always starts from an empty HOME, and `tests/test-doctor-faults.sh` seeds installed_plugins.json with the declared versions on purpose. The shipped engine consequently cannot do the job spec §9 step 2 assigns it — re-running `bin/setup` from the refreshed clone as the Claude update path whenever auto-update is off — for any machine with an older version installed, and the same gap makes the `superpowers@eranroseman` version check (lines 1553-1560) unrepairable after any `scripts/bump-superpowers` run.
 
 FIX: Three edits, all inside Task 6.
 
 1. Task 6 Step 3 — split the apply branch by installed state, and report `did` from the re-read rather than from exit status (update exits 0 when it decides nothing needs moving, so exit 0 is not evidence the version changed):
 
    ```bash
-     installed_sd="$(installed_version software-development)"
+     installed_sd="$(installed_version software-dev)"
      if [ "$installed_sd" != "$want" ] && applying; then
        if [ -z "$installed_sd" ]; then
          # Adding is a clean no-op on re-run, but only add when the marketplace is
@@ -36,10 +36,10 @@ FIX: Three edits, all inside Task 6.
          fi
          # --scope user, never --scope project: project scope writes a checked-in
          # .claude/settings.json carrying enabledPlugins and extraKnownMarketplaces.
-         if claude plugin install software-development@eranroseman -y --scope user >/dev/null 2>&1; then
-           did "installed software-development@eranroseman (with sensemaking and superpowers)"
+         if claude plugin install software-dev@eranroseman -y --scope user >/dev/null 2>&1; then
+           did "installed software-dev@eranroseman (with sensemaking and superpowers)"
          else
-           bad "claude plugin install software-development@eranroseman failed"
+           bad "claude plugin install software-dev@eranroseman failed"
          fi
        else
          # install is a no-op on an already-installed plugin: it prints "already
@@ -48,10 +48,10 @@ FIX: Three edits, all inside Task 6.
          # marketplaces). update is the only verb that moves it, and it exits 0
          # when it decides nothing needs moving, so the re-read below is what
          # reports success.
-         claude plugin update software-development@eranroseman >/dev/null 2>&1 \
-           || bad "claude plugin update software-development@eranroseman failed"
-         if [ "$(installed_version software-development)" = "$want" ]; then
-           did "updated software-development@eranroseman from $installed_sd to $want"
+         claude plugin update software-dev@eranroseman >/dev/null 2>&1 \
+           || bad "claude plugin update software-dev@eranroseman failed"
+         if [ "$(installed_version software-dev)" = "$want" ]; then
+           did "updated software-dev@eranroseman from $installed_sd to $want"
          fi
        fi
      fi
@@ -79,7 +79,7 @@ FIX: Three edits, all inside Task 6.
 
    Leave `sensemaking` alone: its check compares no version, so there is nothing to repair against, and adding one is new scope.
 
-3. Task 6 Step 1 — add an upgrade-path assertion, because the empty-HOME CI job structurally cannot reach it. It must create a _genuine_ older install, not a hand-edited `version` field: seeding only that field leaves the CLI reading the real version from the install path, `update` answers "already at the latest version", and the test fails for the wrong reason (measured). The offline recipe, seconds not minutes: copy the repo into a temp dir, lower `plugins/software-development/.claude-plugin/plugin.json` to a fake older version, `claude plugin marketplace add "$TMP"` and `claude plugin install software-development@eranroseman -y --scope user` into `$H`, restore the declared version, `claude plugin marketplace update eranroseman`, then run `bin/setup` with `SD_MARKETPLACE_SOURCE="$TMP"` and assert `installed_plugins.json` now carries the declared version and setup exits 0. Gate it on `command -v claude` the way `tests/test-doctor-faults.sh` already gates its repair half.
+3. Task 6 Step 1 — add an upgrade-path assertion, because the empty-HOME CI job structurally cannot reach it. It must create a _genuine_ older install, not a hand-edited `version` field: seeding only that field leaves the CLI reading the real version from the install path, `update` answers "already at the latest version", and the test fails for the wrong reason (measured). The offline recipe, seconds not minutes: copy the repo into a temp dir, lower `plugins/software-dev/.claude-plugin/plugin.json` to a fake older version, `claude plugin marketplace add "$TMP"` and `claude plugin install software-dev@eranroseman -y --scope user` into `$H`, restore the declared version, `claude plugin marketplace update eranroseman`, then run `bin/setup` with `SD_MARKETPLACE_SOURCE="$TMP"` and assert `installed_plugins.json` now carries the declared version and setup exits 0. Gate it on `command -v claude` the way `tests/test-doctor-faults.sh` already gates its repair half.
 
 ### Also worth one clause in Task 13 Step 2 or the Global Constraints, so the reason survives the plan: install is the fresh-machine verb and update is the update verb, and the spec's "clean no-op on re-run" (§7.3) means install does no harm, not that it converges
 
@@ -87,7 +87,7 @@ FIX: Three edits, all inside Task 6.
 
 lenses: coverage (1 finding(s))
 
-ISSUE: Task 7 Step 3's `ensure_codex` compares presence only, so `codex plugin add` — which is Codex's only upgrade mechanism — never runs on an already-installed plugin. Verified on codex-cli 0.147.0: `codex plugin --help` has no update verb; `codex plugin list` reports the version from `$CODEX_HOME/plugins/cache/<mkt>/<plugin>/<version>`, i.e. the installed version, not the catalog's (bumping a marketplace source 0.2.0 → 0.3.0 left list reading 0.2.0 until a re-add); and `codex plugin add` re-run is idempotent and exit-0, confirmed against `https://github.com/eranroseman/agent-plugins.git` in a scratch CODEX_HOME. The reference machine holds `~/.codex/plugins/cache/eranroseman/software-development/0.3.0`, so after the plan's 0.3.0 → 0.4.0 bump, Task 13 Step 2 prints `OK: codex plugin software-development present` while Codex stays on 0.3.0 and never receives the vendored `setup-matt-pocock-skills` from Task 2. This contradicts spec §9 step 3 ("It re-adds both Codex plugins, since Codex has no update verb") and leaves §11's "installed plugin version matching the manifest" with no Codex half. The plan's Self-Review maps §9 to README prose only, so the gap is unrecorded, and no gate can catch it: S1 uses a fresh scratch CODEX_HOME (always the add path), CI has no codex, S4 is typed on Claude, and Step 8's version gate reads Claude's installed_plugins.json.
+ISSUE: Task 7 Step 3's `ensure_codex` compares presence only, so `codex plugin add` — which is Codex's only upgrade mechanism — never runs on an already-installed plugin. Verified on codex-cli 0.147.0: `codex plugin --help` has no update verb; `codex plugin list` reports the version from `$CODEX_HOME/plugins/cache/<mkt>/<plugin>/<version>`, i.e. the installed version, not the catalog's (bumping a marketplace source 0.2.0 → 0.3.0 left list reading 0.2.0 until a re-add); and `codex plugin add` re-run is idempotent and exit-0, confirmed against `https://github.com/eranroseman/agent-plugins.git` in a scratch CODEX_HOME. The reference machine holds `~/.codex/plugins/cache/eranroseman/software-dev/0.3.0`, so after the plan's 0.3.0 → 0.4.0 bump, Task 13 Step 2 prints `OK: codex plugin software-dev present` while Codex stays on 0.3.0 and never receives the vendored `setup-matt-pocock-skills` from Task 2. This contradicts spec §9 step 3 ("It re-adds both Codex plugins, since Codex has no update verb") and leaves §11's "installed plugin version matching the manifest" with no Codex half. The plan's Self-Review maps §9 to README prose only, so the gap is unrecorded, and no gate can catch it: S1 uses a fresh scratch CODEX_HOME (always the add path), CI has no codex, S4 is typed on Claude, and Step 8's version gate reads Claude's installed_plugins.json.
 
 FIX: In Task 7, replace `codex_plugin_installed` with a version read and make the loop version-gated. This is parity with `ensure_claude`, which also acts only on mismatch, so it is not a new deviation from §9's unconditional "re-adds"; the literal alternative is to hoist `codex plugin add` out of the branch and run it on every apply, which I verified is idempotent.
 
@@ -109,7 +109,7 @@ ensure_codex() {
   fi
   CODEX_LIST="$(codex plugin list --json 2>/dev/null)" || { bad "codex plugin list failed"; return; }
 
-  for p in software-development sensemaking; do
+  for p in software-dev sensemaking; do
     want="$(jq -r '.version' "$REPO_ROOT/plugins/$p/.claude-plugin/plugin.json")"
     [ -n "$want" ] && [ "$want" != null ] || { bad "could not read the declared version of $p"; continue; }
     got="$(codex_plugin_version "$p")"
@@ -146,7 +146,7 @@ ensure_codex() {
 }
 ```
 
-### Three one-line companions: (1) update Task 7's opening measurement note — the engine now reads `codex plugin list --json`, whose shape is `{"installed":[{"pluginId","version","installed","enabled",...}],"available":[]}`, rather than the table (the table's version is the fourth whitespace field, since `installed, enabled` splits in two, and is empty when not installed); (2) Task 7 Step 5's expectation becomes `FAIL: codex plugin software-development is not installed, declared 0.4.0`; (3) Task 13 Step 2 adds `codex plugin marketplace upgrade` beside `claude plugin marketplace update eranroseman`, per §9 step 1, and Step 8's pre-flight verification should also read `codex plugin list --json` for 0.4.0 before the global files are emptied
+### Three one-line companions: (1) update Task 7's opening measurement note — the engine now reads `codex plugin list --json`, whose shape is `{"installed":[{"pluginId","version","installed","enabled",...}],"available":[]}`, rather than the table (the table's version is the fourth whitespace field, since `installed, enabled` splits in two, and is empty when not installed); (2) Task 7 Step 5's expectation becomes `FAIL: codex plugin software-dev is not installed, declared 0.4.0`; (3) Task 13 Step 2 adds `codex plugin marketplace upgrade` beside `claude plugin marketplace update eranroseman`, per §9 step 1, and Step 8's pre-flight verification should also read `codex plugin list --json` for 0.4.0 before the global files are emptied
 
 ## BLOCKER :: Task 2, Steps 1/3/4/8 (and Global Constraints, "Declared pins")
 
@@ -229,7 +229,7 @@ FIX: Three edits, all in the plan; no code, no test, no gate changes.
 
 lenses: coverage (1 finding(s))
 
-ISSUE: Task 13 sequences gate S3 so that its own experiment is consumed before it can be observed. Step 2 (plan lines 2655-2662) installs 0.4.0 by two explicit commands - `claude plugin marketplace update eranroseman` and `bin/setup`, whose `ensure_claude` (plan line 1515ff) runs `claude plugin install software-development@eranroseman -y --scope user` - and Step 8 (line 2744) depends on that having happened. Step 7 (line 2740) only turns auto-update on afterwards, then asserts "The 0.3.0 -> 0.4.0 bump is the natural experiment", which by then is false; the same paragraph has already quietly retargeted the gate at "a later published release". Spec §13 (line 276) and §16 (line 325) both name the 0.3.0 -> 0.4.0 bump specifically, and §16 makes S3 on this release the sub-project's one remaining open question. Under the plan's ordering S3 can only be recorded pending in Step 12's table, against a release that does not exist, and the plan records no deviation for that - while the contradictory sentence invites the worse outcome of recording S3 as observed on evidence an explicit command produced. Live state confirms the setup: 0.3.0 installed, `extraKnownMarketplaces.eranroseman` carries no `autoUpdate` key, and the source is `github: eranroseman/agent-plugins`.
+ISSUE: Task 13 sequences gate S3 so that its own experiment is consumed before it can be observed. Step 2 (plan lines 2655-2662) installs 0.4.0 by two explicit commands - `claude plugin marketplace update eranroseman` and `bin/setup`, whose `ensure_claude` (plan line 1515ff) runs `claude plugin install software-dev@eranroseman -y --scope user` - and Step 8 (line 2744) depends on that having happened. Step 7 (line 2740) only turns auto-update on afterwards, then asserts "The 0.3.0 -> 0.4.0 bump is the natural experiment", which by then is false; the same paragraph has already quietly retargeted the gate at "a later published release". Spec §13 (line 276) and §16 (line 325) both name the 0.3.0 -> 0.4.0 bump specifically, and §16 makes S3 on this release the sub-project's one remaining open question. Under the plan's ordering S3 can only be recorded pending in Step 12's table, against a release that does not exist, and the plan records no deviation for that - while the contradictory sentence invites the worse outcome of recording S3 as observed on evidence an explicit command produced. Live state confirms the setup: 0.3.0 installed, `extraKnownMarketplaces.eranroseman` carries no `autoUpdate` key, and the source is `github: eranroseman/agent-plugins`.
 
 FIX: Reorder Task 13 so the toggle precedes the bump, and delete the false sentence. No engine change; setup still never writes `autoUpdate`.
 

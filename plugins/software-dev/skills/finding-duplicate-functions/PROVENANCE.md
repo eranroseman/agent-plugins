@@ -10,7 +10,7 @@ Recorded 2026-08-29, resolving the provenance gap found by
 ## Upstream
 
 [`obra/superpowers-lab`](https://github.com/obra/superpowers-lab), path
-`skills/finding-duplicate-functions`. MIT.
+`obra/superpowers-lab:skills/finding-duplicate-functions`. MIT.
 
 **Fork point: unknown.** It was not recorded when the fork was taken, and a
 shallow clone cannot recover it. Upstream's tip when this file was written was

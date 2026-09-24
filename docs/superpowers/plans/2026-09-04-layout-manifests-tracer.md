@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Turn this repository into the `eranroseman` marketplace hosting the `software-development` and `sensemaking` plugins plus a `superpowers` subset entry taken from upstream, prove it with static checks in CI, then cut this machine over to it on Claude Code and Codex and record the five gates.
+**Goal:** Turn this repository into the `eranroseman` marketplace hosting the `software-dev` and `sensemaking` plugins plus a `superpowers` subset entry taken from upstream, prove it with static checks in CI, then cut this machine over to it on Claude Code and Codex and record the five gates.
 
-**Architecture:** Two local plugins under `plugins/`, one marketplace file per CLI at the repo root, and a `git-subdir` marketplace entry that installs 13 of obra/superpowers' 14 skills straight from upstream at a pinned sha. `software-development` vendors upstream's `brainstorming` skill with a narrowed description and ships a SessionStart hook that injects upstream's `using-superpowers` text with one reference repointed. Every static claim is a bash test under `tests/`, run by `tests/run.sh` locally and in GitHub Actions.
+**Architecture:** Two local plugins under `plugins/`, one marketplace file per CLI at the repo root, and a `git-subdir` marketplace entry that installs 13 of obra/superpowers' 14 skills straight from upstream at a pinned sha. `software-dev` vendors upstream's `brainstorming` skill with a narrowed description and ships a SessionStart hook that injects upstream's `using-superpowers` text with one reference repointed. Every static claim is a bash test under `tests/`, run by `tests/run.sh` locally and in GitHub Actions.
 
 **Tech Stack:** bash, jq, python3 (+ pyyaml for the Codex validator), Claude Code CLI 2.1.220 (`claude plugin validate`), codex-cli 0.147.0, GitHub Actions.
 
@@ -20,16 +20,16 @@
 - Vendored `brainstorming` keeps `name: brainstorming`. Only the `description` line and a provenance header change; every other byte, and every file mode, matches upstream at the pinned sha.
 - `rethink-audit` is copied byte-for-byte from `~/harness-backup/claude/skills/rethink-audit/`. Task 2 Step 3 verifies the copy once, by md5, at copy time. No test repeats that check: the source is machine-local, and sub-project 5 rewrites the file.
 - Hook output envelope is exactly `{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"…"}}`.
-- Hook additional context is upstream `skills/using-superpowers/SKILL.md` at the pinned sha, inside upstream's `<EXTREMELY_IMPORTANT>` frame, with exactly one edit: line 30, `superpowers:brainstorming` → `software-development:brainstorming`.
+- Hook additional context is upstream `obra/superpowers:skills/using-superpowers/SKILL.md` at the pinned sha, inside upstream's `<EXTREMELY_IMPORTANT>` frame, with exactly one edit: line 30, `superpowers:brainstorming` → `software-dev:brainstorming`.
 - `superpowers` has no Codex marketplace entry; on Codex it arrives by symlinks from a clone pinned to the same sha.
 - Commit messages are plain prose and end with the executing agent's attribution trailer (`Co-Authored-By: <agent name> <noreply@anthropic.com>`). The commit commands below show the plan author's trailer; substitute your own.
 - All work happens on branch `tracer-bullet` cut from `main`; Tasks 9 to 11 run only after that branch is merged and pushed.
 
 ## Deviation From Spec
 
-Spec §6.2 puts `"hooks": "./hooks/hooks.json"` in the Codex manifest and §10.3 tells CI to tolerate the validator's rejection of that key. This plan **omits the `hooks` key** from `plugins/software-development/.codex-plugin/plugin.json`. Reason: `codex-rs/core-plugins/src/loader.rs` at openai/codex `f3f6922519fa38487c8250c2b8a670a39a2cf9ff`, function `load_plugin_hooks`, line 1230: when the manifest has no `hooks` field, Codex loads `hooks/hooks.json` from the plugin root (`DEFAULT_HOOKS_CONFIG_FILE`). Upstream superpowers' own `tests/codex/test-marketplace-manifest.sh` documents the same fallback. The Codex validator therefore passes cleanly and the hook still loads by fallback. Gate G4 measures that fallback. Task 4 amends spec §6.2, §10.2, §10.3, §12 and §13 so spec and repository agree.
+Spec §6.2 puts `"hooks": "./hooks/hooks.json"` in the Codex manifest and §10.3 tells CI to tolerate the validator's rejection of that key. This plan **omits the `hooks` key** from `plugins/software-dev/.codex-plugin/plugin.json`. Reason: `openai/codex:codex-rs/core-plugins/src/loader.rs` at openai/codex `f3f6922519fa38487c8250c2b8a670a39a2cf9ff`, function `load_plugin_hooks`, line 1230: when the manifest has no `hooks` field, Codex loads `hooks/hooks.json` from the plugin root (`DEFAULT_HOOKS_CONFIG_FILE`). Upstream superpowers' own `obra/superpowers:tests/codex/test-marketplace-manifest.sh` documents the same fallback. The Codex validator therefore passes cleanly and the hook still loads by fallback. Gate G4 measures that fallback. Task 4 amends spec §6.2, §10.2, §10.3, §12 and §13 so spec and repository agree.
 
-Also verified 2026-09-04 and relied on below: Codex's hook-file parser (`codex-rs/config/src/hook_config.rs`, same sha) accepts `command`, `timeout`, `async`, `statusMessage` on a command hook and ignores unknown keys such as `shell`; only the file's top level rejects unknown keys. Spec §8's `hooks.json` therefore parses on Codex unchanged.
+Also verified 2026-09-04 and relied on below: Codex's hook-file parser (`openai/codex:codex-rs/config/src/hook_config.rs`, same sha) accepts `command`, `timeout`, `async`, `statusMessage` on a command hook and ignores unknown keys such as `shell`; only the file's top level rejects unknown keys. Spec §8's `hooks.json` therefore parses on Codex unchanged.
 
 ## File Structure
 
@@ -43,7 +43,7 @@ plugins/sensemaking/
   skills/rethink-audit/SKILL.md                 byte copy from harness-backup (Task 2)
   skills/rethink-audit/agents/openai.yaml       byte copy from harness-backup (Task 2)
   LICENSE, README.md                            (Task 1)
-plugins/software-development/
+plugins/software-dev/
   .claude-plugin/plugin.json                    identity + dependencies (Task 4)
   .codex-plugin/plugin.json                     identity + interface, skills path, no hooks key (Task 4)
   LICENSE                                       MIT + obra's notice for the vendored skill (Task 4)
@@ -141,7 +141,7 @@ upstream_sha() {
 fetch_upstream() {
   local sha dir
   sha="$(upstream_sha)"
-  dir="${UPSTREAM_DIR:-${TMPDIR:-/tmp}/software-development-upstream-superpowers}"
+  dir="${UPSTREAM_DIR:-${TMPDIR:-/tmp}/software-dev-upstream-superpowers}"
   if [ -d "$dir/.git" ] && [ "$(git -C "$dir" rev-parse HEAD)" = "$sha" ]; then
     printf '%s\n' "$dir"
     return
@@ -250,7 +250,7 @@ SOFTWARE.
 ```markdown
 # sensemaking
 
-Skills shared by `software-development` and, later, `research-vault`.
+Skills shared by `software-dev` and, later, `research-vault`.
 
 ## Skills
 
@@ -259,7 +259,7 @@ Skills shared by `software-development` and, later, `research-vault`.
 
 ## Install
 
-Claude Code: installing `software-development@eranroseman` pulls this plugin
+Claude Code: installing `software-dev@eranroseman` pulls this plugin
 in as a dependency. To install it alone:
 
     claude plugin marketplace add eranroseman/agent-plugins
@@ -410,7 +410,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 **Interfaces:**
 
 - Consumes: `tests/lib.sh` (`MARKETPLACE`, `upstream_sha`, `fetch_upstream`, `fail`).
-- Produces: `.claude-plugin/marketplace.json`, the single source of truth for the pinned sha, the `6.3.0` version, and the 13-name list. Tasks 4, 5, 6, 7 and 10 read from it. Two files repeat the sha as human-readable provenance, the `software-development` LICENSE (Task 4) and the vendored `SKILL.md` header (Task 5); Task 5's test asserts both equal the marketplace value.
+- Produces: `.claude-plugin/marketplace.json`, the single source of truth for the pinned sha, the `6.3.0` version, and the 13-name list. Tasks 4, 5, 6, 7 and 10 read from it. Two files repeat the sha as human-readable provenance, the `software-dev` LICENSE (Task 4) and the vendored `SKILL.md` header (Task 5); Task 5's test asserts both equal the marketplace value.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -537,12 +537,12 @@ Expected: `FAIL: missing /…/.claude-plugin/marketplace.json` from both `test-c
 }
 ```
 
-`./plugins/software-development` does not exist yet; `claude plugin validate --strict` checks the manifest schema, not source paths (verified 2026-09-04 with the directory absent).
+`./plugins/software-dev` does not exist yet; `claude plugin validate --strict` checks the manifest schema, not source paths (verified 2026-09-04 with the directory absent).
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `tests/run.sh`
-Expected: `upstream-pin: 13 listed dirs exist at b36e0829c6d0140e93cfef2ca599b1b07d4a7797; brainstorming excluded; version 6.3.0`, `✔ Validation passed` twice, four `PASS` lines, exit 0. The first run fetches upstream (a few seconds); later runs reuse `/tmp/software-development-upstream-superpowers`.
+Expected: `upstream-pin: 13 listed dirs exist at b36e0829c6d0140e93cfef2ca599b1b07d4a7797; brainstorming excluded; version 6.3.0`, `✔ Validation passed` twice, four `PASS` lines, exit 0. The first run fetches upstream (a few seconds); later runs reuse `/tmp/software-dev-upstream-superpowers`.
 
 - [ ] **Step 5: Commit**
 
@@ -552,7 +552,7 @@ git commit -m "Add the eranroseman Claude marketplace with a curated superpowers
 
 superpowers is a git-subdir entry rooted at upstream's skills/ directory,
 pinned by sha, listing 13 of 14 skills. brainstorming is the one dropped;
-software-development ships its own. A network test asserts the list against
+software-dev ships its own. A network test asserts the list against
 the pinned checkout.
 
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
@@ -560,35 +560,35 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 ---
 
-### Task 4: `software-development` manifests, LICENSE, README, and spec amendment
+### Task 4: `software-dev` manifests, LICENSE, README, and spec amendment
 
 **Files:**
 
-- Create: `plugins/software-development/.claude-plugin/plugin.json`
-- Create: `plugins/software-development/.codex-plugin/plugin.json`
-- Create: `plugins/software-development/LICENSE`
-- Create: `plugins/software-development/README.md`
+- Create: `plugins/software-dev/.claude-plugin/plugin.json`
+- Create: `plugins/software-dev/.codex-plugin/plugin.json`
+- Create: `plugins/software-dev/LICENSE`
+- Create: `plugins/software-dev/README.md`
 - Create: `tests/test-references-resolve.sh`
 - Modify: `docs/superpowers/specs/2026-09-04-software-development-layout-and-tracer-design.md` (§6.2, §10.2, §10.3, §12, §13)
 
 **Interfaces:**
 
 - Consumes: `tests/test-claude-validate.sh`, `tests/test-codex-validate.sh` (both already iterate `plugins/*/`); `tests/lib.sh` (`REPO_ROOT`, `MARKETPLACE`, `fail`) for the new test in Step 2.
-- Produces: plugin id `software-development@eranroseman` with `dependencies: ["sensemaking", "superpowers"]`; Codex manifest with `"skills": "./skills/"` and no `hooks` key; `tests/test-references-resolve.sh`, which holds every string-source marketplace path and every `dependencies` name to a real plugin.
+- Produces: plugin id `software-dev@eranroseman` with `dependencies: ["sensemaking", "superpowers"]`; Codex manifest with `"skills": "./skills/"` and no `hooks` key; `tests/test-references-resolve.sh`, which holds every string-source marketplace path and every `dependencies` name to a real plugin.
 
 - [ ] **Step 1: Create the plugin directory and watch the existing tests fail**
 
 ```bash
-mkdir -p plugins/software-development
-touch plugins/software-development/.gitkeep
+mkdir -p plugins/software-dev
+touch plugins/software-dev/.gitkeep
 ```
 
 Run: `tests/run.sh`
-Expected: `FAIL: /…/plugins/software-development/ has no .codex-plugin/plugin.json` from `test-codex-validate.sh`, exit 1. (`test-claude-validate.sh` skips directories without a Claude manifest, so it still passes; that is fine.)
+Expected: `FAIL: /…/plugins/software-dev/ has no .codex-plugin/plugin.json` from `test-codex-validate.sh`, exit 1. (`test-claude-validate.sh` skips directories without a Claude manifest, so it still passes; that is fine.)
 
 - [ ] **Step 2: Write the failing references test**
 
-The marketplace already names `./plugins/software-development` (Task 3) and this task declares `dependencies`. Nothing else checks that either resolves; an install would be the first thing to notice a stale path or a misspelt dependency.
+The marketplace already names `./plugins/software-dev` (Task 3) and this task declares `dependencies`. Nothing else checks that either resolves; an install would be the first thing to notice a stale path or a misspelt dependency.
 
 `tests/test-references-resolve.sh`:
 
@@ -632,11 +632,11 @@ printf 'references-resolve: %s string-source path(s) resolve, %s dependency name
 ```
 
 Run: `bash tests/test-references-resolve.sh`
-Expected: `FAIL: software-development: plugins/software-development has no .claude-plugin/plugin.json`, exit 1.
+Expected: `FAIL: software-dev: plugins/software-dev has no .claude-plugin/plugin.json`, exit 1.
 
 - [ ] **Step 3: Write both manifests, LICENSE, README**
 
-`plugins/software-development/.claude-plugin/plugin.json` (spec §6.1, verbatim):
+`plugins/software-dev/.claude-plugin/plugin.json` (spec §6.1, verbatim):
 
 ```json
 {
@@ -652,7 +652,7 @@ Expected: `FAIL: software-development: plugins/software-development has no .clau
 }
 ```
 
-`plugins/software-development/.codex-plugin/plugin.json` (spec §6.2 minus the `hooks` key; see the deviation note at the top of this plan):
+`plugins/software-dev/.codex-plugin/plugin.json` (spec §6.2 minus the `hooks` key; see the deviation note at the top of this plan):
 
 ```json
 {
@@ -678,7 +678,7 @@ Expected: `FAIL: software-development: plugins/software-development has no .clau
 }
 ```
 
-`plugins/software-development/LICENSE`:
+`plugins/software-dev/LICENSE`:
 
 ```text
 MIT License
@@ -732,10 +732,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-`plugins/software-development/README.md`:
+`plugins/software-dev/README.md`:
 
 ```markdown
-# software-development
+# software-dev
 
 The glue plugin of Eran Roseman's software-development harness. It is a thin
 layer over two upstream skill packs, not a home for copies of them.
@@ -749,7 +749,7 @@ What it ships:
   hand-edit the skill; re-vendor from upstream to update it.
 - `hooks/session-start`: a SessionStart hook that injects `hooks/using-superpowers.md`,
   upstream's `using-superpowers` text with its one `superpowers:brainstorming`
-  reference repointed at `software-development:brainstorming`.
+  reference repointed at `software-dev:brainstorming`.
 
 What it depends on (Claude Code installs both automatically):
 
@@ -762,13 +762,13 @@ What it depends on (Claude Code installs both automatically):
 Claude Code:
 
     claude plugin marketplace add eranroseman/agent-plugins
-    claude plugin install software-development@eranroseman
+    claude plugin install software-dev@eranroseman
 
 Codex (no dependency concept; superpowers arrives by symlink, see the
 repository README):
 
     codex plugin marketplace add https://github.com/eranroseman/agent-plugins.git
-    codex plugin add software-development@eranroseman
+    codex plugin add software-dev@eranroseman
     codex plugin add sensemaking@eranroseman
 
 Codex prompts once to trust the SessionStart hook.
@@ -786,13 +786,13 @@ MIT. The vendored `skills/brainstorming/` is MIT, © 2025 Jesse Vincent. See
 ```
 
 ```bash
-rm plugins/software-development/.gitkeep
+rm plugins/software-dev/.gitkeep
 ```
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `tests/run.sh`
-Expected: `Plugin validation passed: /…/plugins/software-development`, `✔ Validation passed` three times, `json: 5 files well-formed`, `references-resolve: 2 string-source path(s) resolve, 2 dependency name(s) resolve`, five `PASS` lines, exit 0.
+Expected: `Plugin validation passed: /…/plugins/software-dev`, `✔ Validation passed` three times, `json: 5 files well-formed`, `references-resolve: 2 string-source path(s) resolve, 2 dependency name(s) resolve`, five `PASS` lines, exit 0.
 
 - [ ] **Step 5: Amend the spec so it matches the manifest**
 
@@ -813,7 +813,7 @@ In `docs/superpowers/specs/2026-09-04-software-development-layout-and-tracer-des
 (c) §10.2, gate G4 row, replace the "Passes when" cell text with:
 
 ```markdown
-Codex either loads `hooks/hooks.json` by manifest fallback after the trust prompt (a `software-development@eranroseman:hooks/hooks.json:session_start:0:0` entry appears under `[hooks.state]` in `~/.codex/config.toml` and the payload appears once in a session) or does not; either outcome is recorded and sub-project 3 designs against it
+Codex either loads `hooks/hooks.json` by manifest fallback after the trust prompt (a `software-dev@eranroseman:hooks/hooks.json:session_start:0:0` entry appears under `[hooks.state]` in `~/.codex/config.toml` and the payload appears once in a session) or does not; either outcome is recorded and sub-project 3 designs against it
 ```
 
 (d) §10.3, replace the second bullet with:
@@ -837,8 +837,8 @@ Codex either loads `hooks/hooks.json` by manifest fallback after the trust promp
 - [ ] **Step 6: Commit**
 
 ```bash
-git add plugins/software-development docs/superpowers/specs tests/test-references-resolve.sh
-git commit -m "Add the software-development plugin manifests
+git add plugins/software-dev docs/superpowers/specs tests/test-references-resolve.sh
+git commit -m "Add the software-dev plugin manifests
 
 The Codex manifest omits the hooks key: Codex loads hooks/hooks.json by
 fallback when the key is absent, and its validator rejects the key when
@@ -855,20 +855,20 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 **Files:**
 
-- Create: `plugins/software-development/skills/brainstorming/SKILL.md` (copied, then two edits)
-- Create: `plugins/software-development/skills/brainstorming/visual-companion.md` (copy)
-- Create: `plugins/software-development/skills/brainstorming/spec-document-reviewer-prompt.md` (copy)
-- Create: `plugins/software-development/skills/brainstorming/scripts/frame-template.html` (copy)
-- Create: `plugins/software-development/skills/brainstorming/scripts/helper.js` (copy)
-- Create: `plugins/software-development/skills/brainstorming/scripts/server.cjs` (copy)
-- Create: `plugins/software-development/skills/brainstorming/scripts/start-server.sh` (copy, mode 755)
-- Create: `plugins/software-development/skills/brainstorming/scripts/stop-server.sh` (copy, mode 755)
+- Create: `plugins/software-dev/skills/brainstorming/SKILL.md` (copied, then two edits)
+- Create: `plugins/software-dev/skills/brainstorming/visual-companion.md` (copy)
+- Create: `plugins/software-dev/skills/brainstorming/spec-document-reviewer-prompt.md` (copy)
+- Create: `plugins/software-dev/skills/brainstorming/scripts/frame-template.html` (copy)
+- Create: `plugins/software-dev/skills/brainstorming/scripts/helper.js` (copy)
+- Create: `plugins/software-dev/skills/brainstorming/scripts/server.cjs` (copy)
+- Create: `plugins/software-dev/skills/brainstorming/scripts/start-server.sh` (copy, mode 755)
+- Create: `plugins/software-dev/skills/brainstorming/scripts/stop-server.sh` (copy, mode 755)
 - Create: `tests/test-vendored-brainstorming.sh`
 
 **Interfaces:**
 
 - Consumes: `tests/lib.sh` (`fetch_upstream`, `upstream_sha`, `fail`).
-- Produces: skill `software-development:brainstorming` (Claude) / `software-development:brainstorming` (Codex catalog), invocable as `/brainstorming`. The provenance header's first line is `<!-- Vendored from https://github.com/obra/superpowers at <sha>`; sub-project 4 reads the sha from it. The drift test reads the sha from `.claude-plugin/marketplace.json` via `upstream_sha` and asserts the header carries that value.
+- Produces: skill `software-dev:brainstorming` (Claude) / `software-dev:brainstorming` (Codex catalog), invocable as `/brainstorming`. The provenance header's first line is `<!-- Vendored from https://github.com/obra/superpowers at <sha>`; sub-project 4 reads the sha from it. The drift test reads the sha from `.claude-plugin/marketplace.json` via `upstream_sha` and asserts the header carries that value.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -881,7 +881,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 # frontmatter, and line 3 (the description). Needs network access.
 . "$(dirname "$0")/lib.sh"
 
-V="$REPO_ROOT/plugins/software-development/skills/brainstorming"
+V="$REPO_ROOT/plugins/software-dev/skills/brainstorming"
 [ -d "$V" ] || fail "missing $V"
 UP="$(fetch_upstream)" || fail "could not fetch upstream at $(upstream_sha)"
 U="$UP/skills/brainstorming"
@@ -921,7 +921,7 @@ diff <(sed '3d' "$U/SKILL.md") <(sed -e '3d' -e '5,9d' "$V/SKILL.md") \
   || fail "SKILL.md changed beyond the header and the description"
 
 # The LICENSE's provenance notice names the same commit as the pin.
-grep -q "at commit $sha)" "$REPO_ROOT/plugins/software-development/LICENSE" \
+grep -q "at commit $sha)" "$REPO_ROOT/plugins/software-dev/LICENSE" \
   || fail "LICENSE provenance sha != marketplace sha"
 
 printf 'vendored-brainstorming: matches upstream %s except header + description\n' "$sha"
@@ -930,15 +930,15 @@ printf 'vendored-brainstorming: matches upstream %s except header + description\
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `bash tests/test-vendored-brainstorming.sh`
-Expected: `FAIL: missing /…/plugins/software-development/skills/brainstorming`, exit 1.
+Expected: `FAIL: missing /…/plugins/software-dev/skills/brainstorming`, exit 1.
 
 - [ ] **Step 3: Copy the skill from the pinned checkout, preserving modes**
 
 ```bash
 UP="$(bash -c '. tests/lib.sh; fetch_upstream')"
-mkdir -p plugins/software-development/skills
-cp -a "$UP/skills/brainstorming" plugins/software-development/skills/brainstorming
-find plugins/software-development/skills/brainstorming -type f | sort
+mkdir -p plugins/software-dev/skills
+cp -a "$UP/skills/brainstorming" plugins/software-dev/skills/brainstorming
+find plugins/software-dev/skills/brainstorming -type f | sort
 ```
 
 Expected: exactly these 8 paths:
@@ -961,7 +961,7 @@ Replace line 3 (the description) with this single line. The value is a YAML doub
 ```bash
 python3 - <<'EOF'
 from pathlib import Path
-p = Path("plugins/software-development/skills/brainstorming/SKILL.md")
+p = Path("plugins/software-dev/skills/brainstorming/SKILL.md")
 lines = p.read_text().split("\n")
 assert lines[0] == "---" and lines[1] == "name: brainstorming" and lines[2].startswith("description: ") and lines[3] == "---", lines[:4]
 lines[2] = ('description: "Design front door of the superpowers spine. Classifies a build request as spike, bounded, '
@@ -978,7 +978,7 @@ header = [
 lines[4:4] = header
 p.write_text("\n".join(lines))
 EOF
-sed -n 1,12p plugins/software-development/skills/brainstorming/SKILL.md
+sed -n 1,12p plugins/software-dev/skills/brainstorming/SKILL.md
 ```
 
 Expected first lines:
@@ -1003,7 +1003,7 @@ Confirm the frontmatter still parses as YAML and the name survived:
 ```bash
 python3 -c "
 import yaml,io
-t=open('plugins/software-development/skills/brainstorming/SKILL.md').read().split('---')[1]
+t=open('plugins/software-dev/skills/brainstorming/SKILL.md').read().split('---')[1]
 d=yaml.safe_load(t); print(d['name']); print(len(d['description']), 'chars'); print(d['description'][-60:])"
 ```
 
@@ -1017,7 +1017,7 @@ Expected: `vendored-brainstorming: matches upstream b36e0829c6d0140e93cfef2ca599
 - [ ] **Step 6: Commit**
 
 ```bash
-git add plugins/software-development/skills tests/test-vendored-brainstorming.sh
+git add plugins/software-dev/skills tests/test-vendored-brainstorming.sh
 git commit -m "Vendor obra/superpowers' brainstorming skill with a narrowed description
 
 Copied whole from upstream at b36e0829 (8 files). The name stays
@@ -1034,14 +1034,14 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 **Files:**
 
-- Create: `plugins/software-development/hooks/hooks.json`
-- Create: `plugins/software-development/hooks/session-start` (mode 755)
-- Create: `plugins/software-development/hooks/using-superpowers.md`
+- Create: `plugins/software-development/hooks/hooks.json` (now `plugins/software-dev/hooks/claude-hooks.json`)
+- Create: `plugins/software-dev/hooks/session-start` (mode 755)
+- Create: `plugins/software-dev/hooks/using-superpowers.md`
 - Create: `tests/test-hook.sh`
 
 **Interfaces:**
 
-- Consumes: `tests/lib.sh` (`fetch_upstream`, `fail`); upstream `skills/using-superpowers/SKILL.md` at the pinned sha.
+- Consumes: `tests/lib.sh` (`fetch_upstream`, `fail`); upstream `obra/superpowers:skills/using-superpowers/SKILL.md` at the pinned sha.
 - Produces: an executable `hooks/session-start` that takes no arguments, reads `hooks/using-superpowers.md` next to itself, and prints one JSON object on stdout: `{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"<additional context>"}}`. Every C0 control character in the additional context is escaped, not only the common five, so a future additional context cannot silently break the envelope. `hooks/hooks.json` wires it for `startup|clear|compact`. Sub-project 3 replaces only `using-superpowers.md`.
 
 - [ ] **Step 1: Write the failing test**
@@ -1057,7 +1057,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 # just the common five. Needs network access for (1).
 . "$(dirname "$0")/lib.sh"
 
-H="$REPO_ROOT/plugins/software-development/hooks"
+H="$REPO_ROOT/plugins/software-dev/hooks"
 [ -f "$H/using-superpowers.md" ] || fail "missing $H/using-superpowers.md"
 [ -f "$H/hooks.json" ] || fail "missing $H/hooks.json"
 [ -x "$H/session-start" ] || fail "$H/session-start missing or not executable"
@@ -1072,16 +1072,16 @@ expected="$(mktemp)"
   printf '<EXTREMELY_IMPORTANT>\nYou have superpowers.\n\n'
   printf '**Below is the full content of your %s skill - your introduction to using skills. For all other skills, use the %s tool:**\n\n' \
     "'superpowers:using-superpowers'" "'Skill'"
-  sed '30s/superpowers:brainstorming/software-development:brainstorming/' "$src"
+  sed '30s/superpowers:brainstorming/software-dev:brainstorming/' "$src"
   printf '</EXTREMELY_IMPORTANT>\n'
 } > "$expected"
 diff "$expected" "$H/using-superpowers.md" || fail "using-superpowers.md != upstream using-superpowers inside upstream's frame with one edit"
 rm -f "$expected"
-[ "$(grep -c 'software-development:brainstorming' "$H/using-superpowers.md")" -eq 1 ] || fail "expected exactly one software-development:brainstorming"
+[ "$(grep -c 'software-dev:brainstorming' "$H/using-superpowers.md")" -eq 1 ] || fail "expected exactly one software-dev:brainstorming"
 if grep -q 'superpowers:brainstorming' "$H/using-superpowers.md"; then fail "a superpowers:brainstorming reference survived"; fi
 
 # (2) envelope round-trip
-out="$(CLAUDE_PLUGIN_ROOT="$REPO_ROOT/plugins/software-development" "$H/session-start")"
+out="$(CLAUDE_PLUGIN_ROOT="$REPO_ROOT/plugins/software-dev" "$H/session-start")"
 printf '%s' "$out" | jq -e '.hookSpecificOutput.hookEventName == "SessionStart"' >/dev/null \
   || fail "output is not the SessionStart envelope: $out"
 [ "$(printf '%s' "$out" | jq 'keys | length')" -eq 1 ] || fail "envelope has extra top-level keys"
@@ -1111,21 +1111,21 @@ echo "hook: payload exact, envelope round-trips, wiring correct, control charact
 - [ ] **Step 2: Run the test to verify it fails**
 
 Run: `bash tests/test-hook.sh`
-Expected: `FAIL: missing /…/plugins/software-development/hooks/using-superpowers.md`, exit 1.
+Expected: `FAIL: missing /…/plugins/software-dev/hooks/using-superpowers.md`, exit 1.
 
 - [ ] **Step 3: Generate using-superpowers.md from the pinned checkout**
 
 ```bash
 UP="$(bash -c '. tests/lib.sh; fetch_upstream')"
-mkdir -p plugins/software-development/hooks
+mkdir -p plugins/software-dev/hooks
 {
   printf '<EXTREMELY_IMPORTANT>\nYou have superpowers.\n\n'
   printf '**Below is the full content of your %s skill - your introduction to using skills. For all other skills, use the %s tool:**\n\n' \
     "'superpowers:using-superpowers'" "'Skill'"
-  sed '30s/superpowers:brainstorming/software-development:brainstorming/' "$UP/skills/using-superpowers/SKILL.md"
+  sed '30s/superpowers:brainstorming/software-dev:brainstorming/' "$UP/skills/using-superpowers/SKILL.md"
   printf '</EXTREMELY_IMPORTANT>\n'
-} > plugins/software-development/hooks/using-superpowers.md
-grep -n 'brainstorming' plugins/software-development/hooks/using-superpowers.md
+} > plugins/software-dev/hooks/using-superpowers.md
+grep -n 'brainstorming' plugins/software-dev/hooks/using-superpowers.md
 ```
 
 Expected:
@@ -1139,7 +1139,7 @@ Expected:
 
 - [ ] **Step 4: Write hooks.json and the hook script**
 
-`plugins/software-development/hooks/hooks.json` (spec §8, verbatim):
+`plugins/software-development/hooks/hooks.json` (spec §8, verbatim; now `plugins/software-dev/hooks/claude-hooks.json`):
 
 ```json
 {
@@ -1162,11 +1162,11 @@ Expected:
 }
 ```
 
-`plugins/software-development/hooks/session-start`:
+`plugins/software-dev/hooks/session-start`:
 
 ```bash
 #!/usr/bin/env bash
-# SessionStart hook for the software-development plugin.
+# SessionStart hook for the software-dev plugin.
 #
 # Reads hooks/using-superpowers.md (next to this script) and prints it as the
 # additionalContext of a SessionStart envelope. Claude Code documents this
@@ -1203,7 +1203,7 @@ printf '{"hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext
 ```
 
 ```bash
-chmod +x plugins/software-development/hooks/session-start
+chmod +x plugins/software-dev/hooks/session-start
 ```
 
 - [ ] **Step 5: Run the tests to verify they pass**
@@ -1214,11 +1214,11 @@ Expected: `hook: payload exact, envelope round-trips, wiring correct, control ch
 - [ ] **Step 6: Commit**
 
 ```bash
-git add plugins/software-development/hooks tests/test-hook.sh
+git add plugins/software-dev/hooks tests/test-hook.sh
 git commit -m "Add the SessionStart hook with upstream's using-superpowers payload
 
 The payload is upstream's text inside upstream's frame with one edit: the
-superpowers:brainstorming reference now names software-development:brainstorming.
+superpowers:brainstorming reference now names software-dev:brainstorming.
 The script emits the hookSpecificOutput envelope that both harnesses read.
 A test regenerates the payload from the pinned checkout and diffs it.
 
@@ -1238,7 +1238,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 **Interfaces:**
 
 - Consumes: `tests/lib.sh` (`REPO_ROOT`, `MARKETPLACE`, `fail`); both `.codex-plugin/plugin.json` files.
-- Produces: Codex marketplace `eranroseman` exposing `software-development@eranroseman` and `sensemaking@eranroseman`.
+- Produces: Codex marketplace `eranroseman` exposing `software-dev@eranroseman` and `sensemaking@eranroseman`.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1313,7 +1313,7 @@ Expected: `FAIL: missing /…/.agents/plugins/marketplace.json`, exit 1.
 
 - [ ] **Step 4: Write the repository README**
 
-The `software-development` plugin README points here for the Codex symlink recipe.
+The `software-dev` plugin README points here for the Codex symlink recipe.
 
 `README.md`:
 
@@ -1322,7 +1322,7 @@ The `software-development` plugin README points here for the Codex symlink recip
 
 A plugin marketplace for Claude Code and Codex, named `eranroseman`. It hosts:
 
-- `software-development`: the glue plugin. obra/superpowers' `brainstorming`
+- `software-dev`: the glue plugin. obra/superpowers' `brainstorming`
   skill vendored with a narrowed description, plus a SessionStart hook.
   Depends on the two entries below.
 - `sensemaking`: skills shared with `research-vault`, starting with
@@ -1334,7 +1334,7 @@ A plugin marketplace for Claude Code and Codex, named `eranroseman`. It hosts:
 ## Claude Code
 
     claude plugin marketplace add eranroseman/agent-plugins
-    claude plugin install software-development@eranroseman
+    claude plugin install software-dev@eranroseman
 
 That one install pulls in `sensemaking` and the `superpowers` subset entry.
 
@@ -1345,12 +1345,12 @@ two local plugins install explicitly and `superpowers` arrives by symlink
 from a clone pinned to the same commit:
 
     codex plugin marketplace add https://github.com/eranroseman/agent-plugins.git
-    codex plugin add software-development@eranroseman
+    codex plugin add software-dev@eranroseman
     codex plugin add sensemaking@eranroseman
 
     REPO=/path/to/this/checkout
     SHA="$(jq -r '.plugins[] | select(.name == "superpowers") | .source.sha' "$REPO/.claude-plugin/marketplace.json")"
-    CLONE=~/.local/share/software-development/upstream/superpowers
+    CLONE=~/.local/share/software-dev/upstream/superpowers
     git clone https://github.com/obra/superpowers.git "$CLONE" && git -C "$CLONE" checkout "$SHA"
     for s in $(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$REPO/.claude-plugin/marketplace.json" | sed 's#^\./##'); do
       [ -e ~/.codex/skills/"$s" ] && { echo "ALREADY EXISTS: ~/.codex/skills/$s"; continue; }
@@ -1521,7 +1521,7 @@ Expected: `main` carries every commit above, the branch is gone locally and on o
 **Interfaces:**
 
 - Consumes: `main` on GitHub.
-- Produces: `software-development@eranroseman`, `sensemaking@eranroseman`, `superpowers@eranroseman` installed at user scope; `superpowers@superpowers-dev` gone at both scopes; recorded G1/G3/G5 outcomes for Task 11.
+- Produces: `software-dev@eranroseman`, `sensemaking@eranroseman`, `superpowers@eranroseman` installed at user scope; `superpowers@superpowers-dev` gone at both scopes; recorded G1/G3/G5 outcomes for Task 11.
 
 - [ ] **Step 1: Record the rollback data**
 
@@ -1566,11 +1566,11 @@ EOF
 
 ```bash
 claude plugin marketplace add eranroseman/agent-plugins
-claude plugin install software-development@eranroseman
+claude plugin install software-dev@eranroseman
 claude plugin list
 ```
 
-Expected: the list shows `software-development@eranroseman`, `sensemaking@eranroseman`, and `superpowers@eranroseman`, all enabled at user scope. The two dependencies were pulled in by the one install.
+Expected: the list shows `software-dev@eranroseman`, `sensemaking@eranroseman`, and `superpowers@eranroseman`, all enabled at user scope. The two dependencies were pulled in by the one install.
 
 - [ ] **Step 4: Remove the grilling mute (spec §10.1 step 5)**
 
@@ -1620,18 +1620,18 @@ Expected: `git status --short` lists at least `claude/CLAUDE.md` and `claude/set
 
 ```bash
 claude plugin details superpowers@eranroseman
-claude plugin details software-development@eranroseman
+claude plugin details software-dev@eranroseman
 claude plugin details sensemaking@eranroseman
 ```
 
-Expected: `superpowers@eranroseman` lists 13 skills and no `brainstorming`; `software-development@eranroseman` lists one skill (`brainstorming`) and one SessionStart hook; `sensemaking@eranroseman` lists `rethink-audit`. Record the three inventories.
+Expected: `superpowers@eranroseman` lists 13 skills and no `brainstorming`; `software-dev@eranroseman` lists one skill (`brainstorming`) and one SessionStart hook; `sensemaking@eranroseman` lists `rethink-audit`. Record the three inventories.
 
 - [ ] **Step 6: Gates G1 (session half), G3 and G5, in a fresh session**
 
 Restart Claude Code (quit every running instance first, so the removed plugin's hook cannot linger). Start an interactive `claude` session in any directory and ask, verbatim:
 
 1. `From your available skills list, print every namespaced skill name (one containing a colon) that contains "brainstorming" or "rethink-audit" or ends with ":writing-plans". Names only, one per line, nothing else.`
-   Expected, G1: exactly `software-development:brainstorming`, `sensemaking:rethink-audit`, `superpowers:writing-plans`; no `superpowers:brainstorming`. A bare `rethink-audit` also exists on Claude (the harness-backup symlink at `~/.claude/skills/rethink-audit`); it is the same duplicate Task 10 Step 6 records for Codex and is not a G1 failure.
+   Expected, G1: exactly `software-dev:brainstorming`, `sensemaking:rethink-audit`, `superpowers:writing-plans`; no `superpowers:brainstorming`. A bare `rethink-audit` also exists on Claude (the harness-backup symlink at `~/.claude/skills/rethink-audit`); it is the same duplicate Task 10 Step 6 records for Codex and is not a G1 failure.
 2. `Count how many times the exact line "You have superpowers." appears in your system context. Reply with the number only.`
    Expected, G3 startup: `1`. (`0` means the hook did not run; `2` means the old plugin's injection lingers.)
 
@@ -1639,7 +1639,7 @@ Then, still in that session:
 
 1. Type `/clear`, then ask the same "You have superpowers." count question. Expected: `1`.
 2. Type `/compact`, then ask it again. Expected: `1`.
-3. Type `/brainstorming` and confirm it resolves (the skill loads and opens with its classification step). Ask: "Which skill did you just load, by its full namespaced name, and what does its description begin with?" Expected: `software-development:brainstorming`, "Design front door of the superpowers spine". That is G5's first half.
+3. Type `/brainstorming` and confirm it resolves (the skill loads and opens with its classification step). Ask: "Which skill did you just load, by its full namespaced name, and what does its description begin with?" Expected: `software-dev:brainstorming`, "Design front door of the superpowers spine". That is G5's first half.
 4. G5 second half: the vendored skill's terminal handoff is a bare-name mention (`writing-plans`, seven places in `SKILL.md`). Ask: "If brainstorming's terminal step invokes the writing-plans skill, which namespaced skill would the Skill tool resolve that to?" Expected: `superpowers:writing-plans`, and it is the only `writing-plans` in the list.
 
 Record each answer verbatim for Task 11. If G1 fails, the fallback is the fork route (spec §10.2); if G3 or G5 fails, it is a defect to fix in place before Task 10.
@@ -1654,13 +1654,13 @@ Record each answer verbatim for Task 11. If G1 fails, the fallback is the fork r
 
 - Modify: `~/.codex/config.toml` (marketplace removed, plugins added, hook trust recorded by Codex)
 - Modify: `~/harness-backup/codex/config.toml` (refresh copy, committed in Step 7)
-- Create: `~/.local/share/software-development/upstream/superpowers` (clone at the pinned sha)
+- Create: `~/.local/share/software-dev/upstream/superpowers` (clone at the pinned sha)
 - Create: 13 symlinks `~/.codex/skills/<name>` → that clone's `skills/<name>`
 
 **Interfaces:**
 
 - Consumes: `main` on GitHub; the 13-name list in `.claude-plugin/marketplace.json`.
-- Produces: `software-development@eranroseman` and `sensemaking@eranroseman` installed on Codex; 13 bare superpowers skills reachable as `$<name>`; recorded G2/G4 outcomes for Task 11.
+- Produces: `software-dev@eranroseman` and `sensemaking@eranroseman` installed on Codex; 13 bare superpowers skills reachable as `$<name>`; recorded G2/G4 outcomes for Task 11.
 
 - [ ] **Step 1: Record rollback data and remove the old plugin (spec §10.1 Codex step 1)**
 
@@ -1677,13 +1677,13 @@ Expected: `no superpowers-dev entries remain`. Rollback: `codex plugin marketpla
 
 ```bash
 codex plugin marketplace add https://github.com/eranroseman/agent-plugins.git
-codex plugin add software-development@eranroseman
+codex plugin add software-dev@eranroseman
 codex plugin add sensemaking@eranroseman
 codex plugin list | grep -i 'eranroseman'
 grep -n 'eranroseman' ~/.codex/config.toml
 ```
 
-Expected: both plugins listed as installed; `config.toml` has `[marketplaces.eranroseman]` with `source_type = "git"`, `[plugins."software-development@eranroseman"]` and `[plugins."sensemaking@eranroseman"]` with `enabled = true`. Note whether `codex plugin add software-development@eranroseman` prompted to trust a hook; that is the first G4 observation.
+Expected: both plugins listed as installed; `config.toml` has `[marketplaces.eranroseman]` with `source_type = "git"`, `[plugins."software-development@eranroseman"]` and `[plugins."sensemaking@eranroseman"]` with `enabled = true`. Note whether `codex plugin add software-dev@eranroseman` prompted to trust a hook; that is the first G4 observation.
 
 - [ ] **Step 3: Clone upstream at the pinned sha and link the 13 skills (spec §9.2)**
 
@@ -1692,7 +1692,7 @@ The list comes from the marketplace file so there is one source of truth:
 ```bash
 REPO=/home/eranr/software-development
 SHA="$(jq -r '.plugins[] | select(.name == "superpowers") | .source.sha' "$REPO/.claude-plugin/marketplace.json")"
-CLONE=~/.local/share/software-development/upstream/superpowers
+CLONE=~/.local/share/software-dev/upstream/superpowers
 mkdir -p "$(dirname "$CLONE")"
 git clone -q https://github.com/obra/superpowers.git "$CLONE"
 git -C "$CLONE" checkout -q "$SHA"
@@ -1709,7 +1709,7 @@ Expected: `13`, then the pinned sha. No `ALREADY EXISTS` line; if one appears, t
 - [ ] **Step 4: Gate G4, Codex hook**
 
 ```bash
-grep -n 'software-development@eranroseman' ~/.codex/config.toml
+grep -n 'software-dev@eranroseman' ~/.codex/config.toml
 ```
 
 Expected if the fallback loads: a `[hooks.state."software-development@eranroseman:hooks/hooks.json:session_start:0:0"]` block with a `trusted_hash`. Then start `codex` and ask: "Count how many times the exact line 'You have superpowers.' appears in your context. Reply with the number only." Expected `1` if the hook ran, `0` if Codex ignored it. Record the outcome either way; both are valid inputs to sub-project 3.
@@ -1718,7 +1718,7 @@ Expected if the fallback loads: a `[hooks.state."software-development@eranrosema
 
 In a `codex` session:
 
-1. Type `$writing-plans` and confirm the skill loads from the symlink (it opens with "I'm using the writing-plans skill"). Ask: "Which file did that skill load from? Print the absolute path." Expected: a path under `~/.local/share/software-development/upstream/superpowers/skills/writing-plans/`.
+1. Type `$writing-plans` and confirm the skill loads from the symlink (it opens with "I'm using the writing-plans skill"). Ask: "Which file did that skill load from? Print the absolute path." Expected: a path under `~/.local/share/software-dev/upstream/superpowers/skills/writing-plans/`.
 2. Give an SDD-shaped prompt: "Use the subagent-driven-development skill to plan how you would implement a one-task plan. Do not implement; describe which skills you would invoke and by what name." Expected: the model reaches `superpowers:test-driven-development` in the skill body and resolves it to the bare `test-driven-development` (or names it and continues) rather than stalling on a missing `superpowers:` catalog entry.
 
 Record the observed behaviour. If G2 fails, apply the recorded fallback: remove the 13 symlinks, then `codex plugin marketplace add https://github.com/obra/superpowers.git --ref v6.3.0` and `codex plugin add superpowers@superpowers-dev` (upstream's own manifest names that marketplace `superpowers-dev`, not `superpowers`), and record that `brainstorming` now exists twice on Codex.
