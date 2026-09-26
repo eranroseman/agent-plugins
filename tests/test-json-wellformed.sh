@@ -10,7 +10,7 @@ while IFS= read -r f; do
   [ -n "$f" ] || continue
   jq empty "$REPO_ROOT/$f" || fail "not valid JSON: $f"
   found=$((found + 1))
-done < <(checked '*.json')
+done < <(checked_json)
 
 [ "$found" -gt 0 ] || fail "checked '*.json' listed nothing; the ownership derivation went vacuous"
 printf 'json: %s files well-formed\n' "$found"

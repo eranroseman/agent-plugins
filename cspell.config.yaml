@@ -24,9 +24,7 @@ words:
   - frontmatter
   - heredocs
   - HITL
-  - insection
   - mattpocock
-  - nosuchtool
   - obra
   - pathspec
   - pathspecs
@@ -54,7 +52,7 @@ words:
 # globs resolve relative to this file, which is why it lives at the root.
 patterns:
   - name: hash-comments
-    pattern: "/#.*$/gm"
+    pattern: "/(?<=^|\\s)#.*$/gm"
 overrides:
   - filename:
       - "bin/*"

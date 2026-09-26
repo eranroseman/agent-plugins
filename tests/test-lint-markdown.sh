@@ -7,7 +7,7 @@
 # needs: markdownlint-cli2
 . "$(dirname "$0")/lib.sh"
 
-md="$(checked '*.md')"
+md="$(checked_markdown)"
 [ -n "$md" ] || fail "checked '*.md' listed nothing; the ownership derivation went vacuous"
 cd "$REPO_ROOT" || fail "could not cd to $REPO_ROOT"
 # shellcheck disable=SC2086  # one path per word -- no whitespace, a glob character, or a quoted path, asserted by tests/test-ownership.sh

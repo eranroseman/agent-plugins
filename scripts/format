@@ -13,9 +13,9 @@ for t in shfmt prettier markdownlint-cli2; do
 done
 shell="$(checked_shell)"
 [ -n "$shell" ] || fail "checked_shell() listed nothing; the ownership derivation went vacuous"
-docs="$(checked '*.json' '*.yml' '*.yaml' '*.md')"
+docs="$(checked_prettier)"
 [ -n "$docs" ] || fail "the prettier list is empty"
-md="$(checked '*.md')"
+md="$(checked_markdown)"
 [ -n "$md" ] || fail "the markdown list is empty"
 cd "$REPO_ROOT"
 # shellcheck disable=SC2086  # one path per word -- no whitespace, a glob character, or a quoted path, asserted by tests/test-ownership.sh

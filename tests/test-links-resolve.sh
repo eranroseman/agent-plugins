@@ -43,13 +43,12 @@ cd "$REPO_ROOT" || fail "could not cd to the repository root"
 
 # Paths named because they must not exist, or absent by a recorded decision.
 DECLARED_ABSENT=(
-  'hooks/hooks.json'           # the path Codex loads by fallback: named so nothing sits there
-  'docs/adr/'                  # docs/agents/domain.md names it; this repository keeps no ADRs (#26, #37)
-  '.github/actionlint.yaml'    # the runner-label override ubuntu-latest makes unnecessary (names-and-surface spec §14)
-  'bin/setpu'                  # the names-and-surface spec's example of a typo this test must catch
-  'plugins/ghost/'             # the suite-and-ci spec's mutation, created and removed inside the mutation
-  'tests/test-format-apply.sh' # named by the names-and-surface spec §18; plan B creates it and drops this line
-  '.claude/settings.json'      # the project-scope file `claude plugin install --scope project` would write; named so it is never written
+  'hooks/hooks.json'        # the path Codex loads by fallback: named so nothing sits there
+  'docs/adr/'               # docs/agents/domain.md names it; this repository keeps no ADRs (#26, #37)
+  '.github/actionlint.yaml' # the runner-label override ubuntu-latest makes unnecessary (names-and-surface spec §14)
+  'bin/setpu'               # the names-and-surface spec's example of a typo this test must catch
+  'plugins/ghost/'          # the suite-and-ci spec's mutation, created and removed inside the mutation
+  '.claude/settings.json'   # the project-scope file `claude plugin install --scope project` would write; named so it is never written
 )
 
 docs="$(checked '*.md')"

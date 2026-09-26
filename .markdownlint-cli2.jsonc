@@ -10,6 +10,6 @@
     // scaffolder's template shape, CLAUDE.md is an @AGENTS.md include, and
     // every SKILL.md and agent file opens with a paragraph after its
     // frontmatter.
-    "MD041": false
-  }
+    "MD041": false,
+  },
 }

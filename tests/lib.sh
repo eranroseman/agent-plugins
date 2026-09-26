@@ -160,6 +160,15 @@ checked_shell() {
   done < <(checked "$@")
 }
 
+# The formatters' lists, spelled once (#62): what jq reads, what prettier
+# formats (its jsonc parser covers .markdownlint-cli2.jsonc), what
+# markdownlint and cspell read. Each takes further pathspecs the way checked
+# does, so a caller can exclude a directory.
+checked_json() { checked '*.json' "$@"; }
+checked_yaml() { checked '*.yml' '*.yaml' "$@"; }
+checked_markdown() { checked '*.md' "$@"; }
+checked_prettier() { checked '*.json' '*.jsonc' '*.yml' '*.yaml' '*.md' "$@"; }
+
 # shfmt's flags, read by tests/test-format-shell.sh and scripts/format (spec
 # §8.1): the set measured closest to the code as written, 17 files and 272
 # lines at aa8e78d; -sr was dropped because it restyled a further 140 lines.

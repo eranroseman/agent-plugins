@@ -9,14 +9,14 @@
 # needs: cspell
 . "$(dirname "$0")/lib.sh"
 
-md="$(checked '*.md' ':(exclude)docs/superpowers')"
+md="$(checked_markdown ':(exclude)docs/superpowers')"
 [ -n "$md" ] || fail "the markdown list in cspell's scope is empty"
 shell="$(checked_shell)"
 [ -n "$shell" ] || fail "checked_shell() listed nothing"
-yaml="$(checked '*.yml' '*.yaml')"
-[ -n "$yaml" ] || fail "checked '*.yml' '*.yaml' listed nothing"
-json="$(checked '*.json')"
-[ -n "$json" ] || fail "checked '*.json' listed nothing"
+yaml="$(checked_yaml)"
+[ -n "$yaml" ] || fail "checked_yaml() listed nothing"
+json="$(checked_json)"
+[ -n "$json" ] || fail "checked_json() listed nothing"
 cd "$REPO_ROOT" || fail "could not cd to $REPO_ROOT"
 # shellcheck disable=SC2086  # one path per word -- no whitespace, a glob character, or a quoted path, asserted by tests/test-ownership.sh
 cspell --no-progress $md $shell $yaml $json \
