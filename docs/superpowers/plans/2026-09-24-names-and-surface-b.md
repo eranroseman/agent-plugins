@@ -1870,7 +1870,7 @@ git commit -m "Spell the formatters' lists once, prove scripts/format restores w
 
 - [ ] **Step 1: The four fixes**
 
-`.gitignore`: `.worktrees/`, `worktrees/` and `.kilo/` become `/.worktrees/`, `/worktrees/` and `/.kilo/`; `git check-ignore -v .claude/worktrees/x` now names the `.claude/worktrees/` rule, and the same check on a worktrees directory one level below the root exits 1. In `tests/test-links-resolve.sh`: both `git log --all -1 --format=%h -- "$p"` calls in `history_tier_walk` become `git log HEAD -1 --format=%h -- "$p"`, and the header's class 8 sentence says `a path git shows deleted on this branch's history`. In the span loop, the `word="${word#*=}"` strips (the command-word one and the whole-span one) move below a URL test: each becomes
+`.gitignore`: `.worktrees/`, `worktrees/` and `.kilo/` become `/.worktrees/`, `/worktrees/` and `/.kilo/`; `git check-ignore -v .claude/worktrees/x` now names the `.claude/worktrees/` rule, and the same check on a worktrees directory one level below the root exits 1. In `tests/test-links-resolve.sh`: the one `git log --all -1 --format=%h -- "$p"` call in `history_tier_walk` becomes `git log HEAD -1 --format=%h -- "$p"`, and the header's class 8 sentence says `a path git shows deleted on this branch's history`. In the span loop, the `word="${word#*=}"` strips (the command-word one and the whole-span one) move below a URL test: each becomes
 
 ```bash
             case "$word" in
@@ -1885,7 +1885,8 @@ for the command word, and the same shape on `$span` before the whole-span strip.
   # Class 5, two shapes. A revision or a plugin@marketplace before the colon
   # is namespaced by shape alone. owner/repo before the colon is namespaced
   # only when owner is no directory at any root and none git remembers there,
-  # the test class 4 applies to a slug, so bin/setpu:main is not (#65).
+  # the test class 4 applies to a slug, so a misspelled two-segment path with
+  # a colon suffix is not one (#65).
   if printf '%s' "$tok" | grep -qE '^([0-9a-f]{7,40}|[A-Za-z0-9_.-]+@[A-Za-z0-9_.-]+):[^[:space:]]+'; then
     n_ns=$((n_ns + 1))
     return
@@ -1924,7 +1925,7 @@ In a scratch clone (`git clone -q --local . /tmp/ref65`), append to `README.md` 
 See `https://example.com/a?b=c` and `bin/setpu:main` and `sub/worktrees/x` and `1dd7362:upstream/skills.json`.
 ```
 
-Expected: exactly two failures, the probe line's second token (class 5 no longer takes it) and its third (no longer ignored); the URL with `=` and the revision-qualified path pass. Before the fixes the same line produced one failure, the URL, and passed the other three. Then on the tree, `bash tests/test-links-resolve.sh`: green, the namespaced count unchanged from Task 12's run (the eighty genuine tokens all match the tighter shape; a scratch run before hand-over printed 80); record the ignored count before and after, since anchoring can only lower it.
+Expected: exactly two failures, the probe line's second span (class 5 no longer takes it) and third span (no longer ignored); the URL with `=` and the revision-qualified path pass. Before the fixes the same line produced one failure, the URL, and passed the other three. Then on the tree, `bash tests/test-links-resolve.sh`: green, the namespaced count unchanged from Task 12's run (the eighty genuine tokens all match the tighter shape; a scratch run before hand-over printed 80); record the ignored count before and after, since anchoring can only lower it.
 
 - [ ] **Step 3: Suite and commit**
 
