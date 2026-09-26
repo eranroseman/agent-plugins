@@ -40,10 +40,19 @@ fi
 
 # Every action pin in the workflow files, `uses: owner/repo@sha # vX.Y.Z`,
 # as `owner/repo sha tag`, one line per distinct pin. The workflow file is
-# the desired state; no copy is kept (spec §14).
+# the desired state; no copy is kept (spec §14). The file list is built
+# under nullglob, so an unmatched *.yaml never reaches grep as a literal
+# path, and an empty list is exit 2, since grep given no file reads stdin.
 workflow_pins() {
-  grep -hoE 'uses:[[:space:]]*[^@[:space:]]+@[0-9a-f]{40}[[:space:]]*#[[:space:]]*v[0-9]+(\.[0-9]+)*' \
-    "$REPO_ROOT"/.github/workflows/*.yml "$REPO_ROOT"/.github/workflows/*.yaml 2>/dev/null \
+  local -a files
+  mapfile -t files < <(
+    shopt -s nullglob
+    for f in "$REPO_ROOT"/.github/workflows/*.yml "$REPO_ROOT"/.github/workflows/*.yaml; do
+      printf '%s\n' "$f"
+    done
+  )
+  [ "${#files[@]}" -gt 0 ] || die "no workflow file under $REPO_ROOT/.github/workflows"
+  grep -hoE 'uses:[[:space:]]*[^@[:space:]]+@[0-9a-f]{40}[[:space:]]*#[[:space:]]*v[0-9]+(\.[0-9]+)*' "${files[@]}" \
     | sed -E 's/^uses:[[:space:]]*([^@]+)@([0-9a-f]{40})[[:space:]]*#[[:space:]]*(v[0-9.]+)$/\1 \2 \3/' \
     | sort -u
 }
@@ -51,7 +60,7 @@ workflow_pins() {
 # Exposed so the parse can be tested without the network.
 if [ "${1:-}" = "--workflow-pins" ]; then
   workflow_pins
-  exit 0
+  exit $?
 fi
 
 [ -f "$MARKETPLACE" ] || die "missing $MARKETPLACE"

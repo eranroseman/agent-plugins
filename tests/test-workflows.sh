@@ -29,8 +29,20 @@ for f in $files; do
 done
 
 # The watch reads the same pins the guard above checks: one line per
-# distinct pin, and every uses: line accounted for.
-pins="$(bash "$REPO_ROOT/scripts/upstream-watch" --workflow-pins)" || fail "upstream-watch --workflow-pins failed"
+# distinct pin, and every uses: line accounted for. It exits 0 doing so: an
+# unmatched glob never reaches grep.
+pins="$(bash "$REPO_ROOT/scripts/upstream-watch" --workflow-pins)" \
+  || fail "upstream-watch --workflow-pins exited $?, not 0"
+# With no workflow file at all, the reader fails loudly, exit 2, naming the
+# directory, rather than handing grep an empty list and so its stdin.
+W="$(mktemp -d)" || fail "mktemp failed"
+trap 'rm -rf "$W"' EXIT
+mkdir -p "$W/scripts" || fail "could not seed $W"
+cp "$REPO_ROOT/scripts/upstream-watch" "$W/scripts/" || fail "could not copy the watch"
+status=0
+out="$(bash "$W/scripts/upstream-watch" --workflow-pins 2>&1 </dev/null)" || status=$?
+[ "$status" -eq 2 ] || fail "with no workflow file, --workflow-pins exited $status, not 2:"$'\n'"$out"
+grep -qF '.github/workflows' <<<"$out" || fail "with no workflow file, the error does not name .github/workflows:"$'\n'"$out"
 [ "$(printf '%s\n' "$pins" | grep -c .)" -eq 4 ] || fail "expected 4 distinct action pins, got:"$'\n'"$pins"
 # shellcheck disable=SC2086  # one path per word, asserted by tests/test-ownership.sh
 # shellcheck disable=SC2013  # each word is a whole uses: pin, never split by whitespace within one
