@@ -38,6 +38,22 @@ if [ "${1:-}" = "--newest-stable-tag" ]; then
   exit 0
 fi
 
+# Every action pin in the workflow files, `uses: owner/repo@sha # vX.Y.Z`,
+# as `owner/repo sha tag`, one line per distinct pin. The workflow file is
+# the desired state; no copy is kept (spec §14).
+workflow_pins() {
+  grep -hoE 'uses:[[:space:]]*[^@[:space:]]+@[0-9a-f]{40}[[:space:]]*#[[:space:]]*v[0-9]+(\.[0-9]+)*' \
+    "$REPO_ROOT"/.github/workflows/*.yml "$REPO_ROOT"/.github/workflows/*.yaml 2>/dev/null \
+    | sed -E 's/^uses:[[:space:]]*([^@]+)@([0-9a-f]{40})[[:space:]]*#[[:space:]]*(v[0-9.]+)$/\1 \2 \3/' \
+    | sort -u
+}
+
+# Exposed so the parse can be tested without the network.
+if [ "${1:-}" = "--workflow-pins" ]; then
+  workflow_pins
+  exit 0
+fi
+
 [ -f "$MARKETPLACE" ] || die "missing $MARKETPLACE"
 [ -f "$SKILLS_JSON" ] || die "missing $SKILLS_JSON"
 [ -f "$VENDORED_JSON" ] || die "missing $VENDORED_JSON"
@@ -156,6 +172,27 @@ else
   report "- **Manifest order changed:** first entry is now \`${first_manifest:-unreadable}\`. Codex may read the Claude manifest, which declares a hook. Re-read the hook spec section 6.2."
   DRIFT=1
 fi
+report ""
+
+# 4. The action pins: each sha against what its tag names. An annotated tag
+# is peeled; a lightweight one resolves bare, which is what the four current
+# releases are.
+report "### action pins"
+report ""
+while read -r repo sha tag; do
+  [ -n "$repo" ] || continue
+  resolved="$(git ls-remote --tags "https://github.com/$repo.git" "refs/tags/$tag^{}" | cut -f1)"
+  [ -n "$resolved" ] || resolved="$(git ls-remote --tags "https://github.com/$repo.git" "refs/tags/$tag" | cut -f1)"
+  [ -n "$resolved" ] || die "could not resolve $repo tag $tag"
+  if [ "$resolved" = "$sha" ]; then
+    report "- \`$repo@$tag\` is pinned at its tag's commit."
+  else
+    report "- **\`$repo\` is pinned at \`$sha\`, but \`$tag\` is \`$resolved\`.** Edit the \`uses:\` line in the workflow."
+    DRIFT=1
+  fi
+done < <(workflow_pins)
+n_pins="$(workflow_pins | grep -c .)"
+[ "$n_pins" -gt 0 ] || die "no action pin was read from the workflow files"
 report ""
 
 if [ "$DRIFT" -eq 0 ]; then
