@@ -81,6 +81,33 @@ for pat in \
 done
 printf '%s\n' "$out" | grep -q 'FAIL' || fail "doctor reported no FAIL line"
 
+# M13's capture-and-check guards ensure_claude's subset-entries read too, not
+# only ensure_clones': a claude stub on PATH lets ensure_claude clear its own
+# `have claude` gate and reach the same $MARKETPLACE both loops read (#61
+# M13). A scratch desired state, corrupted the same way as
+# tests/test-doctor-silence.sh's fixture 11: the second git-subdir entry's
+# version is a non-scalar, so jq's @tsv abort reaches both loops that read it.
+CLAUDE_REPO="$H/claude-repo"
+mkdir -p "$CLAUDE_REPO/bin" "$CLAUDE_REPO/.claude-plugin" || fail "could not seed $CLAUDE_REPO"
+ln -s "$SETUP" "$CLAUDE_REPO/bin/setup" || fail "could not link bin/setup into $CLAUDE_REPO"
+second="$(jq -r '[.plugins[] | select(.source.source? == "git-subdir")][1].name' "$MARKETPLACE")" \
+  || fail "could not read the second git-subdir entry"
+jq --arg n "$second" '(.plugins[] | select(.name == $n) | .version) = {"x": 1}' "$MARKETPLACE" \
+  >"$CLAUDE_REPO/.claude-plugin/marketplace.json" || fail "could not corrupt the second entry's version"
+cp "$REPO_ROOT/skills.json" "$CLAUDE_REPO/skills.json" || fail "could not copy skills.json into $CLAUDE_REPO"
+cp -R "$REPO_ROOT/plugins" "$CLAUDE_REPO/" || fail "could not copy the plugins into $CLAUDE_REPO"
+H3="$H/home-claude"
+mkdir -p "$H3/.agents/skills" || fail "could not seed $H3"
+BIN3="$H/bin-claude"
+link_tools "$BIN3" bash git jq sed awk grep find date readlink basename dirname \
+  rm mv ln mkdir cp cat sha256sum
+printf '#!/usr/bin/env bash\nexit 1\n' >"$BIN3/claude" || fail "could not write the claude stub"
+chmod +x "$BIN3/claude" || fail "could not make the claude stub executable"
+if out="$(env HOME="$H3" CODEX_HOME="$H3/.codex" PATH="$BIN3" /bin/bash "$CLAUDE_REPO/bin/setup" --check 2>&1)"; then status=0; else status=$?; fi
+[ "$status" -ne 0 ] || fail "non-scalar version with claude on PATH: bin/setup --check exited 0:"$'\n'"$out"
+count="$(printf '%s\n' "$out" | grep -c 'the subset entries could not be read whole from')"
+[ "$count" -eq 2 ] || fail "expected the partial-read message from both ensure_clones and ensure_claude (got $count):"$'\n'"$out"
+
 # The declared versions, read once: both fixtures below seed an
 # installed_plugins.json carrying them, so the Claude half reports OK without
 # running a command.
