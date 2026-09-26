@@ -28,6 +28,12 @@ grep -q -- '--check' "$DOCTOR" || fail "bin/doctor must invoke bin/setup --check
 "$SETUP" --help >/dev/null 2>&1 || fail "bin/setup --help must exit 0"
 "$SETUP" --nonsense >/dev/null 2>&1 && fail "an unknown argument must not exit 0"
 
+# The bash floor is stated in three places and must be one number; the
+# refusal itself cannot run on a machine whose bash is above it.
+for f in "$SETUP" "$REPO_ROOT/tests/run.sh" "$REPO_ROOT/README.md"; do
+  grep -q 'bash.*4\.4 or later' "$f" || fail "$f does not state the bash 4.4 floor"
+done
+
 # Prerequisites: fatal for setup, conditional for the doctor. An empty PATH removes
 # every one of the five, so setup must refuse and the doctor must not.
 H="$(mktemp -d)" || fail "mktemp failed"

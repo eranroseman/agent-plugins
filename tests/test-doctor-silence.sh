@@ -66,7 +66,7 @@ BIN="$(bin_without)"
 R="$(scratch_repo malformed)"
 printf '{\n' >"$R/.claude-plugin/marketplace.json" || fail "could not corrupt the marketplace"
 run_case "malformed marketplace" "$R" "$(seeded_home 1)" "$BIN"
-saw 'no subset (git-subdir) entry could be read' \
+saw 'the subset entries could not be read whole from' \
   || fail "malformed marketplace: ensure_clones did not report the unreadable desired state:"$'\n'"$OUT"
 saw "the subset entries' skill list could not be read from" \
   || fail "malformed marketplace: ensure_links did not report the unreadable desired state:"$'\n'"$OUT"
@@ -186,4 +186,16 @@ saw 'FAIL: check ensure_fresh_clone reported nothing; this machine is unchecked,
 printf '%s\n' "$OUT" | grep -qE '^[0-9]+ check\(s\) failed$' \
   || fail "silent check: it was not counted in the verdict:"$'\n'"$OUT"
 
-printf 'doctor-silence: 10 unreadable machines, none reported clean\n'
+# 11. A non-scalar `version` in the second git-subdir entry: jq's @tsv aborts
+# after the first entry's row (exit 5, one row). A loop fed by process
+# substitution ran that one row and reported one clone; the capture reports
+# the abort (#61 M13). `null` would not do: @tsv renders it as an empty
+# string without error.
+R="$(scratch_repo non-scalar-version)"
+jq --arg n "$second" '(.plugins[] | select(.name == $n) | .version) = {"x": 1}' "$MARKETPLACE" \
+  >"$R/.claude-plugin/marketplace.json" || fail "could not corrupt the second entry's version"
+run_case "non-scalar version" "$R" "$(seeded_home 11)" "$BIN"
+saw 'the subset entries could not be read whole from' \
+  || fail "non-scalar version: the partial read was not reported:"$'\n'"$OUT"
+
+printf 'doctor-silence: 11 unreadable machines, none reported clean\n'

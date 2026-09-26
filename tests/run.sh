@@ -5,7 +5,7 @@
 #   tests/run.sh             a test whose declared need is unmet is skipped
 #   tests/run.sh --no-skip   an unmet need is a FAIL; CI runs this
 #
-# Three things are hard (spec §5.1): bash 4 or later, jq and git. The shared
+# Three things are hard (spec §5.1): bash 4.4 or later, jq and git. The shared
 # substrate cannot run without them, so absent one no test's verdict means
 # anything, and the run refuses with the complete list, exit 2. Everything
 # else is a need: a test declares it on one line of its header comment,
@@ -39,8 +39,9 @@ rm -f "$RESULTS"
 
 # The hard prerequisites, refused as one list in the shape bin/setup uses.
 missing=""
-[ "${BASH_VERSINFO[0]}" -ge 4 ] \
-  || missing="$missing, bash 4 or later (found ${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]})"
+if [ "${BASH_VERSINFO[0]}" -lt 4 ] || { [ "${BASH_VERSINFO[0]}" -eq 4 ] && [ "${BASH_VERSINFO[1]}" -lt 4 ]; }; then
+  missing="$missing, bash 4.4 or later (found ${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]})"
+fi
 command -v jq >/dev/null 2>&1 || missing="$missing, jq"
 command -v git >/dev/null 2>&1 || missing="$missing, git"
 [ -z "$missing" ] || {

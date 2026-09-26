@@ -80,7 +80,7 @@ Claude Code loads the new versions at the next launch or after
 
 ## Checks
 
-`tests/run.sh` runs every check under `tests/`. It needs `bash` 4 or later,
+`tests/run.sh` runs every check under `tests/`. It needs `bash` 4.4 or later,
 `jq` and `git`, and refuses with the list otherwise. Some checks need a tool
 this machine may lack: each such check is skipped with a line naming the
 tool, and the run ends by summing what it did not verify. The versions those

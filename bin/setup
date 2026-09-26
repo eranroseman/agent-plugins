@@ -18,6 +18,15 @@
 # file exits early, with status 2.
 set -uo pipefail
 
+# bash 4.4 or later, refused before anything else runs and with builtins
+# only: below 4.4 an empty array's "${a[@]}" is unbound under set -u and the
+# engine dies mid-check with no verdict (#61 M3). Every distribution that
+# ships an older bash is end of life, so the version goes, not the idiom.
+if [ "${BASH_VERSINFO[0]}" -lt 4 ] || { [ "${BASH_VERSINFO[0]}" -eq 4 ] && [ "${BASH_VERSINFO[1]}" -lt 4 ]; }; then
+  printf 'ERROR: bin/setup needs bash 4.4 or later (found %s.%s)\n' "${BASH_VERSINFO[0]}" "${BASH_VERSINFO[1]}" >&2
+  exit 2
+fi
+
 # Builtins only until require_tools has spoken: under an empty PATH the
 # external dirname is `command not found`, and that line, carrying the
 # script's own path, once satisfied a test's grep for `claude` before the
@@ -205,8 +214,15 @@ split_tsv() {
 }
 
 ensure_clones() {
-  local name url sha dir have n=0 line F
+  local name url sha dir have n=0 line F entries
   needs jq "the subset entries cannot be read, so no pinned clone is checked" || return
+  # Read whole, then looped: a non-zero jq exit means the program aborted
+  # partway (a non-scalar version, say), and the rows before the abort are a
+  # partial list that checks nothing. The idiom ensure_links uses (#61 M13).
+  entries="$(subset_entries)" || {
+    bad "the subset entries could not be read whole from $MARKETPLACE; a partial list checks nothing"
+    return
+  }
   while IFS= read -r line; do
     [ -n "$line" ] || continue
     n=$((n + 1))
@@ -265,7 +281,7 @@ ensure_clones() {
     else
       bad "pinned clone $name is at ${have:-an unknown revision}, declared $sha"
     fi
-  done < <(subset_entries)
+  done <<<"$entries"
   [ "$n" -gt 0 ] || bad "no subset (git-subdir) entry could be read from $MARKETPLACE"
 }
 
@@ -403,7 +419,7 @@ installed_version() {
 }
 
 ensure_claude() {
-  local want have installed_sd name line F
+  local want have installed_sd name line F entries
   if ! have claude; then
     skip "claude is not on PATH: the Claude half is unchecked"
     return
@@ -485,6 +501,10 @@ ensure_claude() {
   # software-dev` moved the parent from 0.6.0 to 0.7.0 and left its new
   # dependency uninstalled -- so a missing entry is installed by name. An
   # installed one at the wrong version only moves under `update`.
+  entries="$(subset_entries)" || {
+    bad "the subset entries could not be read whole from $MARKETPLACE; a partial list checks nothing"
+    return
+  }
   while IFS= read -r line; do
     [ -n "$line" ] || continue
     split_tsv "$line"
@@ -513,7 +533,7 @@ ensure_claude() {
     else
       bad "$name@eranroseman is ${have:-not installed}, declared $want"
     fi
-  done < <(subset_entries)
+  done <<<"$entries"
 }
 
 codex_plugin_version() {
@@ -568,7 +588,7 @@ ensure_codex() {
       # command's exit status: add exits 0 having left the old version in
       # place, and announcing $want there printed a version that the FAIL line
       # immediately below then contradicted.
-      CODEX_LIST="$(codex plugin list --json 2>/dev/null)"
+      CODEX_LIST="$(codex plugin list --json 2>/dev/null)" || CODEX_LIST=""
       got="$(codex_plugin_version "$p")"
       if [ "$got" = "$want" ]; then
         did "installed codex plugin $p $got"
@@ -895,7 +915,7 @@ main() {
 
   if applying; then
     printf '\n--- re-checking ---\n'
-    "$REPO_ROOT/bin/setup" --check
+    "$BASH" "$REPO_ROOT/bin/setup" --check
     exit $?
   fi
   # An unread machine is not a healthy one: a dead detector must not look like a
