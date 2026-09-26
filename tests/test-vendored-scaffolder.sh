@@ -19,13 +19,7 @@ TAG_OBJ="835450ef244ab7335f75d95b83e7d979eae22a6d" # v1.2.3 is annotated; ls-rem
 
 d="$(mktemp -d)"
 trap 'rm -rf "$d"' EXIT
-git -C "$d" init -q || fail "git init failed in $d"
-git -C "$d" remote add origin https://github.com/mattpocock/skills.git \
-  || fail "git remote add failed"
-git -C "$d" fetch -q --depth 1 origin "$SHA" \
-  || fail "could not fetch mattpocock/skills at $SHA"
-git -C "$d" checkout -q FETCH_HEAD || fail "could not check out $SHA"
-[ "$(git -C "$d" rev-parse HEAD)" = "$SHA" ] || fail "checkout HEAD != $SHA"
+fetch_pinned https://github.com/mattpocock/skills.git "$SHA" "$d" >/dev/null
 git ls-remote --exit-code --tags https://github.com/mattpocock/skills.git \
   "refs/tags/$REF" | grep -q "$TAG_OBJ" || fail "tag $REF no longer names $TAG_OBJ"
 
