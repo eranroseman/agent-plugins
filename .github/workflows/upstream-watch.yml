@@ -52,7 +52,7 @@ jobs:
           body="$(cat "$RUNNER_TEMP/report.md")"
           number="$(gh issue list --label upstream-drift --state open \
             --json number --jq '.[0].number // empty')"
-          if grep -q 'Everything matches' "$RUNNER_TEMP/report.md"; then
+          if [ "${{ steps.watch.outputs.code }}" = '0' ]; then
             if [ -n "$number" ]; then
               gh issue comment "$number" --body "Upstream caught up; closing."
               gh issue close "$number"

@@ -43,6 +43,26 @@ status=0
 out="$(bash "$W/scripts/upstream-watch" --workflow-pins 2>&1 </dev/null)" || status=$?
 [ "$status" -eq 2 ] || fail "with no workflow file, --workflow-pins exited $status, not 2:"$'\n'"$out"
 grep -qF '.github/workflows' <<<"$out" || fail "with no workflow file, the error does not name .github/workflows:"$'\n'"$out"
+# A broken marketplace must fail before the watch attempts an upstream read.
+mkdir -p "$W/.claude-plugin" "$W/bin" || fail "could not extend $W"
+cp "$REPO_ROOT/skills.json" "$REPO_ROOT/vendored.json" "$W/" \
+  || fail "could not copy the watch's desired state"
+printf '#!/usr/bin/env bash\nexit 99\n' >"$W/bin/git" || fail "could not write the git stub"
+chmod +x "$W/bin/git" || fail "could not make the git stub executable"
+printf '{\n' >"$W/.claude-plugin/marketplace.json" || fail "could not break marketplace.json"
+status=0
+out="$(PATH="$W/bin:$PATH" bash "$W/scripts/upstream-watch" 2>&1)" || status=$?
+[ "$status" -eq 2 ] || fail "with a broken marketplace, upstream-watch exited $status, not 2:"$'\n'"$out"
+grep -qF "ERROR: could not read subset entries from $W/.claude-plugin/marketplace.json" <<<"$out" \
+  || fail "the broken marketplace was not rejected at its read boundary:"$'\n'"$out"
+# A marketplace with no subset entry is the case the old process substitution
+# turned into a clean verdict: zero rows, zero iterations, DRIFT still 0.
+printf '{"plugins":[]}\n' >"$W/.claude-plugin/marketplace.json" || fail "could not empty marketplace.json"
+status=0
+out="$(PATH="$W/bin:$PATH" bash "$W/scripts/upstream-watch" 2>&1)" || status=$?
+[ "$status" -eq 2 ] || fail "with no subset entry, upstream-watch exited $status, not 2:"$'\n'"$out"
+grep -qF "ERROR: no subset entry could be read from $W/.claude-plugin/marketplace.json" <<<"$out" \
+  || fail "a marketplace with no subset entry was not rejected:"$'\n'"$out"
 [ "$(printf '%s\n' "$pins" | grep -c .)" -eq 4 ] || fail "expected 4 distinct action pins, got:"$'\n'"$pins"
 # shellcheck disable=SC2086  # one path per word, asserted by tests/test-ownership.sh
 # shellcheck disable=SC2013  # each word is a whole uses: pin, never split by whitespace within one
