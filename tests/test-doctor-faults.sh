@@ -193,9 +193,9 @@ jq '{version: 3,
 # uses a copy of bin/setup with no +x beside the real desired state.
 SETUP_NOX="$H/repo/bin/setup"
 mkdir -p "$H/repo/bin" "$H/repo/.claude-plugin" || fail "could not seed $H/repo"
-# shellcheck disable=SC2015  # both stages must succeed or the fixture fails; there is no C that only some A implies
+# shellcheck disable=SC2015  # both commands must succeed; fail is right when either does not
 cp "$SETUP" "$SETUP_NOX" && chmod -x "$SETUP_NOX" || fail "could not copy bin/setup without +x"
-# shellcheck disable=SC2015  # both stages must succeed or the fixture fails; there is no C that only some A implies
+# shellcheck disable=SC2015  # both commands must succeed; fail is right when either does not
 cp "$MARKETPLACE" "$H/repo/.claude-plugin/" && cp "$REPO_ROOT/skills.json" "$H/repo/" || fail "could not copy the desired state"
 cp -R "$REPO_ROOT/plugins" "$H/repo/" || fail "could not copy the plugins"
 
