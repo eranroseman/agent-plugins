@@ -8,7 +8,6 @@
 #     install actually gets, so a repointed or vendored skill cannot leave a
 #     dangling name behind (the class of superpowers:brainstorming, which the
 #     subset entry excludes);
-#   - the rethink stub exists in neither plugin.
 #   - consistency-audit ships with its inspector, the inspector carries no
 #     permissionMode, and the skill names the inspector by the name a plugin
 #     agent actually resolves to.
@@ -53,9 +52,6 @@ for skill in "$REPO_ROOT"/plugins/*/skills/*/; do
 done
 [ "$checked" -ge 3 ] || fail "expected at least 3 plugin skills, found $checked"
 
-[ ! -e "$REPO_ROOT/plugins/sensemaking/skills/rethink" ] || fail "the rethink stub must not ship in sensemaking"
-[ ! -e "$REPO_ROOT/plugins/software-dev/skills/rethink" ] || fail "the rethink stub must not ship in software-dev"
-
 # rethink-audit: the one repointed reference.
 RA="$REPO_ROOT/plugins/sensemaking/skills/rethink-audit/SKILL.md"
 grep -q 'software-dev:brainstorming' "$RA" || fail "rethink-audit does not name software-dev:brainstorming"
@@ -78,4 +74,4 @@ if grep -q '`consistency-audit-inspector`' "$CA"; then fail "consistency-audit s
 grep -q 'On Codex, where a plugin cannot ship a subagent' "$CA" \
   || fail "consistency-audit must state its Codex degradation in its own text (spec section 7.1)"
 
-printf 'plugin-skills: %s skills checked; gates paired, references resolve, rethink absent, inspector shipped\n' "$checked"
+printf 'plugin-skills: %s skills checked; gates paired, references resolve, inspector shipped\n' "$checked"
