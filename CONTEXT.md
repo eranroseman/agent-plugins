@@ -21,7 +21,7 @@ What the repository says a machine and its pinned upstreams should hold: the ski
 _Avoid_: declaration, declarations
 
 **first-party**:
-A skill, agent or file written in this repository, as opposed to third-party.
+A skill, agent, or file written in this repository, as opposed to third-party.
 _Avoid_: authored
 
 **user-invocable only**:
@@ -58,7 +58,7 @@ A vendored tree, or a forked tree's named fragments, held to upstream by a drift
 Pinned so they read identically in every file; each recruits a meaning the reader already has.
 
 **ladder** and **rung**:
-Eliminate the problem, add a mechanism, add a rule, then prose; climb from the top and stop at the first rung that holds.
+Eliminate the problem, add a mechanism, add a rule; prose is the last resort. Climb from the top and stop at the first rung that holds.
 
 **gate**:
 A condition that must hold before the next thing runs.
@@ -67,7 +67,7 @@ A condition that must hold before the next thing runs.
 Something no longer matches what it is pinned to.
 
 **spine**:
-The superpowers process skills, brainstorm to finish.
+The superpowers process skills, from brainstorm to finish.
 
 **front door**:
 `brainstorming`, where a build request enters the spine.
