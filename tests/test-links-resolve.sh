@@ -54,8 +54,8 @@ DECLARED_ABSENT=(
   '.claude/settings.json'   # the project-scope file `claude plugin install --scope project` would write; named so it is never written
 )
 
-docs="$(checked '*.md')"
-[ -n "$docs" ] || fail "checked '*.md' listed nothing; the ownership derivation went vacuous"
+docs="$(checked_markdown)"
+[ -n "$docs" ] || fail "checked_markdown() listed nothing; the ownership derivation went vacuous"
 
 # ---- paths in backticks ----------------------------------------------------
 # The roots a token resolves at, for a document in $1: its directory, the
