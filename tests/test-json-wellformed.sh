@@ -12,5 +12,5 @@ while IFS= read -r f; do
   found=$((found + 1))
 done < <(checked_json)
 
-[ "$found" -gt 0 ] || fail "checked '*.json' listed nothing; the ownership derivation went vacuous"
+[ "$found" -gt 0 ] || fail "checked_json() listed nothing; the ownership derivation went vacuous"
 printf 'json: %s files well-formed\n' "$found"

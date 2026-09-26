@@ -145,9 +145,9 @@ run_apply() { # $1 HOME, $2 PATH dir; leaves the output in OUT
 saw() { printf '%s\n' "$OUT" | grep -qF -- "$1"; }
 
 # True iff $1 appears in $OUT strictly after the apply pass's own
-# `--- re-checking ---` marker (bin/setup line 917): the apply pass prints
-# its own OK the moment a stub's edit lands, so grepping the whole of $OUT
-# would pass on that alone and never notice a broken re-check. Fails loudly
+# `--- re-checking ---` marker: the apply pass prints its own OK the moment
+# a stub's edit lands, so grepping the whole of $OUT would pass on that
+# alone and never notice a broken re-check. Fails loudly
 # if the marker itself never printed, which would otherwise make the `#*`
 # strip a no-op and silently degrade this back into a whole-$OUT grep.
 rechecked() {

@@ -10,7 +10,9 @@
 # output is frozen.
 # A span in backticks that carries whitespace is a command: each of its words is
 # classified on its own once a NAME= prefix and surrounding quotes are dropped,
-# and a word that is not shaped like a path is command syntax, counted.
+# except that a URL word keeps its NAME=-looking text, since the strip is
+# skipped for a URL; a word that is not shaped like a path is command syntax,
+# counted.
 #
 # What does not resolve is one of eight classes, each counted and printed so
 # a zero is visible, or it fails naming the file, line and token:
@@ -27,7 +29,7 @@
 #      directory a move removed;
 #   5. a namespaced path: owner/repo:path or owner/repo@ref:path, the
 #      other-repository convention CONTEXT.md sets, held like a slug to an
-#      owner that is no directory here; a revision before the colon
+#      owner that is no directory here; a hex revision before the colon
 #      (rev:path); or plugin@marketplace:key;
 #   6. a path git check-ignore accepts: runtime-only, classified by the file
 #      that ignores it;

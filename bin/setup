@@ -873,7 +873,7 @@ report_only() {
   reported "$before" report_duplicates
 }
 
-# 5. One skill name reaching two different trees on one agent CLI. Derived
+# One skill name reaching two different trees on one agent CLI. Derived
 # from every route that CLI loads a skill by, never from a declared list:
 # its user skill root, the shared root, and the install path of each of its
 # plugins. Three rules, each earned from a measured false positive on a clean
