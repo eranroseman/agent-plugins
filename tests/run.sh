@@ -24,6 +24,8 @@ cd "$(dirname "$0")/.." || {
 }
 
 NO_SKIP=0
+RESULTS=tests/results.tsv
+rm -f "$RESULTS"
 case "${1:-}" in
   '') ;;
   --no-skip) NO_SKIP=1 ;;
@@ -33,9 +35,7 @@ case "${1:-}" in
     ;;
 esac
 
-RESULTS=tests/results.tsv
 REGISTRY=tests/tools.txt
-rm -f "$RESULTS"
 
 # The hard prerequisites, refused as one list in the shape bin/setup uses.
 missing=""
@@ -53,6 +53,24 @@ command -v git >/dev/null 2>&1 || missing="$missing, git"
   exit 2
 }
 
+# The registry's shape, held at the gate so a duplicate or mangled row is
+# loud before any test reads it (#61 M6, M11): every non-comment row is
+# `tool version sha256-or-dash`, and no tool appears twice.
+n=0
+while IFS= read -r row; do
+  n=$((n + 1))
+  case "$row" in '' | '#'*) continue ;; esac
+  printf '%s\n' "$row" | grep -qE '^[a-z0-9-]+[[:space:]]+[0-9]+\.[0-9]+\.[0-9]+[[:space:]]+([0-9a-f]{64}|-)$' || {
+    printf 'FAIL: %s: row %s is not '"'"'tool version sha256-or-dash'"'"': %s\n' "$REGISTRY" "$n" "$row" >&2
+    exit 2
+  }
+done <"$REGISTRY"
+dup="$(grep -vE '^[[:space:]]*(#|$)' "$REGISTRY" | awk '{ print $1 }' | sort | uniq -d)"
+[ -z "$dup" ] || {
+  printf 'FAIL: %s declares a tool twice: %s\n' "$REGISTRY" "$dup" >&2
+  exit 2
+}
+
 # The version a tool reports: the first dotted triple in its version output.
 tool_version() {
   case "$1" in
@@ -61,9 +79,13 @@ tool_version() {
   esac 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1
 }
 
-# The version tests/tools.txt declares for $1; exit 1 when it declares none.
+# The version tests/tools.txt declares for $1, from the first matching row;
+# exit 1 when it declares none. First match only: `exit` inside the main
+# block still runs END, which is why the earlier `{ print; exit 0 } END
+# { exit 1 }` form failed (#61 M11). The registry gate below has already
+# refused a duplicate row, so first is also only.
 registry_version() {
-  awk -v t="$1" '$1 == t { print $2; found = 1 } END { exit !found }' "$REGISTRY"
+  awk -v t="$1" '$1 == t { if (!found++) v = $2 } END { if (!found) exit 1; print v }' "$REGISTRY"
 }
 
 # One probe per need, run once and remembered. On an unmet need WANT holds
@@ -134,7 +156,8 @@ printf '# %s %s\n' "$tree" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >"$RESULTS"
 passed=0 failed=0 skipped=0 unmet_list=""
 for t in tests/test-*.sh; do
   unmet=""
-  # shellcheck disable=SC2046  # the needs line is space-separated names by contract
+  # The needs line is space-separated names by contract.
+  # shellcheck disable=SC2046
   for need in $(declared_needs "$t"); do
     probe "$need" "$t"
     [ -z "${WANT[$need]}" ] && continue
@@ -158,7 +181,10 @@ for t in tests/test-*.sh; do
     fi
     continue
   fi
-  log="$(mktemp)"
+  log="$(mktemp)" || {
+    printf 'FAIL: could not create a log file (TMPDIR=%s)\n' "${TMPDIR:-/tmp}" >&2
+    exit 2
+  }
   bash "$t" 2>&1 | tee "$log"
   status=${PIPESTATUS[0]}
   last="$(tail -n 1 "$log" | tr '\t' ' ')"

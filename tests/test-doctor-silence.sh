@@ -48,6 +48,20 @@ run_case() {
   [ "$status" -ne 0 ] || fail "$label: bin/setup --check exited 0:"$'\n'"$OUT"
   printf '%s\n' "$OUT" | grep -qx 'clean' \
     && fail "$label: the doctor called an unread machine clean:"$'\n'"$OUT"
+  # The verdict's count equals the FAIL: lines: bad is the only writer of
+  # both, so the bracket's own FAIL is counted, not merely printed (#61 M1).
+  # A needs-only case (jq or sha256sum off PATH) calls skip, never bad, so it
+  # prints no FAIL: line and no verdict at all; an absent verdict there reads
+  # as 0, which is what the invariant demands.
+  local n_fail n_said
+  n_fail="$(printf '%s\n' "$OUT" | grep -c '^FAIL:' || true)"
+  n_said="$(printf '%s\n' "$OUT" | grep -oE '^[0-9]+ check\(s\) failed$' | grep -oE '^[0-9]+' || true)"
+  if [ "$n_fail" -gt 0 ]; then
+    [ -n "$n_said" ] || fail "$label: no 'N check(s) failed' verdict:"$'\n'"$OUT"
+  else
+    n_said="${n_said:-0}"
+  fi
+  [ "$n_said" -eq "$n_fail" ] || fail "$label: the verdict says $n_said failed but $n_fail FAIL: lines were printed:"$'\n'"$OUT"
   return 0
 }
 saw() { printf '%s\n' "$OUT" | grep -q -- "$1"; }
@@ -183,8 +197,6 @@ rm "$R/bin/setup" || fail "could not drop the symlink for the silent-check copy"
 run_case "silent check" "$R" "$(seeded_home 10)" "$BIN"
 saw 'FAIL: check ensure_fresh_clone reported nothing; this machine is unchecked, not verified' \
   || fail "silent check: the bracket around it did not name it:"$'\n'"$OUT"
-printf '%s\n' "$OUT" | grep -qE '^[0-9]+ check\(s\) failed$' \
-  || fail "silent check: it was not counted in the verdict:"$'\n'"$OUT"
 
 # 11. A non-scalar `version` in the second git-subdir entry: jq's @tsv aborts
 # after the first entry's row (exit 5, one row). A loop fed by process

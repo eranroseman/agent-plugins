@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Run Codex's own plugin validator on every plugin. Each must pass cleanly,
-# except for one recorded bullet on each user-invocable-only skill (Deviation D7, below) —
-# any other failure, bullet-shaped or not, fails the test.
+# except for one recorded bullet on each user-invocable-only skill (Deviation
+# D7, below) — any other failure, bullet-shaped or not, fails the test.
 # The validator ships with codex-cli under ~/.codex/skills/.system; CI fetches
-# the same two files from openai/codex and points CODEX_PLUGIN_VALIDATOR at them.
+# the same two files from openai/codex and points CODEX_PLUGIN_VALIDATOR at
+# them.
 # needs: python3 pyyaml codex-validator
 . "$(dirname "$0")/lib.sh"
 
@@ -17,6 +18,7 @@ VALIDATOR="${CODEX_PLUGIN_VALIDATOR:-$HOME/.codex/skills/.system/plugin-creator/
 # the sha below and byte-identical to the codex-cli 0.147.0 copies. The day
 # codex-cli moves the files, this fails and the message says what to do.
 PIN=f3f6922519fa38487c8250c2b8a670a39a2cf9ff
+VALIDATOR="$(readlink -f "$VALIDATOR")" || fail "could not resolve $VALIDATOR"
 VDIR="${VALIDATOR%/*}"
 for pair in \
   'validate_plugin.py f4eeadb733b28b0c3e714de263a76d6542866a672f3e99bdffcf4dbcdf85e944' \
@@ -35,14 +37,15 @@ for p in "$REPO_ROOT"/plugins/*/; do
   [ -f "$p/.codex-plugin/plugin.json" ] || fail "$p has no .codex-plugin/plugin.json"
   # The recorded exceptions. validate_plugin.py requires Claude's
   # disable-model-invocation to be false or absent, on every directory under
-  # <plugin>/skills. Every user-invocable-only skill keeps `true` because that is the field
-  # Claude reads; Codex reads policy.allow_implicit_invocation in
-  # agents/openai.yaml, which is set to false, and the Codex runtime never
+  # <plugin>/skills. Every user-invocable-only skill keeps `true` because
+  # that is the field Claude reads; Codex reads policy.allow_implicit_invocation
+  # in agents/openai.yaml, which is set to false, and the Codex runtime never
   # reads the frontmatter field at all. Any other bullet from the validator
   # still fails the test.
-  # Three user-invocable-only skills, each carrying the field Claude reads beside the yaml
-  # policy Codex reads: the vendored scaffolder, the first-party consistency
-  # audit, and the vendored adhd. tests/test-plugin-skills.sh asserts the pair.
+  # Three user-invocable-only skills, each carrying the field Claude reads
+  # beside the yaml policy Codex reads: the vendored scaffolder, the
+  # first-party consistency audit, and the vendored adhd.
+  # tests/test-plugin-skills.sh asserts the pair.
   known="$(printf '%s\n' \
     '- skill `setup-repository` frontmatter field `disable-model-invocation` must be false' \
     '- skill `consistency-audit` frontmatter field `disable-model-invocation` must be false' \
@@ -66,3 +69,4 @@ $others"
   found=$((found + 1))
 done
 [ "$found" -gt 0 ] || fail "no plugins under plugins/"
+printf 'codex-validate: %s plugin(s) validated; both validator files match openai/codex@%s\n' "$found" "${PIN:0:7}"

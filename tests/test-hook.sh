@@ -53,11 +53,21 @@ while IFS= read -r name; do
     || fail "working-rules.md names superpowers:$name, which the subset entry does not list"
 done < <(grep -o 'superpowers:[a-z-]*' "$H/working-rules.md" | sed 's/^superpowers://' | sort -u)
 
+# The shipped file's own content, three properties the §4.2 oracle once
+# subsumed (#63): the worktree rule is present, no stale
+# superpowers:brainstorming reference, and exactly one trailing newline.
+grep -q 'worktree' "$H/working-rules.md" || fail "working-rules.md lost the worktree rule"
+if grep -q 'superpowers:brainstorming' "$H/working-rules.md"; then
+  fail "working-rules.md names superpowers:brainstorming, which the subset entry does not ship"
+fi
+[ "$(tail -c 1 "$H/working-rules.md" | wc -l)" -eq 1 ] || fail "working-rules.md does not end in a newline"
+[ "$(tail -c 2 "$H/working-rules.md" | wc -l)" -eq 1 ] || fail "working-rules.md ends in more than one newline"
+
 # (2) envelope round-trip
-# CLAUDE_PLUGIN_ROOT mirrors how claude-hooks.json invokes the script; session-start
-# itself resolves using-superpowers.md via dirname "$0" and never reads the
-# variable, so the ${CLAUDE_PLUGIN_ROOT} expansion asserted in section 3 is
-# checked as a string and not exercised as an expansion.
+# CLAUDE_PLUGIN_ROOT mirrors how claude-hooks.json invokes the script;
+# session-start itself resolves using-superpowers.md via dirname "$0" and
+# never reads the variable, so the ${CLAUDE_PLUGIN_ROOT} expansion asserted
+# in section 3 is checked as a string and not exercised as an expansion.
 out="$(CLAUDE_PLUGIN_ROOT="$REPO_ROOT/plugins/software-dev" "$H/session-start")"
 printf '%s' "$out" | jq -e '.hookSpecificOutput.hookEventName == "SessionStart"' >/dev/null \
   || fail "output is not the SessionStart envelope: $out"

@@ -34,7 +34,7 @@ sha="$(git -C "$R" rev-parse --short HEAD)" || fail "could not read the scratch 
 # A PATH carrying what the runner uses and nothing it must not: no claude,
 # and a stub shfmt reporting a version the registry does not declare.
 BIN="$T/bin"
-link_tools "$BIN" bash dirname rm git jq awk grep head tail tee tr date mktemp cat
+link_tools "$BIN" bash dirname rm git jq awk grep head tail tee tr date mktemp cat sort uniq
 printf '#!/usr/bin/env bash\nprintf "v0.0.1\\n"\n' >"$BIN/shfmt" || fail "could not write the shfmt stub"
 chmod +x "$BIN/shfmt" || fail "could not make the shfmt stub executable"
 NOJQ="$T/bin-nojq"
@@ -92,6 +92,11 @@ sed -n 1p "$RES" | grep -qE "^# $sha dirty [0-9]{4}-" \
   || fail "the header must say dirty when git status is non-empty: $(sed -n 1p "$RES")"
 rm -f "$R/untracked"
 
+# A rejected flag leaves no stale result file (M12): the file already exists
+# from fixture 2's run, above.
+env PATH="$BIN" /bin/bash "$R/tests/run.sh" --no-skipp >/dev/null 2>&1 || true
+[ ! -e "$RES" ] || fail "a rejected flag left a stale result file"
+
 # 5. A need no probe knows is exit 2, naming the test and the need.
 printf '#!/usr/bin/env bash\n# needs: nosuchtool\nexit 0\n' >"$R/tests/test-e-unknown.sh" \
   || fail "could not write test-e-unknown.sh"
@@ -107,5 +112,19 @@ if out="$(env PATH="$BIN" /bin/bash "$R/tests/run.sh" 2>&1)"; then status=0; els
 [ "$status" -eq 0 ] || fail "an all-green run must exit 0, got $status:"$'\n'"$out"
 printf '%s\n' "$out" | grep -qxF '1 passed, 0 failed, 0 skipped' \
   || fail "the summary of a green run must carry no 'for want of':"$'\n'"$out"
+
+# 7. A duplicate registry row and a mangled one are refused at the gate,
+# exit 2, before any test runs (#61 M6, M11).
+cp "$R/tests/tools.txt" "$R/tests/tools.txt.bak" || fail "could not back up the registry"
+printf 'shfmt              3.15.0   -\n' >>"$R/tests/tools.txt" || fail "could not duplicate a row"
+if out="$(env PATH="$BIN" /bin/bash "$R/tests/run.sh" 2>&1)"; then status=0; else status=$?; fi
+[ "$status" -eq 2 ] || fail "a duplicate registry row must exit 2, got $status:"$'\n'"$out"
+printf '%s\n' "$out" | grep -q 'declares a tool twice: shfmt' || fail "the duplicate row was not named:"$'\n'"$out"
+cp "$R/tests/tools.txt.bak" "$R/tests/tools.txt" || fail "could not restore the registry"
+printf 'shfmt v3.14.1 -\n' >>"$R/tests/tools.txt" || fail "could not mangle a row"
+if out="$(env PATH="$BIN" /bin/bash "$R/tests/run.sh" 2>&1)"; then status=0; else status=$?; fi
+[ "$status" -eq 2 ] || fail "a mangled registry row must exit 2, got $status:"$'\n'"$out"
+printf '%s\n' "$out" | grep -q "row 8 is not 'tool version sha256-or-dash'" || fail "the mangled row was not named:"$'\n'"$out"
+cp "$R/tests/tools.txt.bak" "$R/tests/tools.txt" || fail "could not restore the registry"
 
 printf 'runner: hard gate refuses, needs skip or fail, versions compared, results.tsv written\n'

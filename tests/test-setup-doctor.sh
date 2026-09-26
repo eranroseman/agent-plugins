@@ -2,9 +2,9 @@
 # The engine's shape: two entry points, one of them a wrapper; a usage text;
 # the documented prerequisite split, with both scripts run under an empty
 # PATH; a doctor that describes an empty machine rather than dying on it; the
-# conditional halves reporting their own absence; the report-only checks; and the
-# README recipes against the usage text. Needs no network and no CLI. The
-# shell lint is tests/test-lint-shell.sh, the upgrade path is
+# conditional halves reporting their own absence; the report-only checks;
+# and the README recipes against the usage text. Needs no network and no
+# CLI. The shell lint is tests/test-lint-shell.sh, the upgrade path is
 # tests/test-setup-upgrade.sh, and the machines the doctor cannot read are
 # tests/test-doctor-silence.sh.
 . "$(dirname "$0")/lib.sh"
@@ -34,8 +34,8 @@ for f in "$SETUP" "$REPO_ROOT/tests/run.sh" "$REPO_ROOT/README.md"; do
   grep -q 'bash.*4\.4 or later' "$f" || fail "$f does not state the bash 4.4 floor"
 done
 
-# Prerequisites: fatal for setup, conditional for the doctor. An empty PATH removes
-# every one of the five, so setup must refuse and the doctor must not.
+# Prerequisites: fatal for setup, conditional for the doctor. An empty PATH
+# removes every one of the five, so setup must refuse and the doctor must not.
 H="$(mktemp -d)" || fail "mktemp failed"
 trap 'rm -rf "$H"' EXIT
 # /bin/bash by absolute path: with an empty PATH, `bash` itself would not
@@ -136,7 +136,7 @@ extract_scoped_blocks() {
 # under `## Other` are out, and a `# comment` line inside a fence does not
 # close the scope.
 S="$H/scope.md"
-printf '%s\n' '# Title' '```' 'h1-before' '```' '## Install' '```' 'in-install' '# note' '```' \
+printf '%s\n' '# Title' '```' 'h1-before' '```' '## Install' '```sh' 'in-install' '# note' '```' \
   '### Sub' '```' 'in-sub' '```' '# Top' '```' 'after-h1' '```' '## Update' '```' 'in-update' '```' \
   '## Other' '```' 'in-other' '```' >"$S" || fail "could not write $S"
 got="$(extract_scoped_blocks "$S" | tr -d '\036' | grep . | tr '\n' ' ')" || true

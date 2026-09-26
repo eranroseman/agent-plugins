@@ -174,6 +174,8 @@ chmod +x "$BIN2/npx" "$BIN2/claude" || fail "could not make the stubs executable
 NPX_LOG="$H2/npx.log"
 if out="$(env HOME="$H2" CODEX_HOME="$H2/.codex" PATH="$BIN2" NPX_LOG="$NPX_LOG" \
   /bin/bash "$SETUP" 2>&1)"; then status=0; else status=$?; fi
+printf '%s\n' "$out" | grep -q "OK:   software-dev@eranroseman $sd installed" \
+  || fail "the npx fixture's Claude half did not report the seeded registry as installed:"$'\n'"$out"
 declared="$(jq '[.sources[].skills[]] | length' "$REPO_ROOT/skills.json")"
 attempted="$(grep -c 'skills add' "$NPX_LOG" 2>/dev/null || true)"
 [ "${attempted:-0}" -eq "$declared" ] \
@@ -233,14 +235,20 @@ jq '{version: 3,
 # uses a copy of bin/setup with no +x beside the real desired state.
 SETUP_NOX="$H/repo/bin/setup"
 mkdir -p "$H/repo/bin" "$H/repo/.claude-plugin" || fail "could not seed $H/repo"
-# shellcheck disable=SC2015  # both commands must succeed; fail is right when either does not
+# Both commands must succeed; fail is right when either does not.
+# shellcheck disable=SC2015
 cp "$SETUP" "$SETUP_NOX" && chmod -x "$SETUP_NOX" || fail "could not copy bin/setup without +x"
-# shellcheck disable=SC2015  # both commands must succeed; fail is right when either does not
+# Both commands must succeed; fail is right when either does not.
+# shellcheck disable=SC2015
 cp "$MARKETPLACE" "$H/repo/.claude-plugin/" && cp "$REPO_ROOT/skills.json" "$H/repo/" || fail "could not copy the desired state"
 cp -R "$REPO_ROOT/plugins" "$H/repo/" || fail "could not copy the plugins"
 
 if out="$(env HOME="$H" CODEX_HOME="$H/.codex" PATH="$BIN" /bin/bash "$SETUP_NOX" 2>&1)"; then status=0; else status=$?; fi
 [ "$status" -eq 1 ] || fail "bin/setup exited $status; the re-check must run and report the unrepairable clone"
+printf '%s\n' "$out" | grep -q "OK:   software-dev@eranroseman $sd installed" \
+  || fail "the repair fixture's Claude half did not report the seeded registry as installed:"$'\n'"$out"
+printf '%s\n' "$out" | grep -q 'FAIL: claude plugin' \
+  && fail "an unexpected claude invocation reached the stub:"$'\n'"$out"
 printf '%s\n' "$out" | grep -q -- '--- re-checking ---' || fail "bin/setup did not re-check after applying"
 [ -L "$SKILLS/writing-plans" ] || fail "the dangling link was not replaced"
 [ "$(readlink -f "$SKILLS/writing-plans")" = "$CLONE/skills/writing-plans" ] \
