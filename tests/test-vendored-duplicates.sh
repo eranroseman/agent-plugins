@@ -11,7 +11,14 @@ V="$REPO_ROOT/plugins/software-dev/skills/finding-duplicate-functions"
 [ -d "$V" ] || fail "missing $V"
 guards plugins/software-dev/skills/finding-duplicate-functions/scripts/categorize-prompt.md plugins/software-dev/skills/finding-duplicate-functions/scripts/find-duplicates-prompt.md
 
-SHA="51111f74f24058117752d9aa917cb19859f8ec86"
+# Pinned in vendored.json; the header, PROVENANCE.md and the LICENSE are held
+# to the declared sha before anything is fetched (#56).
+SHA="$(vendored_sha plugins/software-dev/skills/finding-duplicate-functions)"
+grep -q "Forked from https://github.com/obra/superpowers-lab at commit $SHA\$" "$V/SKILL.md" \
+  || fail "SKILL.md's provenance header does not carry the declared sha $SHA"
+grep -q "$SHA" "$V/PROVENANCE.md" || fail "PROVENANCE.md does not name commit $SHA"
+grep -q "^$SHA); its two prompt templates" "$REPO_ROOT/plugins/software-dev/LICENSE" \
+  || fail "LICENSE carries no provenance notice naming commit $SHA for the fork"
 UP="$(fetch_pinned https://github.com/obra/superpowers-lab.git "$SHA" \
   "${TMPDIR:-/tmp}/software-dev-upstream-superpowers-lab")"
 U="$UP/skills/finding-duplicate-functions"
@@ -55,10 +62,5 @@ start="$(grep -n '^<!-- Forked from ' "$V/SKILL.md" | cut -d: -f1)" || true
 [ "$start" -le 6 ] || fail "the provenance header must directly follow the frontmatter, found at line $start"
 [ "$(sed -n "${start},$((start + 5))p" "$V/SKILL.md")" = "$expected_header" ] \
   || fail "lines $start-$((start + 5)) are not the provenance header"
-
-# PROVENANCE.md and the LICENSE name the same commit.
-grep -q "$SHA" "$V/PROVENANCE.md" || fail "PROVENANCE.md does not name commit $SHA"
-grep -q "^$SHA); its two prompt templates" "$REPO_ROOT/plugins/software-dev/LICENSE" \
-  || fail "LICENSE carries no provenance notice naming commit $SHA for the fork"
 
 printf 'vendored-duplicates: two templates match obra/superpowers-lab %s; six files, two executables\n' "$SHA"

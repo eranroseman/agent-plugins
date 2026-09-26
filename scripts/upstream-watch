@@ -12,6 +12,7 @@ set -uo pipefail
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 MARKETPLACE="$REPO_ROOT/.claude-plugin/marketplace.json"
 SKILLS_JSON="$REPO_ROOT/skills.json"
+VENDORED_JSON="$REPO_ROOT/vendored.json"
 
 die() {
   printf 'ERROR: %s\n' "$*" >&2
@@ -39,6 +40,7 @@ fi
 
 [ -f "$MARKETPLACE" ] || die "missing $MARKETPLACE"
 [ -f "$SKILLS_JSON" ] || die "missing $SKILLS_JSON"
+[ -f "$VENDORED_JSON" ] || die "missing $VENDORED_JSON"
 
 report "## Upstream watch"
 report ""
@@ -70,11 +72,32 @@ while IFS="$(printf '\t')" read -r name url ref sha; do
   fi
   if [ "$name" = superpowers ]; then
     latest_tag="$(git ls-remote --tags --refs "$url" | awk -F/ '{print $NF}' | newest_stable_tag)"
-    [ -n "$latest_tag" ] && report "- Latest upstream tag: \`$latest_tag\`."
+    [ -n "$latest_tag" ] || die "could not resolve the newest stable tag of $url"
+    report "- Latest upstream tag: \`$latest_tag\`."
   fi
   report ""
 done < <(jq -r '.plugins[] | select(.source.source? == "git-subdir")
                 | [.name, .source.url, .source.ref, .source.sha] | @tsv' "$MARKETPLACE")
+
+# 1b. Each vendored or forked tree: the pinned sha against the tip of the
+# declared branch (vendored.json). A bump is a human decision: edit
+# vendored.json, re-vendor or re-diff the tree, update the records the drift
+# test holds to it.
+report "### vendored and forked trees"
+report ""
+while IFS="$(printf '\t')" read -r tree repo branch sha kind; do
+  [ -n "$tree" ] || continue
+  [ "${#sha}" -eq 40 ] || die "no 40-character sha for $tree in $VENDORED_JSON"
+  head_sha="$(git ls-remote "https://github.com/$repo.git" "refs/heads/$branch" | cut -f1)"
+  [ -n "$head_sha" ] || die "could not resolve $repo $branch"
+  if [ "$head_sha" = "$sha" ]; then
+    report "- \`$tree\` ($kind from \`$repo\`) pinned at \`$sha\`, which is $branch. Nothing to do."
+  else
+    report "- \`$tree\` ($kind from \`$repo\`) pinned at \`$sha\`; $branch is \`$head_sha\`. Bump by editing \`vendored.json\`, then re-vendor the tree (a forked tree: re-diff its carried fragments) and update the sha in its SKILL.md header, its PROVENANCE.md if any, and the plugin LICENSE; the drift test holds them equal."
+    DRIFT=1
+  fi
+done < <(jq -r 'to_entries[] | select(.key != "$comment") | [.key, .value.repo, .value.branch, .value.sha, .value.kind] | @tsv' "$VENDORED_JSON")
+report ""
 
 # 2. Each skills.sh source: the declared ref against the newest tag.
 report "### skills.sh sources"

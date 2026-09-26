@@ -11,10 +11,16 @@ V="$REPO_ROOT/plugins/sensemaking/skills/adhd"
 [ -d "$V" ] || fail "missing $V"
 guards plugins/sensemaking/skills/adhd/SKILL.md plugins/sensemaking/skills/adhd/agents/openai.yaml
 
-# The repository's HEAD on 2026-09-06. Its only tag, v0.1.4, dates from
-# 2026-05-30 and predates both this SKILL.md text and the plugin manifest,
-# so the pin is a commit.
-SHA="16dc239ff186b869372e75095cfa58fc0ee89927"
+# Pinned in vendored.json: the repository's HEAD on 2026-09-06, since its
+# only tag, v0.1.4, predates both this SKILL.md text and the plugin manifest.
+# Every in-tree record that also carries the sha is held to the declared one
+# before anything is fetched, so a bump that forgets a record fails by name
+# whether or not the sha is reachable (#56).
+SHA="$(vendored_sha plugins/sensemaking/skills/adhd)"
+grep -q "Vendored from https://github.com/UditAkhourii/adhd at commit $SHA\$" "$V/SKILL.md" \
+  || fail "SKILL.md's provenance header does not carry the declared sha $SHA"
+grep -q "at commit $SHA)" "$REPO_ROOT/plugins/sensemaking/LICENSE" \
+  || fail "plugins/sensemaking/LICENSE does not carry the declared sha $SHA"
 UP="$(fetch_pinned https://github.com/UditAkhourii/adhd.git "$SHA" \
   "${TMPDIR:-/tmp}/software-dev-upstream-adhd")"
 U="$UP/skills/adhd"
@@ -57,9 +63,6 @@ expected_header="$(printf '%s\n' \
 diff <(sed '3d' "$U/SKILL.md") <(sed -e '3d' -e '5d' -e '7,13d' "$V/SKILL.md") \
   || fail "SKILL.md changed beyond the header, the description and the gate"
 
-# The LICENSE's provenance notice names the same commit.
-grep -q "at commit $SHA)" "$REPO_ROOT/plugins/sensemaking/LICENSE" \
-  || fail "LICENSE provenance does not name commit $SHA"
 grep -q "Copyright (c) 2026 ADHD contributors" "$REPO_ROOT/plugins/sensemaking/LICENSE" \
   || fail "LICENSE lacks upstream's copyright line"
 

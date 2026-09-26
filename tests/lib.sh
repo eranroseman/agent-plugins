@@ -15,6 +15,19 @@ upstream_sha() {
   jq -r '.plugins[] | select(.name == "superpowers") | .source.sha' "$MARKETPLACE"
 }
 
+# The pinned sha of a vendored or forked tree, $1 its repository-relative
+# path, read from vendored.json, the one place it is declared; fails unless
+# it is 40 characters. The subset entries keep upstream_sha(), since the
+# marketplace pins them; the two mattpocock trees keep their literal until
+# #52 gives them a subset entry.
+vendored_sha() {
+  local sha
+  sha="$(jq -r --arg t "$1" '.[$t].sha // empty' "$REPO_ROOT/vendored.json")" \
+    || fail "could not read vendored.json"
+  [ "${#sha}" -eq 40 ] || fail "vendored.json declares no 40-char sha for $1 (got '$sha')"
+  printf '%s\n' "$sha"
+}
+
 # Shallow-fetch $1 (a git URL) at commit $2 into $3 and print the path.
 # Reuses an existing checkout whose HEAD already matches. Every git command is
 # guarded here rather than at the call sites. A caller writing

@@ -1,0 +1,17 @@
+{
+  "$comment": "The vendored and forked trees, each pinned to an upstream commit (CONTEXT.md defines the two kinds by which way edits flow). scripts/upstream-watch reports when the declared branch moves past a pin; tests/test-vendored-*.sh read their sha here and hold every in-tree record to it. bin/setup never reads this file.",
+  "plugins/sensemaking/skills/adhd": {
+    "repo": "UditAkhourii/adhd",
+    "branch": "main",
+    "sha": "16dc239ff186b869372e75095cfa58fc0ee89927",
+    "upstream_path": "skills/adhd",
+    "kind": "vendored"
+  },
+  "plugins/software-dev/skills/finding-duplicate-functions": {
+    "repo": "obra/superpowers-lab",
+    "branch": "main",
+    "sha": "51111f74f24058117752d9aa917cb19859f8ec86",
+    "upstream_path": "skills/finding-duplicate-functions",
+    "kind": "forked"
+  }
+}

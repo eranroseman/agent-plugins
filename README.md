@@ -104,6 +104,8 @@ bin/               the two commands a user runs: setup, and doctor, its check mo
 scripts/           what CI and the maintainer run: the upstream watch, the superpowers bump, the formatter
 plugins/           the two plugins, software-dev and sensemaking, each with its own README
 skills.json        the desired state for skills.sh: sources, refs, skill names
+vendored.json      the desired state for the vendored and forked trees: repo, branch, pinned sha, kind
+.claude-plugin/    the Claude marketplace manifest: the two plugins and the two subset entries, with their pins
 tests/             every check; tests/run.sh runs them and tests/tools.txt pins the tools
 docs/agents/       the conventions the agents read: issue tracker, triage labels, domain docs
 docs/Professional-Editorial-Standards-2024.md   the editorial reference
