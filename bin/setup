@@ -761,7 +761,7 @@ ensure_watch_fresh() {
 }
 
 report_only() {
-  local v src set_names="" link actual before undeclared line F
+  local v src set_names="" before undeclared line F
   needs jq "the settings this script only reports cannot be read" || return
 
   # The telemetry variable. Setup writes it nowhere: the exposure is one
@@ -808,9 +808,9 @@ report_only() {
 
   # Every skills.sh install the desired state does not declare (#54): one
   # NOTE each, naming the lockfile's source and ref, worded against the
-  # desired state so it stays true once #52 moves names to a subset entry.
-  # The vendored scaffolder's unadapted twin keeps its remedy. Reported,
-  # never removed; a lockfile jq cannot parse is a FAIL, never the all-clear.
+  # desired state so it stays true once #52 moves names to a subset entry,
+  # and naming the command that removes it. Reported, never removed; a
+  # lockfile jq cannot parse is a FAIL, never the all-clear.
   if [ ! -f "$LOCKFILE" ]; then
     skip "no skills.sh lockfile at $LOCKFILE; nothing to compare the desired state against"
   elif ! undeclared="$(jq -r --slurpfile d "$SKILLS_JSON" \
@@ -826,11 +826,7 @@ report_only() {
     while IFS= read -r line; do
       [ -n "$line" ] || continue
       split_tsv "$line"
-      if [ "${F[0]}" = setup-matt-pocock-skills ]; then
-        note "setup-matt-pocock-skills is installed through skills.sh, but this plugin vendors an adapted copy as setup-repository; remove the unadapted one with 'npx skills remove setup-matt-pocock-skills -g'"
-      else
-        note "skills.sh install ${F[0]} (${F[1]} at ${F[2]}) is not in the skills.sh desired state"
-      fi
+      note "skills.sh install ${F[0]} (${F[1]} at ${F[2]}) is not in the skills.sh desired state; remove it with 'npx skills remove ${F[0]} -g'"
     done <<<"$undeclared"
   fi
 
@@ -844,21 +840,6 @@ report_only() {
   if have codex; then
     v="$(codex --version 2>/dev/null)"
     note "codex ${v%%$'\n'*}"
-  fi
-
-  # Redundant Codex links: anything under CODEX_HOME/skills that resolves
-  # into the shared root Codex already reads directly, deduping by resolved
-  # path. Reported generically; their removal is sub-project 5's call.
-  if [ -d "$CODEX_SKILLS" ]; then
-    local redundant=0
-    for link in "$CODEX_SKILLS"/*; do
-      [ -L "$link" ] || continue
-      actual="$(readlink -f "$link" 2>/dev/null)"
-      case "$actual" in
-        "$SKILL_ROOT"/*) redundant=$((redundant + 1)) ;;
-      esac
-    done
-    [ "$redundant" -gt 0 ] && note "$redundant link(s) under $CODEX_SKILLS resolve into $SKILL_ROOT, which Codex already reads directly; they are redundant and are left alone"
   fi
 
   before=$REPORTED

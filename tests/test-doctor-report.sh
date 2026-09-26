@@ -52,8 +52,8 @@ saw "NOTE: archify's update check is still on: ARCHIFY_UPDATE_CHECK_DISABLED=tru
   || fail "=true in settings.json: the archify line is wrong or missing:"$'\n'"$OUT"
 [ "$(sha256sum "$T/h3/.claude/settings.json")" = "$before" ] || fail "the doctor wrote settings.json"
 
-# 4. #54: two undeclared installs, one of them the vendored scaffolder's
-# unadapted twin, beside every declared one.
+# 4. #54: three undeclared installs, one of them the vendored scaffolder's
+# unadapted twin, beside every declared one; each note names its remedy.
 mkdir -p "$T/h4/.agents" || fail "could not seed h4"
 jq '{version: 3,
      skills: ((reduce (.sources[] as $s | $s.skills[] |
@@ -64,11 +64,11 @@ jq '{version: 3,
      dismissed: {}}' "$REPO_ROOT/skills.json" >"$T/h4/.agents/.skill-lock.json" \
   || fail "could not synthesize the lockfile"
 run_doctor "$T/h4"
-saw 'NOTE: skills.sh install tdd (mattpocock/skills at v1.2.3) is not in the skills.sh desired state' \
+saw "NOTE: skills.sh install tdd (mattpocock/skills at v1.2.3) is not in the skills.sh desired state; remove it with 'npx skills remove tdd -g'" \
   || fail "undeclared tdd was not reported with source and ref:"$'\n'"$OUT"
-saw 'NOTE: skills.sh install typesafe-ai (typesafe-ai/skills at no ref) is not in the skills.sh desired state' \
+saw "NOTE: skills.sh install typesafe-ai (typesafe-ai/skills at no ref) is not in the skills.sh desired state; remove it with 'npx skills remove typesafe-ai -g'" \
   || fail "undeclared typesafe-ai was not reported with its missing ref named:"$'\n'"$OUT"
-saw "NOTE: setup-matt-pocock-skills is installed through skills.sh, but this plugin vendors an adapted copy as setup-repository; remove the unadapted one with 'npx skills remove setup-matt-pocock-skills -g'" \
+saw "NOTE: skills.sh install setup-matt-pocock-skills (mattpocock/skills at v1.2.3) is not in the skills.sh desired state; remove it with 'npx skills remove setup-matt-pocock-skills -g'" \
   || fail "the scaffolder's twin lost its remedy:"$'\n'"$OUT"
 saw 'every skills.sh install in the lockfile is in the skills.sh desired state' \
   && fail "the none line was printed beside undeclared installs:"$'\n'"$OUT"
