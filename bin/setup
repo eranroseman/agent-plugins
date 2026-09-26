@@ -38,9 +38,6 @@ REPO_ROOT="$(cd "$script_dir/.." && pwd)"
 MARKETPLACE="$REPO_ROOT/.claude-plugin/marketplace.json"
 SKILLS_JSON="$REPO_ROOT/skills.json"
 
-# Each later task adds the variables its own checks need, beside them, rather
-# than here: a variable declared before anything reads it is a shellcheck
-# SC2034 warning, and shellcheck must exit 0 from Task 4 onward.
 # One pinned clone per subset (git-subdir) marketplace entry, named after it:
 #   $UPSTREAM_ROOT/superpowers, $UPSTREAM_ROOT/writing-clearly-and-concisely
 UPSTREAM_ROOT="$HOME/.local/share/software-dev/upstream"
@@ -75,10 +72,6 @@ REPORTED=0
 UNANSWERED=0
 UNCHECKED=""
 
-# Reporting. Each later task adds the one helper it is the first to call —
-# `did` in Task 5, `skip` in Task 6, `note` in Task 9 — for the same reason the
-# path variables are staged: shellcheck reports a function nothing calls
-# (SC2317) and the lint assertion requires a clean exit.
 ok() {
   printf 'OK:   %s\n' "$*"
   REPORTED=$((REPORTED + 1))
