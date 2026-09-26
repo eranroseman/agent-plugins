@@ -17,7 +17,7 @@ _Avoid_: installer, installers
 _Avoid_: carrier
 
 **desired state**:
-What the repository states should hold: `skills.json` and the marketplace manifest, which `bin/setup` converges a machine to, and `vendored.json`, whose pins the watch holds the vendored and forked trees to. The verb _declare_ is a different word and stays.
+What the repository states should hold: `skills.json` and the marketplace manifest, which `bin/setup` converges a machine to, `vendored.json`, whose pins the watch holds the vendored and forked trees to, and the workflow files, whose action pins the watch holds to their tags. The verb _declare_ is a different word and stays.
 _Avoid_: declaration, declarations
 
 **first-party**:
@@ -64,7 +64,7 @@ Pinned so they read identically in every file; each recruits a meaning the reade
 
 - `bin/` holds what a user runs; `scripts/` holds what CI and the maintainer run.
 - A path in another repository is written `owner/repo:path`, or `owner/repo@ref:path` when the ref matters, so the reference check can tell it from a path here.
-- The desired state lives in three files: `.claude-plugin/marketplace.json` for the plugins and the subset entries, `skills.json` for what `skills.sh` installs, and `vendored.json` for the vendored and forked trees' pins, which the watch reads and the engine never does. `bin/setup` converges a machine to the first two; `bin/doctor` is the same engine in check mode.
+- The desired state lives in `.claude-plugin/marketplace.json` for the plugins and the subset entries, `skills.json` for what `skills.sh` installs, `vendored.json` for the vendored and forked trees' pins, and the workflow files under `.github/workflows/` for the action pins. The watch reads the last two and the engine never does; `bin/setup` converges a machine to the first two, and `bin/doctor` is the same engine in check mode.
 
 ## Flagged ambiguities
 
