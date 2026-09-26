@@ -26,6 +26,6 @@ tests/results.tsv
 # tests/test-hook.sh round-trips byte for byte; and Kilo's worktree directory,
 # named by the suite-and-ci spec. None is ever tracked, and the reference
 # check classifies a path by the file that ignores it.
-.worktrees/
-worktrees/
-.kilo/
+/.worktrees/
+/worktrees/
+/.kilo/

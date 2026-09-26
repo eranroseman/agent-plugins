@@ -26,15 +26,16 @@
 #      a misspelled two-segment path is still checked, and so is one under a
 #      directory a move removed;
 #   5. a namespaced path: owner/repo:path or owner/repo@ref:path, the
-#      other-repository convention CONTEXT.md sets, and the same shape with a
-#      bare name before the colon (rev:path, plugin@marketplace:key);
+#      other-repository convention CONTEXT.md sets, held like a slug to an
+#      owner that is no directory here; a revision before the colon
+#      (rev:path); or plugin@marketplace:key;
 #   6. a path git check-ignore accepts: runtime-only, classified by the file
 #      that ignores it;
 #   7. a path declared absent by decision, in DECLARED_ABSENT below;
 #   8. under docs/superpowers/ only, the history tier: a path git shows
-#      deleted passes, since git history is the archive; a renamed path fails
-#      naming its successor at HEAD, followed through later renames; a path
-#      with no history is a typo and fails.
+#      deleted on this branch's history passes, since git history is the
+#      archive; a renamed path fails naming its successor at HEAD, followed
+#      through later renames; a path with no history is a typo and fails.
 . "$(dirname "$0")/lib.sh"
 
 cd "$REPO_ROOT" || fail "could not cd to the repository root"
@@ -83,7 +84,7 @@ history_tier() {
 history_tier_walk() {
   local p="$1" c line st new
   while :; do
-    c="$(git log --all -1 --format=%h -- "$p")"
+    c="$(git log HEAD -1 --format=%h -- "$p")"
     [ -n "$c" ] || return 0
     line="$(git show --name-status -M --format= "$c" \
       | awk -F'\t' -v p="${p%/}" '
@@ -157,12 +158,17 @@ classify() {
       return
       ;;
   esac
-  if printf '%s' "$tok" | grep -qE '^[A-Za-z0-9_.-]+(/[A-Za-z0-9_.-]+)?(@[^:]+)?:.+'; then
+  # Class 5, two shapes. A revision or a plugin@marketplace before the colon
+  # is namespaced by shape alone. owner/repo before the colon is namespaced
+  # only when owner is no directory at any root and none git remembers there,
+  # the test class 4 applies to a slug, so a misspelled two-segment path with
+  # a colon suffix is not one (#65).
+  if printf '%s' "$tok" | grep -qE '^([0-9a-f]{7,40}|[A-Za-z0-9_.-]+@[A-Za-z0-9_.-]+):[^[:space:]]+'; then
     n_ns=$((n_ns + 1))
     return
   fi
   tok="${tok#./}"
-  if printf '%s' "$tok" | grep -qE '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+([#@][^/]+)?$'; then
+  if printf '%s' "$tok" | grep -qE '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+((@[^:/]+)?:[^[:space:]]+|([#@][^/]+)?)$'; then
     first="${tok%%/*}"
     isdir=0
     while IFS= read -r r; do
@@ -176,7 +182,10 @@ classify() {
       [ -z "$TIER_VERDICT" ] || isdir=1
     done < <(roots_for "$(dirname "$doc")")
     if [ "$isdir" -eq 0 ]; then
-      n_slug=$((n_slug + 1))
+      case "$tok" in
+        *:*) n_ns=$((n_ns + 1)) ;;
+        *) n_slug=$((n_slug + 1)) ;;
+      esac
       return
     fi
   fi
@@ -274,7 +283,10 @@ for f in $docs; do
           read -ra words <<<"$span"
           for word in "${words[@]}"; do
             case "$word" in */*) ;; *) continue ;; esac
-            word="${word#*=}"
+            case "$word" in
+              *://* | mailto:*) ;;
+              *) word="${word#*=}" ;;
+            esac
             word="$(printf '%s' "$word" | sed -E "s/^[\"'(]+//; s/[\"'),;:]+\$//; s/([^.])\.\$/\\1/; s/:[0-9]+([-,][0-9]+)*\$//")"
             if printf '%s' "$word" | grep -qE '^[A-Za-z0-9_.@#~$-]+(/[A-Za-z0-9_.@#~$-]*)+$'; then
               classify "$doc" "$n" "$span" "$word"
@@ -284,7 +296,10 @@ for f in $docs; do
           done
           ;;
         *)
-          word="${span#*=}"
+          case "$span" in
+            *://* | mailto:*) word="$span" ;;
+            *) word="${span#*=}" ;;
+          esac
           classify "$doc" "$n" "$span" "$(printf '%s' "$word" | sed -E "s/^[\"'(]+//; s/[\"'),;:]+\$//; s/([^.])\.\$/\\1/; s/:[0-9]+([-,][0-9]+)*\$//")"
           ;;
       esac
