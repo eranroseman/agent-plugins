@@ -398,98 +398,81 @@ ensure_links() {
   done <<<"$lines"
 }
 
-plugin_version() {
-  jq -r '.version' "$REPO_ROOT/plugins/software-dev/.claude-plugin/plugin.json"
-}
-
 installed_version() {
   jq -r --arg k "$1@eranroseman" \
     '.plugins[$k][0].version // empty' "$INSTALLED_PLUGINS" 2>/dev/null
 }
 
-ensure_claude() {
-  local want have installed_sd name line F entries
-  if ! have claude; then
-    skip "claude is not on PATH: the Claude half is unchecked"
-    return
-  fi
-  needs jq "the declared plugin versions cannot be read, so the Claude half is unchecked" || return
-  want="$(plugin_version)"
-  [ -n "$want" ] || {
-    bad "could not read the declared plugin version"
-    return
-  }
-
-  installed_sd="$(installed_version software-dev)"
-  if [ "$installed_sd" = "$want" ]; then
-    ok "software-dev@eranroseman $want installed"
+# $1 a plugin name, $2 its declared version: reported, and in apply mode
+# installed by name when missing or updated when behind.
+converge_claude() {
+  local name="$1" want="$2" have
+  have="$(installed_version "$name")"
+  if [ "$have" = "$want" ]; then
+    ok "$name@eranroseman $want installed"
   elif ! applying; then
-    bad "software-dev@eranroseman is ${installed_sd:-not installed}, declared $want"
-  elif [ -z "$installed_sd" ]; then
-    # Adding is a clean no-op on re-run, but only add when the marketplace is
-    # unknown: an existing entry may point at a different source than ours.
-    if ! jq -e '.eranroseman' "$KNOWN_MARKETPLACES" >/dev/null 2>&1; then
-      if claude plugin marketplace add "$MARKETPLACE_SOURCE" >/dev/null 2>&1; then
-        did "added the eranroseman marketplace from $MARKETPLACE_SOURCE"
-      else
-        bad "claude plugin marketplace add $MARKETPLACE_SOURCE failed"
-        return
-      fi
-    fi
+    bad "$name@eranroseman is ${have:-not installed}, declared $want"
+  elif [ -z "$have" ]; then
     # --scope user, never --scope project: project scope writes a checked-in
     # .claude/settings.json carrying enabledPlugins and extraKnownMarketplaces.
     # No -y: claude 2.1.220, the version CI pins, rejects it outright with
     # "error: unknown option". Where the flag does exist it only waives the
     # confirmation for a plugin installed by running a marketplace-declared
     # command, or one fetched through a headersHelper, and this is neither.
-    if claude plugin install software-dev@eranroseman --scope user >/dev/null 2>&1; then
-      did "installed software-dev@eranroseman (with sensemaking and superpowers)"
+    if claude plugin install "$name@eranroseman" --scope user >/dev/null 2>&1; then
+      did "installed $name@eranroseman"
     else
-      bad "claude plugin install software-dev@eranroseman failed"
+      bad "claude plugin install $name@eranroseman failed"
     fi
+  # install is a no-op on an already-installed plugin: it prints "already
+  # installed", exits 0, and leaves the old version on disk (measured
+  # 2026-09-05 on claude 2.1.261, both directory- and github-source
+  # marketplaces). update is the only verb that moves it, and it exits 0
+  # when it decides nothing needs moving, so the DID line names the command
+  # and the re-check reports the version.
+  elif claude plugin update "$name@eranroseman" >/dev/null 2>&1; then
+    did "ran claude plugin update $name@eranroseman"
   else
-    # install is a no-op on an already-installed plugin: it prints "already
-    # installed", exits 0, and leaves the old version on disk (measured
-    # 2026-09-05 on claude 2.1.261, both directory- and github-source
-    # marketplaces). update is the only verb that moves it, and it exits 0
-    # when it decides nothing needs moving, so the DID line names the command
-    # and the re-check reports the version.
-    if claude plugin update software-dev@eranroseman >/dev/null 2>&1; then
-      did "ran claude plugin update software-dev@eranroseman"
+    bad "claude plugin update $name@eranroseman failed"
+  fi
+}
+
+ensure_claude() {
+  local p want name line F entries
+  if ! have claude; then
+    skip "claude is not on PATH: the Claude half is unchecked"
+    return
+  fi
+  needs jq "the declared plugin versions cannot be read, so the Claude half is unchecked" || return
+
+  # Before a first install only. Adding is a clean no-op on re-run, but only
+  # add when the marketplace is unknown: an existing entry may point at a
+  # different source than ours.
+  if applying && [ -z "$(installed_version software-dev)" ] \
+    && ! jq -e '.eranroseman' "$KNOWN_MARKETPLACES" >/dev/null 2>&1; then
+    if claude plugin marketplace add "$MARKETPLACE_SOURCE" >/dev/null 2>&1; then
+      did "added the eranroseman marketplace from $MARKETPLACE_SOURCE"
     else
-      bad "claude plugin update software-dev@eranroseman failed"
+      bad "claude plugin marketplace add $MARKETPLACE_SOURCE failed"
+      return
     fi
   fi
 
-  # sensemaking installs itself as a dependency of the first install, but a
-  # parent's update does not carry it (sub-project 2's plan, B2), so a copy
-  # behind its manifest moves under its own update. `[ -n "$have" ]` first:
-  # update fails against a plugin that is not installed, and a missing
-  # dependency is the parent install's business. A version the manifest
-  # does not carry is a FAIL, never an OK against an empty string (#17).
-  want="$(jq -r '.version // empty' "$REPO_ROOT/plugins/sensemaking/.claude-plugin/plugin.json" 2>/dev/null)"
-  if [ -z "$want" ]; then
-    bad "sensemaking version unreadable from plugins/sensemaking/.claude-plugin/plugin.json"
-  else
-    have="$(installed_version sensemaking)"
-    if [ "$have" = "$want" ]; then
-      ok "sensemaking@eranroseman $want installed"
-    elif [ -n "$have" ] && applying; then
-      if claude plugin update sensemaking@eranroseman >/dev/null 2>&1; then
-        did "ran claude plugin update sensemaking@eranroseman"
-      else
-        bad "claude plugin update sensemaking@eranroseman failed"
-      fi
+  # Each plugin by its declared version, software-dev first: its install
+  # brings the others as dependencies, but a parent's update neither moves a
+  # dependency nor installs a new one (measured 2026-09-06 on claude
+  # 2.1.263: `claude plugin update software-dev` moved the parent from 0.6.0
+  # to 0.7.0 and left its new dependency uninstalled), so every plugin is
+  # converged by name. A version the manifest does not carry is a FAIL,
+  # never an OK against an empty string (#17).
+  for p in software-dev sensemaking; do
+    want="$(jq -r '.version // empty' "$REPO_ROOT/plugins/$p/.claude-plugin/plugin.json" 2>/dev/null)"
+    if [ -n "$want" ]; then
+      converge_claude "$p" "$want"
     else
-      bad "sensemaking@eranroseman is ${have:-not installed}, declared $want"
+      bad "$p version unreadable from plugins/$p/.claude-plugin/plugin.json"
     fi
-  fi
-  # Every subset entry, by its declared version. superpowers arrives as a
-  # dependency of the first install; an entry declared after a machine was set
-  # up does not -- measured 2026-09-06 on claude 2.1.263, `claude plugin update
-  # software-dev` moved the parent from 0.6.0 to 0.7.0 and left its new
-  # dependency uninstalled -- so a missing entry is installed by name. An
-  # installed one at the wrong version only moves under `update`.
+  done
   entries="$(subset_entries)" || {
     bad "the subset entries could not be read whole from $MARKETPLACE; a partial list checks nothing"
     return
@@ -502,22 +485,7 @@ ensure_claude() {
       bad "a subset entry is malformed: name='$name' version='$want'"
       continue
     fi
-    have="$(installed_version "$name")"
-    if [ "$have" = "$want" ]; then
-      ok "$name@eranroseman $want installed"
-    elif ! applying; then
-      bad "$name@eranroseman is ${have:-not installed}, declared $want"
-    elif [ -z "$have" ]; then
-      if claude plugin install "$name@eranroseman" --scope user >/dev/null 2>&1; then
-        did "installed $name@eranroseman"
-      else
-        bad "claude plugin install $name@eranroseman failed"
-      fi
-    elif claude plugin update "$name@eranroseman" >/dev/null 2>&1; then
-      did "ran claude plugin update $name@eranroseman"
-    else
-      bad "claude plugin update $name@eranroseman failed"
-    fi
+    converge_claude "$name" "$want"
   done <<<"$entries"
 }
 
