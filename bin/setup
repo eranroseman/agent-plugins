@@ -812,11 +812,10 @@ report_only() {
 # subset-entry links into the pinned clone are not thirteen findings; take only
 # the current version of each installed plugin, which the install registry
 # names, so a plugin bump does not manufacture duplicates of its own skills;
-# and report a Claude plugin cache whose marketplace is no longer registered
-# as its own finding rather than filtering it away. Per agent CLI, because the
-# hazard is one name reaching two skills in one session; the two CLIs
-# running different versions of a third-party plugin is a different, milder
-# thing and is not reported here. Reported, never repaired.
+# a cache whose marketplace is no longer registered is ensure_cache's, below.
+# Per agent CLI, because the hazard is one name reaching two skills in one
+# session; the two CLIs running different versions of a third-party plugin is
+# a different, milder thing and is not reported here.
 report_duplicates() {
   local -a claude_dirs=() codex_dirs=()
   local root dir path mkt name version line F before
@@ -882,17 +881,6 @@ report_duplicates() {
     report_pool Codex "${codex_dirs[@]}"
     reported "$before" report_pool
   fi
-
-  # A Claude plugin cache whose marketplace is not registered: residue of a
-  # removal, and not this script's to delete.
-  if [ -d "$HOME/.claude/plugins/cache" ]; then
-    for dir in "$HOME/.claude/plugins/cache"/*/; do
-      [ -d "$dir" ] || continue
-      name="$(basename "$dir")"
-      jq -e --arg m "$name" '.[$m]' "$KNOWN_MARKETPLACES" >/dev/null 2>&1 \
-        || note "plugin cache for an unregistered marketplace: ${dir%/} (left alone; remove it by hand)"
-    done
-  fi
 }
 
 # $1 the agent CLI's name, then every skill directory that CLI can load.
@@ -923,6 +911,106 @@ report_pool() {
     note "$cli: skill $name resolves to ${#distinct[@]} different trees: ${places[$name]}"
   done
   [ "$found" -eq 0 ] && note "$cli: $hashed skill tree(s) hashed; no name resolves to more than one tree"
+}
+
+# The one class of residue this script can prove (spec §11, #25): a Claude
+# plugin cache directory whose marketplace known_marketplaces.json no longer
+# names, or one of the CLI's temp_subdir_*.clone scratch clones from a
+# git-subdir install, is deleted in apply mode when four facts hold, each
+# read from a registry or from the directory itself: the registry parses as
+# a JSON object; the directory's name is absent from its keys; the install
+# registry parses as an object whose .plugins is an object, and no
+# installPath in it lies under the directory; and the directory's own mtime
+# is over an hour old. A registry that fails to parse skips the whole walk
+# and nothing is deleted. Deleted, not moved aside: aside_path() is for what
+# a user made and might want back; a cache the CLI regenerates from a
+# marketplace that no longer exists is not, and a pile of aside copies would
+# keep the disk cost and add something the walk must skip. The Codex half
+# only reports (plan B, P1): Codex's own built-in marketplaces are in no file
+# and no list, so residue there cannot be told from the CLI's own cache; a
+# directory that neither config.toml's [marketplaces.*] tables nor an
+# installed plugin accounts for is named and left alone.
+ensure_cache() {
+  local root="$HOME/.claude/plugins/cache" dir name what why keys paths p n=0 registered=0
+  local croot="${CODEX_HOME:-$HOME/.codex}/plugins/cache" cfg="${CODEX_HOME:-$HOME/.codex}/config.toml" cnames="" cpaths="" line F
+  needs jq "the plugin registries cannot be read, so no cache directory is judged" || return
+  if [ ! -d "$root" ]; then
+    ok "no Claude plugin cache at $root"
+  elif ! keys="$(jq -r 'if type == "object" then keys[] else error("not an object") end' "$KNOWN_MARKETPLACES" 2>/dev/null)"; then
+    skip "$KNOWN_MARKETPLACES does not parse as a JSON object, so no cache directory is judged and none is deleted"
+  elif ! paths="$(jq -r 'if type == "object" and (.plugins | type) == "object" then .plugins[][]?.installPath // empty else error("not an object") end' "$INSTALLED_PLUGINS" 2>/dev/null)"; then
+    skip "$INSTALLED_PLUGINS does not parse as a JSON object with a plugins object, so no cache directory is judged and none is deleted"
+  else
+    for dir in "$root"/*/; do
+      [ -d "$dir" ] || continue
+      dir="${dir%/}"
+      name="${dir##*/}"
+      n=$((n + 1))
+      if grep -qxF -- "$name" <<<"$keys"; then
+        registered=$((registered + 1))
+        continue
+      fi
+      case "$name" in
+        temp_subdir_*.clone) what="scratch clone from a git-subdir install" ;;
+        *) what="cache for an unregistered marketplace" ;;
+      esac
+      why=""
+      while IFS= read -r p; do
+        [ -n "$p" ] || continue
+        case "$p" in "$dir" | "$dir"/*) why="an installed plugin's installPath lies under it" ;; esac
+      done <<<"$paths"
+      if [ -z "$why" ] && [ -z "$(find "$dir" -maxdepth 0 -mmin +60)" ]; then
+        why="modified less than an hour ago"
+      fi
+      if [ -n "$why" ]; then
+        note "left alone: $dir ($why)"
+      elif applying; then
+        if rm -rf -- "$dir"; then
+          did "deleted $what: $dir"
+        else
+          bad "could not delete $what: $dir"
+        fi
+      else
+        bad "$what: $dir (not in known_marketplaces.json, no installed plugin under it, unmodified for over an hour); bin/setup deletes it"
+      fi
+    done
+    ok "$n Claude plugin cache director(ies) walked, $registered registered"
+  fi
+
+  [ -d "$croot" ] || return
+  if ! have codex; then
+    return
+  elif [ -z "$CODEX_LIST" ]; then
+    skip "codex plugin list failed earlier, so the Codex plugin cache is not judged"
+    return
+  fi
+  if [ -f "$cfg" ]; then
+    while IFS= read -r line; do
+      case "$line" in
+        '[marketplaces.'*']')
+          line="${line:14}" # past the 14 characters of [marketplaces.
+          cnames="$cnames ${line%]}"
+          ;;
+      esac
+    done <"$cfg"
+  fi
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    split_tsv "$line"
+    cpaths="$cpaths"$'\n'"$croot/${F[0]}/${F[1]}/${F[2]}"
+  done < <(printf '%s' "$CODEX_LIST" | jq -r '.installed[]? | [.marketplaceName, .name, .version] | @tsv')
+  for dir in "$croot"/*/; do
+    [ -d "$dir" ] || continue
+    dir="${dir%/}"
+    name="${dir##*/}"
+    case " $cnames " in *" $name "*) continue ;; esac
+    why=""
+    while IFS= read -r p; do
+      [ -n "$p" ] || continue
+      case "$p" in "$dir" | "$dir"/*) why=under ;; esac
+    done <<<"$cpaths"
+    [ -n "$why" ] || note "Codex plugin cache for a marketplace config.toml does not record: $dir (left alone; remove it by hand)"
+  done
 }
 
 main() {
@@ -962,6 +1050,9 @@ main() {
   before=$REPORTED
   ensure_codex
   reported "$before" ensure_codex
+  before=$REPORTED
+  ensure_cache
+  reported "$before" ensure_cache
   before=$REPORTED
   ensure_skills_sh
   reported "$before" ensure_skills_sh

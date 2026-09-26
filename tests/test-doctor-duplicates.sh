@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # bin/doctor must report one skill name reaching two different trees on one
-# agent CLI, and a Claude plugin cache whose marketplace is not registered, and
-# must stay quiet on the three false positives spec section 6.6 measured: the
+# agent CLI, and, through ensure_cache, a Claude plugin cache whose marketplace
+# is not registered, and must stay quiet on the three false positives spec
+# section 6.6 measured: the
 # same content under two paths, a superseded plugin version, and the same
 # name differing only across the two CLIs. Needs no network and no CLI: every
 # route is filesystem state plus the two registry files. The Codex half is
@@ -50,6 +51,7 @@ cat >"$H/.claude/plugins/known_marketplaces.json" <<'JSON'
 JSON
 # Residue: a cache directory for a marketplace the registry no longer names.
 mkdir -p "$H/.claude/plugins/cache/gone/old/1.0.0/skills/zeta"
+touch -d '2 hours ago' "$H/.claude/plugins/cache/gone" || fail "could not age the residue"
 
 # No codex on this PATH: the Codex pool is not reported, and nothing is added
 # to a marketplace over the network.
@@ -66,8 +68,8 @@ for quiet in alpha gamma delta; do
   printf '%s\n' "$out" | grep -q "skill $quiet resolves" \
     && fail "the doctor reported $quiet, a measured false positive:"$'\n'"$out"
 done
-printf '%s\n' "$out" | grep -q "NOTE: plugin cache for an unregistered marketplace: $H/.claude/plugins/cache/gone" \
-  || fail "the doctor did not report the unregistered cache:"$'\n'"$out"
+printf '%s\n' "$out" | grep -q "FAIL: cache for an unregistered marketplace: $H/.claude/plugins/cache/gone (not in known_marketplaces.json" \
+  || fail "the doctor did not report the unregistered cache as ensure_cache's FAIL:"$'\n'"$out"
 printf '%s\n' "$out" | grep -q "unregistered marketplace: $H/.claude/plugins/cache/mkt" \
   && fail "the doctor reported a registered marketplace's cache as unregistered"
 printf '%s\n' "$out" | grep -q 'NOTE: Codex:' \
