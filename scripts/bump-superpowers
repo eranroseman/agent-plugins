@@ -2,7 +2,7 @@
 # Move the obra/superpowers pin to a new sha and leave the diff for review.
 #
 #   scripts/bump-superpowers <sha>              apply the bump in this checkout
-#   scripts/bump-superpowers --emit-using-superpowers DIR print the additional context for a clone at DIR
+#   scripts/bump-superpowers --emit-using-superpowers DIR print the using-superpowers text for a clone at DIR
 #
 # A bump moves four coupled artifacts by three mechanisms:
 #   substituted   .claude-plugin/marketplace.json source.sha, LICENSE "at commit"
@@ -24,7 +24,7 @@ die() {
   exit 2
 }
 
-# The one copy of the additional-context recipe. $1 is a checkout of obra/superpowers.
+# The one copy of the using-superpowers recipe. $1 is a checkout of obra/superpowers.
 # The frame comes from upstream's own hook: it builds one line,
 #   session_context="<frame-head>${using_superpowers_escaped}<frame-tail>"
 # so splitting on the placeholder yields the two halves. Upstream reads the
@@ -78,13 +78,17 @@ old_sha="$(jq -r '.plugins[] | select(.name == "superpowers") | .source.sha' "$M
 [ "${#old_sha}" -eq 40 ] || die "could not read the current sha from $MARKETPLACE"
 [ "$new_sha" != "$old_sha" ] || die "already pinned at $new_sha"
 
-work="$(mktemp -d)"
+work="$(mktemp -d)" || die "could not create a scratch directory (TMPDIR=${TMPDIR:-/tmp})"
 using_superpowers_tmp=""
 license_tmp=""
+marketplace_tmp=""
+skill_tmp=""
 cleanup() {
   rm -rf "$work"
   [ -n "$using_superpowers_tmp" ] && rm -f "$using_superpowers_tmp"
   [ -n "$license_tmp" ] && rm -f "$license_tmp"
+  [ -n "$marketplace_tmp" ] && rm -f "$marketplace_tmp"
+  [ -n "$skill_tmp" ] && rm -f "$skill_tmp"
 }
 trap cleanup EXIT
 fetch_at "$work" "$new_sha"
@@ -96,16 +100,17 @@ fi
 
 # 1. substituted. Written through a temporary and moved into place, never
 # `cmd > file`, which truncates the source before the rewrite is known good.
-tmp="$(mktemp)"
+marketplace_tmp="$(mktemp "$MARKETPLACE.XXXXXX")" || die "could not create a temporary beside $MARKETPLACE"
 if jq --arg s "$new_sha" --arg v "$new_version" \
   '(.plugins[] | select(.name == "superpowers") | .source.sha) = $s
       | (.plugins[] | select(.name == "superpowers") | .version) = $v' \
-  "$MARKETPLACE" >"$tmp"; then
-  mv "$tmp" "$MARKETPLACE" || die "could not replace $MARKETPLACE"
+  "$MARKETPLACE" >"$marketplace_tmp"; then
+  mv "$marketplace_tmp" "$MARKETPLACE" || die "could not replace $MARKETPLACE"
+  marketplace_tmp=""
 else
   die "could not rewrite $MARKETPLACE"
 fi
-license_tmp="$(mktemp "$PLUGIN/LICENSE.XXXXXX")"
+license_tmp="$(mktemp "$PLUGIN/LICENSE.XXXXXX")" || die "could not create a temporary beside the LICENSE"
 if sed "s/at commit $old_sha/at commit $new_sha/" "$PLUGIN/LICENSE" >"$license_tmp"; then
   grep -q "at commit $new_sha" "$license_tmp" \
     || die "sed found no 'at commit $old_sha' in the LICENSE to replace; re-audit the phrasing"
@@ -115,10 +120,10 @@ else
   die "could not rewrite the LICENSE"
 fi
 
-# 2. regenerated: the additional context, then the vendored brainstorming tree. Written
+# 2. regenerated: the using-superpowers text, then the vendored brainstorming tree. Written
 # through a temporary beside the destination so a die inside emit_using_superpowers
 # cannot truncate the shipped using-superpowers.md.
-using_superpowers_tmp="$(mktemp "$PLUGIN/hooks/using-superpowers.md.XXXXXX")"
+using_superpowers_tmp="$(mktemp "$PLUGIN/hooks/using-superpowers.md.XXXXXX")" || die "could not create a temporary beside using-superpowers.md"
 if emit_using_superpowers "$work" >"$using_superpowers_tmp"; then
   mv "$using_superpowers_tmp" "$PLUGIN/hooks/using-superpowers.md" || die "could not replace using-superpowers.md"
   using_superpowers_tmp=""
@@ -131,7 +136,7 @@ fi
 DESCRIPTION='description: "Design front door of the superpowers spine. Classifies a build request as spike, bounded, or architectural, then takes it from intent to an approved design, and to a written spec for architectural work, before any implementation. Use for \"let'"'"'s build, add, or change X\". Not for open-ended ideation, and not for stress-testing an existing plan."'
 
 revendor_brainstorming() {
-  local up="$1" sha="$2" src dest tmp
+  local up="$1" sha="$2" src dest
   src="$up/skills/brainstorming/SKILL.md"
   dest="$PLUGIN/skills/brainstorming"
   [ -f "$src" ] || die "no skills/brainstorming/SKILL.md at $sha"
@@ -139,7 +144,7 @@ revendor_brainstorming() {
     || die "upstream brainstorming frontmatter is no longer three lines; re-audit the vendoring"
   rm -rf "$dest"
   cp -R "$up/skills/brainstorming" "$dest" || die "could not copy skills/brainstorming"
-  tmp="$(mktemp)"
+  skill_tmp="$(mktemp "$dest/SKILL.md.XXXXXX")" || die "could not create a temporary beside $dest/SKILL.md"
   {
     sed -n '1,2p' "$src"
     printf '%s\n' "$DESCRIPTION"
@@ -151,8 +156,9 @@ revendor_brainstorming() {
       "     Do not hand-edit below this line; re-vendor from upstream to update." \
       "-->"
     sed -n '5,$p' "$src"
-  } >"$tmp" || die "could not build the vendored SKILL.md"
-  mv "$tmp" "$dest/SKILL.md" || die "could not write $dest/SKILL.md"
+  } >"$skill_tmp" || die "could not build the vendored SKILL.md"
+  mv "$skill_tmp" "$dest/SKILL.md" || die "could not write $dest/SKILL.md"
+  skill_tmp=""
 }
 
 revendor_brainstorming "$work" "$new_sha"
