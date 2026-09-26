@@ -49,6 +49,40 @@ JSON
 
 saw() { printf '%s\n' "$OUT" | grep -qF -- "$1"; }
 
+# Every HOME a $SETUP (apply-mode) run touches needs this or ensure_clones
+# finds no pinned clone on disk and reaches the real network for one (#25): a
+# bare `git init` + an empty commit satisfies the `-d "$dir/.git"` check, and
+# the seeded repo carries no origin remote, so the `git fetch origin`
+# ensure_clones falls back to on a sha mismatch fails against a local
+# nonexistent path instead of a real remote.
+seed_clones() {
+  local h="$1" upstream="$1/.local/share/software-dev/upstream" name path skill dir
+  while IFS="$(printf '\t')" read -r name path skill; do
+    [ -n "$name" ] || continue
+    dir="$upstream/$name"
+    if [ ! -d "$dir/.git" ]; then
+      mkdir -p "$dir" || fail "could not seed $dir"
+      git -C "$dir" init -q || fail "git init failed in $dir"
+      git -C "$dir" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m seed \
+        || fail "could not seed a commit in $dir"
+    fi
+    mkdir -p "$dir/$path/$skill"
+  done < <(jq -r '.plugins[] | select(.source.source? == "git-subdir") as $p
+                  | $p.skills[] | [$p.name, $p.source.path, (. | sub("^\\./"; ""))] | @tsv' "$MARKETPLACE")
+}
+
+# A lockfile pinning every declared skills.sh ref, so ensure_skills_sh sees
+# each already at its declared ref and never calls npx (which is stubbed to
+# fail here anyway, but a real failure is still a wrong reason to fail).
+seed_lockfile() {
+  local h="$1"
+  jq '{version: 3,
+       skills: (reduce (.sources[] as $s | $s.skills[] |
+         {key: ., value: {source: $s.repo, ref: $s.ref}}) as $e ({}; . + {($e.key): $e.value})),
+       dismissed: {}}' "$REPO_ROOT/skills.json" >"$h/.agents/.skill-lock.json" \
+    || fail "could not synthesize a pinned lockfile"
+}
+
 # 1. Check mode: the two deletable directories are FAILs naming the facts,
 # the two guarded ones are NOTEs naming the guard, the registered one is silent.
 H="$T/h1"
@@ -68,24 +102,8 @@ saw 'OK:   5 Claude plugin cache director(ies) walked, 1 registered' \
 
 # 2. Apply mode deletes exactly the two, says so, and the re-check is clean
 # of them. The clones are seeded so nothing reaches the network.
-UPSTREAM="$H/.local/share/software-dev/upstream"
-while IFS="$(printf '\t')" read -r name path skill; do
-  [ -n "$name" ] || continue
-  dir="$UPSTREAM/$name"
-  if [ ! -d "$dir/.git" ]; then
-    mkdir -p "$dir" || fail "could not seed $dir"
-    git -C "$dir" init -q || fail "git init failed in $dir"
-    git -C "$dir" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m seed \
-      || fail "could not seed a commit in $dir"
-  fi
-  mkdir -p "$dir/$path/$skill"
-done < <(jq -r '.plugins[] | select(.source.source? == "git-subdir") as $p
-                | $p.skills[] | [$p.name, $p.source.path, (. | sub("^\\./"; ""))] | @tsv' "$MARKETPLACE")
-jq '{version: 3,
-     skills: (reduce (.sources[] as $s | $s.skills[] |
-       {key: ., value: {source: $s.repo, ref: $s.ref}}) as $e ({}; . + {($e.key): $e.value})),
-     dismissed: {}}' "$REPO_ROOT/skills.json" >"$H/.agents/.skill-lock.json" \
-  || fail "could not synthesize a pinned lockfile"
+seed_clones "$H"
+seed_lockfile "$H"
 OUT="$(env HOME="$H" CODEX_HOME="$H/.codex" PATH="$BIN" /bin/bash "$SETUP" 2>&1 || true)"
 saw "DID:  deleted cache for an unregistered marketplace: $H/.claude/plugins/cache/gone" \
   || fail "apply: the orphaned cache's deletion was not reported:"$'\n'"$OUT"
@@ -142,6 +160,8 @@ saw 'FAIL: cache for an unregistered' \
   && fail "installed_plugins.json with a non-object .plugins: a directory was still judged:"$'\n'"$OUT"
 # The critical case, in apply mode too: a blank registry must not reach rm -rf
 # for a directory that would otherwise be registered or held.
+seed_clones "$T/h-known_marketplaces.json-empty"
+seed_lockfile "$T/h-known_marketplaces.json-empty"
 OUT="$(env HOME="$T/h-known_marketplaces.json-empty" CODEX_HOME="$T/h-known_marketplaces.json-empty/.codex" PATH="$BIN" \
   /bin/bash "$SETUP" 2>&1 || true)"
 for keep in mkt held gone fresh; do
@@ -181,6 +201,8 @@ seed "$H5"
 OUT="$(env HOME="$H5/" CODEX_HOME="$H5/.codex" PATH="$BIN" /bin/bash "$DOCTOR" 2>&1 || true)"
 saw "NOTE: left alone: $H5/.claude/plugins/cache/held (an installed plugin's installPath lies under it)" \
   || fail "HOME with a trailing slash: the held cache was not left alone by name:"$'\n'"$OUT"
+seed_clones "$H5"
+seed_lockfile "$H5"
 OUT="$(env HOME="$H5/" CODEX_HOME="$H5/.codex" PATH="$BIN" /bin/bash "$SETUP" 2>&1 || true)"
 [ -d "$H5/.claude/plugins/cache/held" ] \
   || fail "HOME with a trailing slash: apply mode deleted the held cache:"$'\n'"$OUT"
@@ -198,6 +220,8 @@ JSON
 OUT="$(env HOME="$H6" CODEX_HOME="$H6/.codex" PATH="$BIN" /bin/bash "$DOCTOR" 2>&1 || true)"
 saw "NOTE: left alone: $H6/.claude/plugins/cache/held (an installed plugin's installPath lies under it)" \
   || fail "installPath through a symlinked HOME prefix: the held cache was not left alone by name:"$'\n'"$OUT"
+seed_clones "$H6"
+seed_lockfile "$H6"
 OUT="$(env HOME="$H6" CODEX_HOME="$H6/.codex" PATH="$BIN" /bin/bash "$SETUP" 2>&1 || true)"
 [ -d "$H6/.claude/plugins/cache/held" ] \
   || fail "installPath through a symlinked HOME prefix: apply mode deleted the held cache:"$'\n'"$OUT"
@@ -224,6 +248,8 @@ saw "$H4/.codex/plugins/cache/reg" && fail "codex: the recorded marketplace's ca
 saw "$H4/.codex/plugins/cache/inst" && fail "codex: the cache holding an installed plugin was reported:"$'\n'"$OUT"
 # P1's central promise, in apply mode: the Codex half never calls rm, so an
 # unaccounted-for directory and one holding an installed plugin both survive.
+seed_clones "$H4"
+seed_lockfile "$H4"
 OUT="$(env HOME="$H4" CODEX_HOME="$H4/.codex" PATH="$BIN" /bin/bash "$SETUP" 2>&1 || true)"
 [ -d "$H4/.codex/plugins/cache/orphan" ] || fail "codex apply: orphan was deleted, but the Codex half never deletes:"$'\n'"$OUT"
 [ -d "$H4/.codex/plugins/cache/inst" ] || fail "codex apply: inst was deleted, but the Codex half never deletes:"$'\n'"$OUT"
@@ -264,6 +290,8 @@ OUT="$(env HOME="$H9" CODEX_HOME="$H9/.codex" PATH="$BIN" /bin/bash "$DOCTOR" 2>
 saw 'SKIP: codex plugin list failed earlier, so the Codex plugin cache is not judged' \
   || fail "codex plugin list failed: the cache walk was not skipped by name:"$'\n'"$OUT"
 saw "$H9/.codex/plugins/cache/orphan" && fail "codex plugin list failed: a directory was still judged:"$'\n'"$OUT"
+seed_clones "$H9"
+seed_lockfile "$H9"
 OUT="$(env HOME="$H9" CODEX_HOME="$H9/.codex" PATH="$BIN" /bin/bash "$SETUP" 2>&1 || true)"
 [ -d "$H9/.codex/plugins/cache/orphan" ] \
   || fail "codex plugin list failed: apply mode deleted orphan despite the SKIP:"$'\n'"$OUT"
