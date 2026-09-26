@@ -110,10 +110,97 @@ for reg in known_marketplaces.json installed_plugins.json; do
   saw 'FAIL: cache for an unregistered' && fail "$reg unreadable: a directory was still judged:"$'\n'"$OUT"
 done
 
+# 3b. A registry that is empty, blank, or the wrong JSON shape must skip the
+# whole walk exactly as a syntax error does (spec §11): jq's slurp mode reads
+# a 0-byte or blank file as zero documents, not a parse error, so the guard
+# must demand exactly one document of the right shape, not merely "parses".
+for reg in known_marketplaces.json installed_plugins.json; do
+  for variant in empty whitespace array null; do
+    H2="$T/h-$reg-$variant"
+    seed "$H2"
+    case "$variant" in
+      empty) printf '' >"$H2/.claude/plugins/$reg" ;;
+      whitespace) printf '   \n\t\n' >"$H2/.claude/plugins/$reg" ;;
+      array) printf '[]' >"$H2/.claude/plugins/$reg" ;;
+      null) printf 'null' >"$H2/.claude/plugins/$reg" ;;
+    esac
+    OUT="$(env HOME="$H2" CODEX_HOME="$H2/.codex" PATH="$BIN" /bin/bash "$DOCTOR" 2>&1 || true)"
+    saw "SKIP: $H2/.claude/plugins/$reg does not parse" \
+      || fail "$reg $variant: the walk was not skipped by name:"$'\n'"$OUT"
+    saw 'FAIL: cache for an unregistered' \
+      && fail "$reg $variant: a directory was still judged:"$'\n'"$OUT"
+  done
+done
+# installed_plugins.json only: a .plugins that parses but is the wrong shape.
+H2="$T/h-installed_plugins.json-plugins-array"
+seed "$H2"
+printf '{"plugins":[]}\n' >"$H2/.claude/plugins/installed_plugins.json"
+OUT="$(env HOME="$H2" CODEX_HOME="$H2/.codex" PATH="$BIN" /bin/bash "$DOCTOR" 2>&1 || true)"
+saw "SKIP: $H2/.claude/plugins/installed_plugins.json does not parse" \
+  || fail "installed_plugins.json with a non-object .plugins: the walk was not skipped by name:"$'\n'"$OUT"
+saw 'FAIL: cache for an unregistered' \
+  && fail "installed_plugins.json with a non-object .plugins: a directory was still judged:"$'\n'"$OUT"
+# The critical case, in apply mode too: a blank registry must not reach rm -rf
+# for a directory that would otherwise be registered or held.
+OUT="$(env HOME="$T/h-known_marketplaces.json-empty" CODEX_HOME="$T/h-known_marketplaces.json-empty/.codex" PATH="$BIN" \
+  /bin/bash "$SETUP" 2>&1 || true)"
+for keep in mkt held gone fresh; do
+  [ -d "$T/h-known_marketplaces.json-empty/.claude/plugins/cache/$keep" ] \
+    || fail "blank known_marketplaces.json: apply mode deleted $keep:"$'\n'"$OUT"
+done
+
+# 3c. Guard 2 (registered) must not depend on an external's exit code or on
+# a marketplace name being free of regex-special characters: a name that
+# would confuse a pattern match is still recognized and its cache stays
+# silent.
+H7="$T/h7"
+seed "$H7"
+# shellcheck disable=SC2015  # both commands must succeed; fail is right when either does not
+jq --arg m 'mk.t+x' '. + {($m): {"source":{"source":"github","repo":"x/y"},"installLocation":"/nowhere"}}' \
+  "$H7/.claude/plugins/known_marketplaces.json" >"$H7/.claude/plugins/known_marketplaces.json.tmp" \
+  && mv "$H7/.claude/plugins/known_marketplaces.json.tmp" "$H7/.claude/plugins/known_marketplaces.json" \
+  || fail "could not add the regex-special marketplace"
+mkdir -p "$H7/.claude/plugins/cache/mk.t+x/old/1.0.0/skills/zeta" || fail "could not seed the regex-special cache"
+touch -d '2 hours ago' "$H7/.claude/plugins/cache/mk.t+x" || fail "could not age the regex-special cache"
+OUT="$(env HOME="$H7" CODEX_HOME="$H7/.codex" PATH="$BIN" /bin/bash "$DOCTOR" 2>&1 || true)"
+saw "$H7/.claude/plugins/cache/mk.t+x" \
+  && fail "regex-special marketplace name: its cache was reported though registered:"$'\n'"$OUT"
+saw 'OK:   6 Claude plugin cache director(ies) walked, 2 registered' \
+  || fail "regex-special marketplace name: the walk's summary line is wrong:"$'\n'"$OUT"
+
 # 4. No cache directory at all still reports, so the bracket holds.
 mkdir -p "$T/h3/.agents/skills" || fail "could not seed h3"
 OUT="$(env HOME="$T/h3" CODEX_HOME="$T/h3/.codex" PATH="$BIN" /bin/bash "$DOCTOR" 2>&1 || true)"
 saw 'OK:   no Claude plugin cache at' || fail "no cache: the walk did not report:"$'\n'"$OUT"
+
+# 4b. Guard 3 (an installed plugin's installPath lies under it) must survive a
+# literal-prefix trap: a HOME passed with a trailing slash must not silently
+# build a doubled slash into the cache root and lose the match.
+H5="$T/h5"
+seed "$H5"
+OUT="$(env HOME="$H5/" CODEX_HOME="$H5/.codex" PATH="$BIN" /bin/bash "$DOCTOR" 2>&1 || true)"
+saw "NOTE: left alone: $H5/.claude/plugins/cache/held (an installed plugin's installPath lies under it)" \
+  || fail "HOME with a trailing slash: the held cache was not left alone by name:"$'\n'"$OUT"
+OUT="$(env HOME="$H5/" CODEX_HOME="$H5/.codex" PATH="$BIN" /bin/bash "$SETUP" 2>&1 || true)"
+[ -d "$H5/.claude/plugins/cache/held" ] \
+  || fail "HOME with a trailing slash: apply mode deleted the held cache:"$'\n'"$OUT"
+
+# 4c. Same guard, reached the other way: the registry records the installPath
+# through a symlinked ancestor of HOME rather than HOME's own real path.
+H6="$T/h6"
+seed "$H6"
+ln -s "$H6" "$T/link6" || fail "could not create the symlinked HOME prefix"
+cat >"$H6/.claude/plugins/installed_plugins.json" <<JSON || fail "could not rewrite installed_plugins.json"
+{"version":2,"plugins":{
+  "plug@mkt":[{"scope":"user","version":"1.0.0","installPath":"$H6/.claude/plugins/cache/mkt/plug/1.0.0"}],
+  "plug@held":[{"scope":"user","version":"1.0.0","installPath":"$T/link6/.claude/plugins/cache/held/plug/1.0.0"}]}}
+JSON
+OUT="$(env HOME="$H6" CODEX_HOME="$H6/.codex" PATH="$BIN" /bin/bash "$DOCTOR" 2>&1 || true)"
+saw "NOTE: left alone: $H6/.claude/plugins/cache/held (an installed plugin's installPath lies under it)" \
+  || fail "installPath through a symlinked HOME prefix: the held cache was not left alone by name:"$'\n'"$OUT"
+OUT="$(env HOME="$H6" CODEX_HOME="$H6/.codex" PATH="$BIN" /bin/bash "$SETUP" 2>&1 || true)"
+[ -d "$H6/.claude/plugins/cache/held" ] \
+  || fail "installPath through a symlinked HOME prefix: apply mode deleted the held cache:"$'\n'"$OUT"
 
 # 5. The Codex half reports and never deletes: a directory config.toml does
 # not record and no installed plugin sits under is a NOTE; the recorded one
@@ -135,6 +222,51 @@ saw "NOTE: Codex plugin cache for a marketplace config.toml does not record: $H4
   || fail "codex: the unrecorded cache was not reported:"$'\n'"$OUT"
 saw "$H4/.codex/plugins/cache/reg" && fail "codex: the recorded marketplace's cache was reported:"$'\n'"$OUT"
 saw "$H4/.codex/plugins/cache/inst" && fail "codex: the cache holding an installed plugin was reported:"$'\n'"$OUT"
+# P1's central promise, in apply mode: the Codex half never calls rm, so an
+# unaccounted-for directory and one holding an installed plugin both survive.
+OUT="$(env HOME="$H4" CODEX_HOME="$H4/.codex" PATH="$BIN" /bin/bash "$SETUP" 2>&1 || true)"
+[ -d "$H4/.codex/plugins/cache/orphan" ] || fail "codex apply: orphan was deleted, but the Codex half never deletes:"$'\n'"$OUT"
+[ -d "$H4/.codex/plugins/cache/inst" ] || fail "codex apply: inst was deleted, but the Codex half never deletes:"$'\n'"$OUT"
+rm -f "$BIN/codex"
+
+# 5b. Controller amendment P-3: a missing config.toml means no recorded
+# names, not a crash or a leak -- codex is present, a cache directory is
+# unaccounted for, and nothing about config.toml reaches stderr.
+H8="$T/h8"
+mkdir -p "$H8/.agents/skills" "$H8/.codex/plugins/cache/orphan" || fail "could not seed h8"
+cat >"$BIN/codex" <<'STUB' || fail "could not write the codex stub"
+#!/usr/bin/env bash
+[ "$1" = --version ] && { printf 'codex-cli 0.147.0\n'; exit 0; }
+[ "$*" = "plugin list --json" ] || exit 1
+printf '{"installed":[]}\n'
+STUB
+chmod +x "$BIN/codex" || fail "could not make the codex stub executable"
+STDERR8="$T/h8-stderr"
+OUT="$(env HOME="$H8" CODEX_HOME="$H8/.codex" PATH="$BIN" /bin/bash "$DOCTOR" 2>"$STDERR8" || true)"
+saw "NOTE: Codex plugin cache for a marketplace config.toml does not record: $H8/.codex/plugins/cache/orphan (left alone; remove it by hand)" \
+  || fail "no config.toml: the unrecorded cache was not reported:"$'\n'"$OUT"
+[ -s "$STDERR8" ] && fail "no config.toml: stderr was not empty:"$'\n'"$(cat "$STDERR8")"
+rm -f "$BIN/codex" "$STDERR8"
+
+# 5c. codex present but `plugin list --json` failed earlier (ensure_codex
+# already reported it): the Codex cache is skipped by name, not silently
+# judged with an empty list, and nothing is deleted even in apply mode.
+H9="$T/h9"
+mkdir -p "$H9/.agents/skills" "$H9/.codex/plugins/cache/orphan" || fail "could not seed h9"
+printf '[marketplaces.reg]\nsource = "x"\n' >"$H9/.codex/config.toml" || fail "could not write config.toml"
+cat >"$BIN/codex" <<'STUB' || fail "could not write the codex stub"
+#!/usr/bin/env bash
+[ "$1" = --version ] && { printf 'codex-cli 0.147.0\n'; exit 0; }
+exit 1
+STUB
+chmod +x "$BIN/codex" || fail "could not make the codex stub executable"
+OUT="$(env HOME="$H9" CODEX_HOME="$H9/.codex" PATH="$BIN" /bin/bash "$DOCTOR" 2>&1 || true)"
+saw 'SKIP: codex plugin list failed earlier, so the Codex plugin cache is not judged' \
+  || fail "codex plugin list failed: the cache walk was not skipped by name:"$'\n'"$OUT"
+saw "$H9/.codex/plugins/cache/orphan" && fail "codex plugin list failed: a directory was still judged:"$'\n'"$OUT"
+OUT="$(env HOME="$H9" CODEX_HOME="$H9/.codex" PATH="$BIN" /bin/bash "$SETUP" 2>&1 || true)"
+[ -d "$H9/.codex/plugins/cache/orphan" ] \
+  || fail "codex plugin list failed: apply mode deleted orphan despite the SKIP:"$'\n'"$OUT"
 rm -f "$BIN/codex"
 
 printf 'doctor-cache: two deletable directories named and deleted, two guarded ones left alone by name, unreadable registries skip the walk, Codex reported only\n'

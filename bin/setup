@@ -821,8 +821,7 @@ report_duplicates() {
   local root dir path mkt name version line F before
   local can_hash=1
   # Guarded once here, not inside report_pool: report_pool runs once per
-  # CLI, and a guard placed there would print this SKIP twice. The
-  # residue check below needs jq, not sha256sum, and still runs either way.
+  # CLI, and a guard placed there would print this SKIP twice.
   needs sha256sum "the skill trees cannot be compared by content, so the duplicate check is unanswered" \
     || can_hash=0
 
@@ -918,27 +917,39 @@ report_pool() {
 # names, or one of the CLI's temp_subdir_*.clone scratch clones from a
 # git-subdir install, is deleted in apply mode when four facts hold, each
 # read from a registry or from the directory itself: the registry parses as
-# a JSON object; the directory's name is absent from its keys; the install
-# registry parses as an object whose .plugins is an object, and no
-# installPath in it lies under the directory; and the directory's own mtime
-# is over an hour old. A registry that fails to parse skips the whole walk
-# and nothing is deleted. Deleted, not moved aside: aside_path() is for what
-# a user made and might want back; a cache the CLI regenerates from a
-# marketplace that no longer exists is not, and a pile of aside copies would
-# keep the disk cost and add something the walk must skip. The Codex half
-# only reports (plan B, P1): Codex's own built-in marketplaces are in no file
-# and no list, so residue there cannot be told from the CLI's own cache; a
-# directory that neither config.toml's [marketplaces.*] tables nor an
-# installed plugin accounts for is named and left alone.
+# exactly one JSON object; the directory's name is absent from its keys; the
+# install registry parses as exactly one JSON object whose .plugins is an
+# object, and no installPath in it lies under the directory, comparing both
+# the literal and the canonical (readlink -f) form of each side so a
+# trailing slash on $HOME or a symlinked ancestor cannot hide an installed
+# plugin from the guard; and the directory's own mtime is over an hour old.
+# A registry that is blank, malformed, or not a single JSON object of the
+# right shape skips the whole walk and nothing is deleted -- jq's slurp mode
+# reads a 0-byte or blank file as zero documents rather than a parse error,
+# so the guard demands exactly one document, not merely a document that
+# parses (plan B erratum: an empty or blank registry used to pass both parse
+# guards and leave every directory unregistered and unprotected). Deleted,
+# not moved aside: aside_path() is for what a user made and might want back;
+# a cache the CLI regenerates from a marketplace that no longer exists is
+# not, and a pile of aside copies would keep the disk cost and add something
+# the walk must skip. The Codex half only reports (plan B, P1): Codex's own
+# built-in marketplaces are in no file and no list, so residue there cannot
+# be told from the CLI's own cache; a directory that neither config.toml's
+# [marketplaces.*] tables nor an installed plugin accounts for is named and
+# left alone.
 ensure_cache() {
-  local root="$HOME/.claude/plugins/cache" dir name what why keys paths p n=0 registered=0
-  local croot="${CODEX_HOME:-$HOME/.codex}/plugins/cache" cfg="${CODEX_HOME:-$HOME/.codex}/config.toml" cnames="" cpaths="" line F
+  local root dir name what why keys paths p n=0 registered=0 registered_here k
+  local canon_dir canon_p
+  local croot cfg cnames="" cpaths="" line F
+  root="${HOME%/}/.claude/plugins/cache"
+  croot="${CODEX_HOME:-$HOME/.codex}/plugins/cache"
+  cfg="${CODEX_HOME:-$HOME/.codex}/config.toml"
   needs jq "the plugin registries cannot be read, so no cache directory is judged" || return
   if [ ! -d "$root" ]; then
     ok "no Claude plugin cache at $root"
-  elif ! keys="$(jq -r 'if type == "object" then keys[] else error("not an object") end' "$KNOWN_MARKETPLACES" 2>/dev/null)"; then
+  elif ! keys="$(jq -rs 'if length == 1 and (.[0] | type) == "object" then .[0] | keys[] else error("not one object") end' "$KNOWN_MARKETPLACES" 2>/dev/null)"; then
     skip "$KNOWN_MARKETPLACES does not parse as a JSON object, so no cache directory is judged and none is deleted"
-  elif ! paths="$(jq -r 'if type == "object" and (.plugins | type) == "object" then .plugins[][]?.installPath // empty else error("not an object") end' "$INSTALLED_PLUGINS" 2>/dev/null)"; then
+  elif ! paths="$(jq -rs 'if length == 1 and (.[0] | type) == "object" and (.[0].plugins | type) == "object" then .[0].plugins[][]?.installPath // empty else error("not one object") end' "$INSTALLED_PLUGINS" 2>/dev/null)"; then
     skip "$INSTALLED_PLUGINS does not parse as a JSON object with a plugins object, so no cache directory is judged and none is deleted"
   else
     for dir in "$root"/*/; do
@@ -946,7 +957,13 @@ ensure_cache() {
       dir="${dir%/}"
       name="${dir##*/}"
       n=$((n + 1))
-      if grep -qxF -- "$name" <<<"$keys"; then
+      # A builtin membership test, not grep: no external's exit code stands
+      # between a registered marketplace and its cache.
+      registered_here=0
+      while IFS= read -r k; do
+        [ "$k" = "$name" ] && registered_here=1
+      done <<<"$keys"
+      if [ "$registered_here" -eq 1 ]; then
         registered=$((registered + 1))
         continue
       fi
@@ -954,10 +971,13 @@ ensure_cache() {
         temp_subdir_*.clone) what="scratch clone from a git-subdir install" ;;
         *) what="cache for an unregistered marketplace" ;;
       esac
+      canon_dir="$(readlink -f "$dir" 2>/dev/null)" || canon_dir="$dir"
       why=""
       while IFS= read -r p; do
         [ -n "$p" ] || continue
-        case "$p" in "$dir" | "$dir"/*) why="an installed plugin's installPath lies under it" ;; esac
+        canon_p="$(readlink -f "$p" 2>/dev/null)" || canon_p="$p"
+        case "$p" in "$dir" | "$dir"/* | "$canon_dir" | "$canon_dir"/*) why="an installed plugin's installPath lies under it" ;; esac
+        case "$canon_p" in "$dir" | "$dir"/* | "$canon_dir" | "$canon_dir"/*) why="an installed plugin's installPath lies under it" ;; esac
       done <<<"$paths"
       if [ -z "$why" ] && [ -z "$(find "$dir" -maxdepth 0 -mmin +60)" ]; then
         why="modified less than an hour ago"
