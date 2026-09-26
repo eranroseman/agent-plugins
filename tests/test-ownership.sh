@@ -48,11 +48,12 @@ for row in "${GUARDED[@]}"; do
   fi
 done
 
-printf '%s\n' "$list" | grep -q '[[:space:]*?[\\"]' \
-  && fail "a tracked path carries whitespace, a glob character, or a quoted path; the tool tests expand the list unquoted:"$'\n'"$(printf '%s\n' "$list" | grep '[[:space:]*?[\\"]')"
+odd="$(grep '[[:space:]*?[\\"]' <<<"$list" || true)"
+[ -z "$odd" ] \
+  || fail "a tracked path carries whitespace, a glob character, or a quoted path; the tool tests expand the list unquoted:"$'\n'"$odd"
 shell="$(checked_shell)"
 [ -n "$shell" ] || fail "checked_shell() listed nothing"
-printf '%s\n' "$shell" | grep -qx 'bin/setup' || fail "checked_shell() does not list bin/setup, a shell file with no extension"
+grep -qx 'bin/setup' <<<"$shell" || fail "checked_shell() does not list bin/setup, a shell file with no extension"
 # The floor under that pin, derived rather than enumerated: an expected list of
 # shell files goes stale silently, which is the defect this suite exists to
 # catch. Every checked file whose first line names bash must be in
@@ -64,7 +65,7 @@ while IFS= read -r f; do
   [ -n "$f" ] || continue
   case "$(head -n 1 "$REPO_ROOT/$f")" in
     '#!'*bash*)
-      printf '%s\n' "$shell" | grep -qxF -- "$f" || missing="$missing $f"
+      grep -qxF -- "$f" <<<"$shell" || missing="$missing $f"
       ;;
   esac
 done < <(printf '%s\n' "$list")

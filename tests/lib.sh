@@ -144,13 +144,17 @@ checked() {
 }
 
 # The shell files: every checked file whose first line is the bash shebang.
-# By shebang, not extension: five of them have none. Arguments narrow the
-# list the same way checked's do.
+# By shebang, not extension: the two commands under bin/, the three scripts
+# and the hook have none. Arguments narrow the list the same way checked's
+# do. A tracked file absent from the working tree is a FAIL by name, not a
+# silently shorter list: head's failure is not swallowed (#61 M4).
 checked_shell() {
-  local f
+  local f line
   while IFS= read -r f; do
     [ -n "$f" ] || continue
-    if [ "$(head -n 1 "$REPO_ROOT/$f")" = '#!/usr/bin/env bash' ]; then
+    [ -f "$REPO_ROOT/$f" ] || fail "$f is tracked but absent from the working tree"
+    line="$(head -n 1 "$REPO_ROOT/$f")" || fail "could not read the first line of $f"
+    if [ "$line" = '#!/usr/bin/env bash' ]; then
       printf '%s\n' "$f"
     fi
   done < <(checked "$@")
