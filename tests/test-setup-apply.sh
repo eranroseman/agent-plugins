@@ -138,6 +138,19 @@ run_apply() { # $1 HOME, $2 PATH dir; leaves the output in OUT
 }
 saw() { printf '%s\n' "$OUT" | grep -qF -- "$1"; }
 
+# True iff $1 appears in $OUT strictly after the apply pass's own
+# `--- re-checking ---` marker (bin/setup line 917): the apply pass prints
+# its own OK the moment a stub's edit lands, so grepping the whole of $OUT
+# would pass on that alone and never notice a broken re-check. Fails loudly
+# if the marker itself never printed, which would otherwise make the `#*`
+# strip a no-op and silently degrade this back into a whole-$OUT grep.
+rechecked() {
+  local marker='--- re-checking ---' recheck
+  recheck="${OUT#*"$marker"}"
+  [ "$recheck" != "$OUT" ] || fail "no re-check marker ($marker) in \$OUT:"$'\n'"$OUT"
+  printf '%s\n' "$recheck" | grep -qF -- "$1"
+}
+
 # 1. A subset entry one version behind: the update branch.
 H1="$T/home-1"
 seed_home "$H1"
@@ -147,7 +160,7 @@ fixture_bin "$B1"
 write_claude_stub "$B1"
 run_apply "$H1" "$B1"
 saw "DID:  superpowers@eranroseman is now $sp" || fail "update branch: no DID line for superpowers:"$'\n'"$OUT"
-[ "$(printf '%s\n' "$OUT" | grep -c "OK:   superpowers@eranroseman $sp installed")" -ge 1 ] \
+rechecked "OK:   superpowers@eranroseman $sp installed" \
   || fail "update branch: the re-check did not report superpowers at $sp:"$'\n'"$OUT"
 saw 'SKIP: codex is not on PATH' || fail "update branch: the Codex half was not skipped with no codex:"$'\n'"$OUT"
 
@@ -157,7 +170,7 @@ seed_home "$H2"
 write_registry "$H2" "software-dev=$sd" "sensemaking=$sm" "superpowers=$sp"
 run_apply "$H2" "$B1"
 saw 'DID:  installed writing-clearly-and-concisely@eranroseman' || fail "install branch: no DID line:"$'\n'"$OUT"
-[ "$(printf '%s\n' "$OUT" | grep -c "OK:   writing-clearly-and-concisely@eranroseman $wcc installed")" -ge 1 ] \
+rechecked "OK:   writing-clearly-and-concisely@eranroseman $wcc installed" \
   || fail "install branch: the re-check did not report the entry installed:"$'\n'"$OUT"
 
 # 3. Codex present: upgrade, add, and the second list read, in order.
@@ -175,7 +188,7 @@ for p in software-dev sensemaking; do
 done
 saw "DID:  installed codex plugin software-dev $sd" || fail "codex: no DID line for software-dev:"$'\n'"$OUT"
 saw "DID:  installed codex plugin sensemaking $sm" || fail "codex: no DID line for sensemaking:"$'\n'"$OUT"
-[ "$(printf '%s\n' "$OUT" | grep -c "OK:   codex plugin software-dev $sd installed")" -ge 1 ] \
+rechecked "OK:   codex plugin software-dev $sd installed" \
   || fail "codex: the re-check did not report software-dev installed:"$'\n'"$OUT"
 
 printf 'setup-apply: the update and install branches of the Claude half and the Codex half ran under stateful stubs\n'
