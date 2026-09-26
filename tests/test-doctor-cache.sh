@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 # The one class of residue the engine can prove and repair (spec §11, #25):
 # a Claude plugin cache directory that known_marketplaces.json does not
-# name, that no installed plugin's installPath lies under, and that has not
-# been modified for an hour. Check mode names it as a FAIL with the four
-# facts; apply mode deletes it and says so; a directory failing any guard is
-# left alone and named with the guard; a registry jq cannot parse skips the
-# whole walk and nothing is deleted; the CLI's temp_subdir_*.clone scratch
-# directories are the same class under their own name. The Codex half only
-# reports (plan B, P1). Needs no network; the clones are seeded at a wrong
-# sha with no origin, and claude, node and npx are stubs.
+# name, that no installed plugin's installPath lies under, that no installed
+# plugin's key names after its @, and that has not been modified for an
+# hour. Check mode names it as a FAIL with the four facts; apply mode
+# deletes it and says so; a directory failing any guard is left alone and
+# named with the guard; a registry jq cannot parse, or an installed entry
+# with neither an installPath nor an @marketplace, skips the whole walk and
+# nothing is deleted; the CLI's temp_subdir_*.clone scratch directories are
+# the same class under their own name. The Codex half only reports (plan B,
+# P1). Needs no network; the clones are seeded at a wrong sha with no
+# origin, and claude, node and npx are stubs.
 . "$(dirname "$0")/lib.sh"
 
 DOCTOR="$REPO_ROOT/bin/doctor"
@@ -225,6 +227,48 @@ seed_lockfile "$H6"
 OUT="$(env HOME="$H6" CODEX_HOME="$H6/.codex" PATH="$BIN" /bin/bash "$SETUP" 2>&1 || true)"
 [ -d "$H6/.claude/plugins/cache/held" ] \
   || fail "installPath through a symlinked HOME prefix: apply mode deleted the held cache:"$'\n'"$OUT"
+
+# 4d. Same guard, for an installed entry that records no installPath at all:
+# the marketplace its key names after the @ holds its cache directory.
+H10="$T/h10"
+seed "$H10"
+cat >"$H10/.claude/plugins/installed_plugins.json" <<JSON || fail "could not rewrite installed_plugins.json"
+{"version":2,"plugins":{
+  "plug@mkt":[{"scope":"user","version":"1.0.0","installPath":"$H10/.claude/plugins/cache/mkt/plug/1.0.0"}],
+  "plug@held":[{"scope":"user","version":"1.0.0"}]}}
+JSON
+OUT="$(env HOME="$H10" CODEX_HOME="$H10/.codex" PATH="$BIN" /bin/bash "$DOCTOR" 2>&1 || true)"
+saw "NOTE: left alone: $H10/.claude/plugins/cache/held (an installed plugin's key names this marketplace)" \
+  || fail "an installed entry with no installPath: its marketplace's cache was not left alone by name:"$'\n'"$OUT"
+seed_clones "$H10"
+seed_lockfile "$H10"
+OUT="$(env HOME="$H10" CODEX_HOME="$H10/.codex" PATH="$BIN" /bin/bash "$SETUP" 2>&1 || true)"
+[ -d "$H10/.claude/plugins/cache/held" ] \
+  || fail "an installed entry with no installPath: apply mode deleted its marketplace's cache:"$'\n'"$OUT"
+
+# 4e. An installed entry whose key names no marketplace and which records no
+# installPath cannot be placed under any directory: the whole walk is one
+# SKIP naming the key, and nothing is deleted, even in apply mode.
+H11="$T/h11"
+seed "$H11"
+cat >"$H11/.claude/plugins/installed_plugins.json" <<JSON || fail "could not rewrite installed_plugins.json"
+{"version":2,"plugins":{
+  "plug@mkt":[{"scope":"user","version":"1.0.0","installPath":"$H11/.claude/plugins/cache/mkt/plug/1.0.0"}],
+  "plug@held":[{"scope":"user","version":"1.0.0","installPath":"$H11/.claude/plugins/cache/held/plug/1.0.0"}],
+  "stray":[{"scope":"user","version":"1.0.0"}]}}
+JSON
+OUT="$(env HOME="$H11" CODEX_HOME="$H11/.codex" PATH="$BIN" /bin/bash "$DOCTOR" 2>&1 || true)"
+saw 'SKIP: installed_plugins.json entry stray has no installPath and no @marketplace; not walking' \
+  || fail "an entry with neither an installPath nor an @marketplace: the walk was not skipped by name:"$'\n'"$OUT"
+printf '%s\n' "$OUT" | grep -qE '^FAIL: (cache for an unregistered|scratch clone)' \
+  && fail "an entry with neither an installPath nor an @marketplace: a directory was still judged:"$'\n'"$OUT"
+seed_clones "$H11"
+seed_lockfile "$H11"
+OUT="$(env HOME="$H11" CODEX_HOME="$H11/.codex" PATH="$BIN" /bin/bash "$SETUP" 2>&1 || true)"
+for keep in mkt held gone fresh temp_subdir_1789739987658_kwt7rv.clone; do
+  [ -d "$H11/.claude/plugins/cache/$keep" ] \
+    || fail "an entry with neither an installPath nor an @marketplace: apply mode deleted $keep:"$'\n'"$OUT"
+done
 
 # 5. The Codex half reports and never deletes: a directory config.toml does
 # not record and no installed plugin sits under is a NOTE; the recorded one

@@ -988,10 +988,15 @@ report_pool() {
 # read from a registry or from the directory itself: the registry parses as
 # exactly one JSON object; the directory's name is absent from its keys; the
 # install registry parses as exactly one JSON object whose .plugins is an
-# object, and no installPath in it lies under the directory, comparing both
+# object, no installPath in it lies under the directory, comparing both
 # the literal and the canonical (readlink -f) form of each side so a
 # trailing slash on $HOME or a symlinked ancestor cannot hide an installed
-# plugin from the guard; and the directory's own mtime is over an hour old.
+# plugin from the guard, and no key in it names the directory after its @
+# (plug@held holds held), so an entry that records no installPath still
+# holds its marketplace's cache; and the directory's own mtime is over an
+# hour old. An installed entry that has neither a string installPath nor an
+# @marketplace in its key could be holding any directory, so it skips the
+# whole walk, naming the key, and nothing is deleted.
 # A registry that is blank, malformed, or not a single JSON object of the
 # right shape skips the whole walk and nothing is deleted -- jq's slurp mode
 # reads a 0-byte or blank file as zero documents rather than a parse error,
@@ -1007,7 +1012,7 @@ report_pool() {
 # [marketplaces.*] tables nor an installed plugin accounts for is named and
 # left alone.
 ensure_cache() {
-  local root dir name what why keys paths p n=0 registered=0 registered_here k
+  local root dir name what why keys installed tag v paths="" held="" bare="" unplaced=0 p n=0 registered=0 registered_here k
   local canon_dir canon_p
   local croot cfg cnames="" cpaths="" line F
   root="${HOME%/}/.claude/plugins/cache"
@@ -1018,52 +1023,83 @@ ensure_cache() {
     ok "no Claude plugin cache at $root"
   elif ! keys="$(jq -rs 'if length == 1 and (.[0] | type) == "object" then .[0] | keys[] else error("not one object") end' "$KNOWN_MARKETPLACES" 2>/dev/null)"; then
     skip "$KNOWN_MARKETPLACES does not parse as a JSON object, so no cache directory is judged and none is deleted"
-  elif ! paths="$(jq -rs 'if length == 1 and (.[0] | type) == "object" and (.[0].plugins | type) == "object" then .[0].plugins[][]?.installPath // empty else error("not one object") end' "$INSTALLED_PLUGINS" 2>/dev/null)"; then
+  elif ! installed="$(jq -rs 'if length == 1 and (.[0] | type) == "object" and (.[0].plugins | type) == "object"
+      then .[0].plugins | to_entries[] | .key as $k | ($k | test("@[^@]+$")) as $named
+        | (if $named then "held\t" + ($k | sub("^.*@"; "")) else empty end),
+          (.value[]? | .installPath
+            | if type == "string" then "path\t" + . elif $named then empty else "bare\t" + $k end)
+      else error("not one object") end' "$INSTALLED_PLUGINS" 2>/dev/null)"; then
     skip "$INSTALLED_PLUGINS does not parse as a JSON object with a plugins object, so no cache directory is judged and none is deleted"
   else
-    for dir in "$root"/*/; do
-      [ -d "$dir" ] || continue
-      dir="${dir%/}"
-      name="${dir##*/}"
-      n=$((n + 1))
-      # A builtin membership test, not grep: no external's exit code stands
-      # between a registered marketplace and its cache.
-      registered_here=0
-      while IFS= read -r k; do
-        [ "$k" = "$name" ] && registered_here=1
-      done <<<"$keys"
-      if [ "$registered_here" -eq 1 ]; then
-        registered=$((registered + 1))
-        continue
-      fi
-      case "$name" in
-        temp_subdir_*.clone) what="scratch clone from a git-subdir install" ;;
-        *) what="cache for an unregistered marketplace" ;;
+    # One pass read three lists: each installPath; each marketplace an
+    # installed plugin's key names after its @; and each key that names no
+    # marketplace on an entry that records no installPath. Split at the first
+    # tab by expansion, not by a tab IFS (see split_tsv), so an empty value
+    # is kept.
+    while IFS= read -r line; do
+      tag="${line%%$'\t'*}" v="${line#*$'\t'}"
+      case "$tag" in
+        path) paths="$paths$v"$'\n' ;;
+        held) held="$held$v"$'\n' ;;
+        bare) unplaced=1 bare="$v" ;;
       esac
-      canon_dir="$(readlink -f "$dir" 2>/dev/null)" || canon_dir="$dir"
-      why=""
-      while IFS= read -r p; do
-        [ -n "$p" ] || continue
-        canon_p="$(readlink -f "$p" 2>/dev/null)" || canon_p="$p"
-        case "$p" in "$dir" | "$dir"/* | "$canon_dir" | "$canon_dir"/*) why="an installed plugin's installPath lies under it" ;; esac
-        case "$canon_p" in "$dir" | "$dir"/* | "$canon_dir" | "$canon_dir"/*) why="an installed plugin's installPath lies under it" ;; esac
-      done <<<"$paths"
-      if [ -z "$why" ] && [ -z "$(find "$dir" -maxdepth 0 -mmin +60)" ]; then
-        why="modified less than an hour ago"
-      fi
-      if [ -n "$why" ]; then
-        note "left alone: $dir ($why)"
-      elif applying; then
-        if rm -rf -- "$dir"; then
-          did "deleted $what: $dir"
-        else
-          bad "could not delete $what: $dir"
+    done <<<"$installed"
+    # An entry that neither lies under a directory nor names a marketplace
+    # could be holding any of them, so none is judged.
+    if [ "$unplaced" -eq 1 ]; then
+      skip "installed_plugins.json entry $bare has no installPath and no @marketplace; not walking"
+    else
+      for dir in "$root"/*/; do
+        [ -d "$dir" ] || continue
+        dir="${dir%/}"
+        name="${dir##*/}"
+        n=$((n + 1))
+        # A builtin membership test, not grep: no external's exit code stands
+        # between a registered marketplace and its cache.
+        registered_here=0
+        while IFS= read -r k; do
+          [ "$k" = "$name" ] && registered_here=1
+        done <<<"$keys"
+        if [ "$registered_here" -eq 1 ]; then
+          registered=$((registered + 1))
+          continue
         fi
-      else
-        bad "$what: $dir (not in known_marketplaces.json, no installed plugin under it, unmodified for over an hour); bin/setup deletes it"
-      fi
-    done
-    ok "$n Claude plugin cache director(ies) walked, $registered registered"
+        case "$name" in
+          temp_subdir_*.clone) what="scratch clone from a git-subdir install" ;;
+          *) what="cache for an unregistered marketplace" ;;
+        esac
+        canon_dir="$(readlink -f "$dir" 2>/dev/null)" || canon_dir="$dir"
+        why=""
+        while IFS= read -r p; do
+          [ -n "$p" ] || continue
+          canon_p="$(readlink -f "$p" 2>/dev/null)" || canon_p="$p"
+          case "$p" in "$dir" | "$dir"/* | "$canon_dir" | "$canon_dir"/*) why="an installed plugin's installPath lies under it" ;; esac
+          case "$canon_p" in "$dir" | "$dir"/* | "$canon_dir" | "$canon_dir"/*) why="an installed plugin's installPath lies under it" ;; esac
+        done <<<"$paths"
+        # An entry the registry records with no installPath still names its
+        # marketplace in its key; a builtin membership test, as above.
+        if [ -z "$why" ]; then
+          while IFS= read -r k; do
+            [ "$k" = "$name" ] && why="an installed plugin's key names this marketplace"
+          done <<<"$held"
+        fi
+        if [ -z "$why" ] && [ -z "$(find "$dir" -maxdepth 0 -mmin +60)" ]; then
+          why="modified less than an hour ago"
+        fi
+        if [ -n "$why" ]; then
+          note "left alone: $dir ($why)"
+        elif applying; then
+          if rm -rf -- "$dir"; then
+            did "deleted $what: $dir"
+          else
+            bad "could not delete $what: $dir"
+          fi
+        else
+          bad "$what: $dir (not in known_marketplaces.json, no installed plugin under it, unmodified for over an hour); bin/setup deletes it"
+        fi
+      done
+      ok "$n Claude plugin cache director(ies) walked, $registered registered"
+    fi
   fi
 
   [ -d "$croot" ] || return
