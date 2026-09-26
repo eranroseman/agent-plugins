@@ -12,28 +12,17 @@ S="$REPO_ROOT/skills.json"
 [ -f "$S" ] || fail "missing $S"
 jq -e . "$S" >/dev/null 2>&1 || fail "$S is not well-formed JSON"
 
-# The scaffolder is vendored into this plugin (spec section 8). Installing it
-# through skills.sh as well would leave the unadapted copy, whose file-pick
-# rule writes CLAUDE.md, one invocation away from the adapted one.
-if jq -e '[.sources[].skills[]] | index("setup-matt-pocock-skills")' "$S" >/dev/null 2>&1; then
-  fail "setup-matt-pocock-skills is vendored by this plugin as an adapted copy whose file-pick rule differs; declaring it here too would install the unadapted one beside it"
-fi
-
-# diagnosing-bugs is vendored with a rewritten description (spec section 6.1);
-# declaring it here too would install the unadapted one beside it.
-if jq -e '[.sources[].skills[]] | index("diagnosing-bugs")' "$S" >/dev/null 2>&1; then
-  fail "diagnosing-bugs is vendored by software-dev with a rewritten description; declaring it here too would install the unadapted one beside it"
-fi
-
-# mattpocock's process skills are not adopted: superpowers owns those slots.
-# Author's ruling 2026-09-06, restating knowledge-harness #72 and settling the
-# one case that had drifted from it. grill-with-docs IS adopted, per that
-# ticket's 2026-08-31 amendment, and is declared.
-for n in to-spec to-tickets implement tdd code-review; do
-  if jq -e --arg n "$n" '[.sources[].skills[]] | index($n)' "$S" >/dev/null 2>&1; then
-    fail "$n collides with a superpowers skill and is not adopted; it must not be declared"
-  fi
-done
+# The three buckets per source are disjoint, and each not_adopted entry
+# carries a reason: the collision policy lives in skills.json, and a name
+# in two buckets is two policies (#53).
+while IFS= read -r repo; do
+  [ -n "$repo" ] || continue
+  dup="$(jq -r --arg r "$repo" '.sources[] | select(.repo == $r)
+    | [.skills[], (.not_adopted[].name), .via_subset_entry[]] | group_by(.) | map(select(length > 1) | .[0]) | .[]' "$S")"
+  [ -z "$dup" ] || fail "$repo: a name sits in two buckets: $dup"
+  bare="$(jq -r --arg r "$repo" '.sources[] | select(.repo == $r) | .not_adopted[] | select((.reason // "") == "") | .name' "$S")"
+  [ -z "$bare" ] || fail "$repo: a not_adopted entry carries no reason: $bare"
+done < <(jq -r '.sources[].repo' "$S")
 
 total="$(jq '[.sources[].skills[]] | length' "$S")"
 [ "$total" -eq 19 ] || fail "expected 19 declared skills, got $total"
@@ -41,6 +30,7 @@ total="$(jq '[.sources[].skills[]] | length' "$S")"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 
+per_source=""
 while IFS="$(printf '\t')" read -r repo ref; do
   [ -n "$repo" ] || continue
   url="https://github.com/$repo.git"
@@ -62,6 +52,28 @@ while IFS="$(printf '\t')" read -r repo ref; do
     [ "$matches" -eq 1 ] \
       || fail "$repo@$ref: '$name' resolves to $matches SKILL.md files, expected 1"
   done < <(jq -r --arg r "$repo" '.sources[] | select(.repo == $r) | .skills[]' "$S")
+  # The complement: the basename of each SKILL.md directory upstream ships
+  # at the ref, the repository root excluded, a duplicate basename itself a
+  # failure, equal the union of the three buckets, so a new upstream skill
+  # is a visible decision at the next ref bump rather than a silent omission.
+  upstream="$(find "$d" -name SKILL.md -not -path '*/.git/*' | while IFS= read -r f; do
+    dir="${f%/SKILL.md}"
+    [ "$dir" != "$d" ] || continue
+    printf '%s\n' "${dir##*/}"
+  done | sort)"
+  dupbase="$(printf '%s\n' "$upstream" | uniq -d)"
+  [ -z "$dupbase" ] || fail "$repo@$ref: a basename resolves to more than one SKILL.md: $dupbase"$'\n'"$(find "$d" -name SKILL.md -not -path '*/.git/*' | grep -F "/$dupbase/")"
+  declared_set="$(jq -r --arg r "$repo" '.sources[] | select(.repo == $r) | [.skills[], (.not_adopted[].name), .via_subset_entry[]] | .[]' "$S" | sort)"
+  only_up="$(comm -23 <(printf '%s\n' "$upstream") <(printf '%s\n' "$declared_set"))"
+  only_here="$(comm -13 <(printf '%s\n' "$upstream") <(printf '%s\n' "$declared_set"))"
+  # shellcheck disable=SC2086  # word-splitting the names onto one line is the point
+  [ -z "$only_up" ] || fail "$repo@$ref ships skills no bucket names; declare or record each: $(printf '%s ' $only_up)"
+  # shellcheck disable=SC2086  # word-splitting the names onto one line is the point
+  [ -z "$only_here" ] || fail "$repo@$ref does not ship these names a bucket carries: $(printf '%s ' $only_here)"
+  n_decl="$(jq -r --arg r "$repo" '.sources[] | select(.repo == $r) | .skills | length' "$S")"
+  n_not="$(jq -r --arg r "$repo" '.sources[] | select(.repo == $r) | .not_adopted | length' "$S")"
+  n_via="$(jq -r --arg r "$repo" '.sources[] | select(.repo == $r) | .via_subset_entry | length' "$S")"
+  per_source="$per_source $repo: $n_decl declared, $n_not not adopted, $n_via via a subset entry, of $(printf '%s\n' "$upstream" | grep -c .);"
 done < <(jq -r '.sources[] | [.repo, .ref] | @tsv' "$S")
 
-printf 'skills-pin: %s declared skills, every ref a real tag, every name resolving once\n' "$total"
+printf 'skills-pin: %s declared skills, every ref a real tag, every name resolving once;%s\n' "$total" "$per_source"

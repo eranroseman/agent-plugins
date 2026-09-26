@@ -1,5 +1,5 @@
 {
-  "$comment": "Skills installed through the skills.sh CLI. bin/setup applies these; bin/doctor verifies them. setup-matt-pocock-skills is deliberately absent: this plugin vendors an adapted copy of it as setup-repository.",
+  "$comment": "Skills installed through the skills.sh CLI: bin/setup applies each source's skills at its ref and bin/doctor verifies them; both read .sources[].skills[] and nothing else. not_adopted records every skill the source ships at that ref that is deliberately not declared, with its reason, and via_subset_entry the names a marketplace subset entry provides instead, so the three buckets together are the whole of what upstream ships; tests/test-skills-pin.sh holds that equality.",
   "sources": [
     {
       "repo": "mattpocock/skills",
@@ -21,17 +21,109 @@
         "wayfinder",
         "wizard",
         "writing-for-agents"
-      ]
+      ],
+      "not_adopted": [
+        {
+          "name": "setup-matt-pocock-skills",
+          "reason": "vendored into software-dev as setup-repository, an adapted copy whose file-pick rule differs; installing the unadapted one beside it is the collision of 2026-09-05"
+        },
+        {
+          "name": "diagnosing-bugs",
+          "reason": "vendored into software-dev with a rewritten description, so it shares no trigger word with superpowers:systematic-debugging"
+        },
+        {
+          "name": "to-spec",
+          "reason": "collides with a superpowers skill; superpowers owns that slot (ruling of 2026-09-06)"
+        },
+        {
+          "name": "to-tickets",
+          "reason": "collides with a superpowers skill; superpowers owns that slot (ruling of 2026-09-06)"
+        },
+        {
+          "name": "implement",
+          "reason": "collides with a superpowers skill; superpowers owns that slot (ruling of 2026-09-06)"
+        },
+        {
+          "name": "tdd",
+          "reason": "collides with a superpowers skill; superpowers owns that slot (ruling of 2026-09-06)"
+        },
+        {
+          "name": "code-review",
+          "reason": "collides with a superpowers skill; superpowers owns that slot (ruling of 2026-09-06)"
+        },
+        {
+          "name": "grill-me",
+          "reason": "a four-line alias whose whole body calls grilling, which is declared (ruling of 2026-09-16)"
+        },
+        {
+          "name": "ask-matt",
+          "reason": "never evaluated; surfaced by the complement check on 2026-09-16"
+        },
+        {
+          "name": "claude-handoff",
+          "reason": "never evaluated; surfaced by the complement check on 2026-09-16"
+        },
+        {
+          "name": "git-guardrails-claude-code",
+          "reason": "never evaluated; surfaced by the complement check on 2026-09-16"
+        },
+        {
+          "name": "loop-me",
+          "reason": "never evaluated; surfaced by the complement check on 2026-09-16"
+        },
+        {
+          "name": "migrate-to-shoehorn",
+          "reason": "never evaluated; surfaced by the complement check on 2026-09-16"
+        },
+        {
+          "name": "scaffold-exercises",
+          "reason": "never evaluated; surfaced by the complement check on 2026-09-16"
+        },
+        {
+          "name": "setup-pre-commit",
+          "reason": "never evaluated; surfaced by the complement check on 2026-09-16"
+        },
+        {
+          "name": "setup-ts-deep-modules",
+          "reason": "never evaluated; surfaced by the complement check on 2026-09-16"
+        },
+        {
+          "name": "writing-beats",
+          "reason": "never evaluated; surfaced by the complement check on 2026-09-16"
+        },
+        {
+          "name": "writing-fragments",
+          "reason": "never evaluated; surfaced by the complement check on 2026-09-16"
+        },
+        {
+          "name": "writing-shape",
+          "reason": "never evaluated; surfaced by the complement check on 2026-09-16"
+        }
+      ],
+      "via_subset_entry": []
     },
     {
       "repo": "obra/superpowers-developing-for-claude-code",
       "ref": "v0.3.1",
-      "skills": ["developing-claude-code-plugins", "working-with-claude-code"]
+      "skills": ["developing-claude-code-plugins", "working-with-claude-code"],
+      "not_adopted": [
+        {
+          "name": "professional-greeting",
+          "reason": "never evaluated; an example plugin's skill under examples/, surfaced by the complement check on 2026-09-16"
+        },
+        {
+          "name": "workflow",
+          "reason": "never evaluated; an example plugin's skill under examples/, surfaced by the complement check on 2026-09-16"
+        }
+      ],
+      "via_subset_entry": []
     },
     {
       "repo": "tt-a1i/archify",
       "ref": "v2.16.0",
-      "skills": ["archify"]
+      "skills": ["archify"],
+      "not_adopted": [],
+      "via_subset_entry": []
     }
   ]
 }
