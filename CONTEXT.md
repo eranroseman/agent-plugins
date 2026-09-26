@@ -17,7 +17,7 @@ _Avoid_: installer, installers
 _Avoid_: carrier
 
 **desired state**:
-What `skills.json` and the marketplace manifest declare and `bin/setup` converges a machine to. The verb _declare_ is a different word and stays.
+What the repository states should hold: `skills.json` and the marketplace manifest, which `bin/setup` converges a machine to, and `vendored.json`, whose pins the watch holds the vendored and forked trees to. The verb _declare_ is a different word and stays.
 _Avoid_: declaration, declarations
 
 **first-party**:
