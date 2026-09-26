@@ -122,10 +122,11 @@ history_tier_walk() {
 # counts when a span on the line names it, its basename, or a directory it
 # sits under.
 names_successor() {
-  local line="$1" new="$2" span dir
-  while IFS= read -r span; do
-    span="${span#\`}"
-    span="${span%\`}"
+  local line="$1" new="$2" rest span dir
+  rest="$line"
+  while [[ $rest =~ $BACKTICK_SPAN ]]; do
+    span="${BASH_REMATCH[1]}"
+    rest="${rest#*"${BASH_REMATCH[0]}"}"
     span="${span%/}"
     [ -n "$span" ] || continue
     [ "$span" = "$new" ] && return 0
@@ -135,13 +136,25 @@ names_successor() {
       [ "$span" = "$dir" ] && return 0
       case "$dir" in */*) dir="${dir%/*}" ;; *) break ;; esac
     done
-  done < <(grep -o '`[^`]*`' <<<"$line")
+  done
   return 1
 }
 
 n_ok=0 n_url=0 n_shape=0 n_glob=0 n_slug=0 n_ns=0 n_ignored=0 n_declared=0 n_history=0 n_renamed=0 n_syntax=0
 failures=""
 cur_line=""
+
+# classify()'s two shape checks and the main loop's word check, kept in
+# variables and matched unquoted so bash reads them as regex ([[ =~ ]]);
+# quoting the right-hand side there would match them as literal text. The
+# extraction patterns below are variables for a second reason: their
+# unescaped ( and ` would otherwise reach bash's own command-line parser,
+# not the regex engine, and fail to parse.
+NS_SHAPE='^([0-9a-f]{7,40}|[A-Za-z0-9_.-]+@[A-Za-z0-9_.-]+):[^[:space:]]+'
+SLUG_SHAPE='^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+((@[^:/]+)?:[^[:space:]]+|([#@][^/]+)?)$'
+WORD_SHAPE='^[A-Za-z0-9_.@#~$-]+(/[A-Za-z0-9_.@#~$-]*)+$'
+LINK_TARGET='\]\(([^)]+)\)'
+BACKTICK_SPAN='`([^`]*)`'
 
 # $1 document, $2 line number, $3 the span as written, $4 the token to check.
 classify() {
@@ -165,12 +178,12 @@ classify() {
   # only when owner is no directory at any root and none git remembers there,
   # the test class 4 applies to a slug, so a misspelled two-segment path with
   # a colon suffix is not one (#65).
-  if printf '%s' "$tok" | grep -qE '^([0-9a-f]{7,40}|[A-Za-z0-9_.-]+@[A-Za-z0-9_.-]+):[^[:space:]]+'; then
+  if [[ $tok =~ $NS_SHAPE ]]; then
     n_ns=$((n_ns + 1))
     return
   fi
   tok="${tok#./}"
-  if printf '%s' "$tok" | grep -qE '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+((@[^:/]+)?:[^[:space:]]+|([#@][^/]+)?)$'; then
+  if [[ $tok =~ $SLUG_SHAPE ]]; then
     first="${tok%%/*}"
     isdir=0
     while IFS= read -r r; do
@@ -261,7 +274,10 @@ for f in $docs; do
     esac
     [ -z "$fence" ] || continue
     # A markdown link: skip external URLs and bare anchors; drop an anchor.
-    while IFS= read -r target; do
+    rest="$line"
+    while [[ $rest =~ $LINK_TARGET ]]; do
+      target="${BASH_REMATCH[1]}"
+      rest="${rest#*"${BASH_REMATCH[0]}"}"
       [ -n "$target" ] || continue
       case "$target" in http://* | https://* | mailto:* | '#'*) continue ;; esac
       target="${target%%#*}"
@@ -272,13 +288,11 @@ for f in $docs; do
         *) resolved="$dir/$target" ;;
       esac
       [ -e "$resolved" ] || failures="$failures"$'\n'"$f:$n: the link [$target] does not exist (looked at $resolved)"
-    done < <(grep -oE '\]\([^)]+\)' <<<"$line" | while IFS= read -r t; do
-      t="${t#"]("}"
-      printf '%s\n' "${t%)}"
-    done)
-    while IFS= read -r span; do
-      span="${span#\`}"
-      span="${span%\`}"
+    done
+    rest="$line"
+    while [[ $rest =~ $BACKTICK_SPAN ]]; do
+      span="${BASH_REMATCH[1]}"
+      rest="${rest#*"${BASH_REMATCH[0]}"}"
       case "$span" in */*) ;; *) continue ;; esac
       case "$span" in
         *[[:space:]]*)
@@ -290,7 +304,7 @@ for f in $docs; do
               *) word="${word#*=}" ;;
             esac
             word="$(printf '%s' "$word" | sed -E "s/^[\"'(]+//; s/[\"'),;:]+\$//; s/([^.])\.\$/\\1/; s/:[0-9]+([-,][0-9]+)*\$//")"
-            if printf '%s' "$word" | grep -qE '^[A-Za-z0-9_.@#~$-]+(/[A-Za-z0-9_.@#~$-]*)+$'; then
+            if [[ $word =~ $WORD_SHAPE ]]; then
               classify "$doc" "$n" "$span" "$word"
             else
               n_syntax=$((n_syntax + 1))
@@ -305,7 +319,7 @@ for f in $docs; do
           classify "$doc" "$n" "$span" "$(printf '%s' "$word" | sed -E "s/^[\"'(]+//; s/[\"'),;:]+\$//; s/([^.])\.\$/\\1/; s/:[0-9]+([-,][0-9]+)*\$//")"
           ;;
       esac
-    done < <(grep -o '`[^`]*`' <<<"$line")
+    done
   done <"$f"
 done
 
