@@ -9,7 +9,7 @@ What the SessionStart hook prints into a session; Claude Code's own name for it.
 _Avoid_: payload, payloads
 
 **user**:
-Whoever runs `bin/setup`, or no noun at all; a program is named, never called an installer.
+Whoever runs `bin/setup`, or no noun at all; a program is called by its name.
 _Avoid_: installer, installers
 
 **instruction file**:
