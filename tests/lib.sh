@@ -115,8 +115,8 @@ seed_lockfile() {
 
 # ---- Ownership (spec §4; #61 M7) -------------------------------------------
 # Every list of "the files we own" comes from checked() below. One class of
-# tracked file is excluded: trees with a drift test, where an upstream pin
-# constrains the bytes and the paired test asserts them. One table, one row
+# tracked file is excluded: the files a drift test holds to upstream, where a
+# pin constrains the bytes and the paired test asserts them. One table, one row
 # per pattern: the pattern, anchored at the start of the path, a tab, then
 # the test that guards it. A guard binds itself to its row by calling
 # guards() on one line with the paths it holds to upstream, and

@@ -50,9 +50,6 @@ A tree that is upstream's at a pinned commit, held byte-identical by a drift tes
 **forked**:
 A tree that is first-party and holds named fragments to upstream under a drift test. Edits flow out from here.
 
-**tree with a drift test**:
-A vendored tree, or a forked tree's named fragments, held to upstream by a drift test.
-
 ### Leading words
 
 Pinned so they read identically in every file; each recruits a meaning the reader already has.
@@ -64,7 +61,7 @@ Eliminate the problem, add a mechanism, add a rule; prose is the last resort. Cl
 A condition that must hold before the next thing runs.
 
 **drift**:
-Something no longer matches what it is pinned to.
+A difference between a thing and what it is held to: an upstream past its pin, a machine off the desired state, a term off this glossary.
 
 **spine**:
 The superpowers process skills, from brainstorm to finish.
