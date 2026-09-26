@@ -1,12 +1,10 @@
 #!/usr/bin/env bash
 # The SessionStart hook must (1) carry upstream's using-superpowers text inside
 # upstream's frame with exactly one edit, (1b) name only skills the superpowers
-# subset entry lists in its working-rules file, (2) emit both files as the
-# documented JSON envelope so that a JSON parser recovers the additional
-# context byte-for-byte, (3) be wired by claude-hooks.json, (4) escape every
-# C0 control character, not just the common five, and (5) fail rather than
-# emit a rules-only envelope when using-superpowers.md is missing. Needs
-# network access for (1).
+# subset entry lists in its working-rules file, (2) print both files joined
+# by one blank line, the stdout Claude Code adds to the context as it stands,
+# (3) be wired by claude-hooks.json, and (4) fail rather than print the rules
+# alone when using-superpowers.md is missing. Needs network access for (1).
 . "$(dirname "$0")/lib.sh"
 
 # fail() exits immediately, so temporaries have to be freed from a trap or a
@@ -14,7 +12,6 @@
 cleanup() {
   [ -n "${expected:-}" ] && rm -f "$expected"
   [ -n "${T:-}" ] && rm -rf "$T"
-  [ -n "${T2:-}" ] && rm -rf "$T2"
   return 0
 }
 trap cleanup EXIT
@@ -63,24 +60,22 @@ fi
 [ "$(tail -c 1 "$H/working-rules.md" | wc -l)" -eq 1 ] || fail "working-rules.md does not end in a newline"
 [ "$(tail -c 2 "$H/working-rules.md" | wc -l)" -eq 1 ] || fail "working-rules.md ends in more than one newline"
 
-# (2) envelope round-trip
+# (2) the output, byte for byte
 # CLAUDE_PLUGIN_ROOT mirrors how claude-hooks.json invokes the script;
 # session-start itself resolves using-superpowers.md via dirname "$0" and
 # never reads the variable, so the ${CLAUDE_PLUGIN_ROOT} expansion asserted
 # in section 3 is checked as a string and not exercised as an expansion.
-out="$(CLAUDE_PLUGIN_ROOT="$REPO_ROOT/plugins/software-dev" "$H/session-start")"
-printf '%s' "$out" | jq -e '.hookSpecificOutput.hookEventName == "SessionStart"' >/dev/null \
-  || fail "output is not the SessionStart envelope: $out"
-[ "$(printf '%s' "$out" | jq 'keys | length')" -eq 1 ] || fail "envelope has extra top-level keys"
-diff <(printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext') \
+out="$(CLAUDE_PLUGIN_ROOT="$REPO_ROOT/plugins/software-dev" "$H/session-start")" \
+  || fail "session-start exited non-zero"
+diff <(printf '%s\n' "$out") \
   <(
     cat "$H/using-superpowers.md"
     printf '\n'
     cat "$H/working-rules.md"
   ) \
-  || fail "additionalContext does not round-trip to using-superpowers.md + blank line + working-rules.md"
-len="$(printf '%s' "$out" | jq '.hookSpecificOutput.additionalContext | length')"
-[ "$len" -lt 8000 ] || fail "additionalContext is $len code points; the tripwire is 8000"
+  || fail "the output is not using-superpowers.md + blank line + working-rules.md"
+len="$(printf '%s' "$out" | jq -Rs 'length')"
+[ "$len" -lt 8000 ] || fail "the additional context is $len code points; the tripwire is 8000"
 
 # (3) wiring: the Claude manifest declares the hook file, and nothing sits at
 # the path Codex loads by fallback when its manifest has no hooks key.
@@ -106,26 +101,14 @@ for f in "$PLUGIN/.claude-plugin/plugin.json" "$PLUGIN/.codex-plugin/plugin.json
   if grep -q 'Lifecycle hooks' "$f"; then fail "$f still advertises Lifecycle hooks"; fi
 done
 
-# (4) the encoder escapes control characters, not just the common five
+# (4) a missing using-superpowers.md must fail loudly, never print the rules
+# alone as if they were the whole context.
 T="$(mktemp -d)"
 cp "$H/session-start" "$T/session-start"
-sample=$'x\x01\x0c\x1b\x1fy "q" \\ end'
-printf '%s' "$sample" >"$T/using-superpowers.md"
-: >"$T/working-rules.md" # the script reads it; empty keeps the expectation the sample alone
-out="$("$T/session-start")"
-printf '%s' "$out" | jq -e . >/dev/null || fail "control characters produced invalid JSON"
-[ "$(printf '%s' "$out" | jq -r '.hookSpecificOutput.additionalContext')" = "$sample" ] \
-  || fail "control characters did not round-trip"
-
-# (5) a missing using-superpowers.md must fail loudly: $(...) does not inherit
-# -e, so `cat using-superpowers.md; printf '\n'; cat working-rules.md` would
-# let a present working-rules.md's zero exit mask the missing file and
-# silently emit a rules-only envelope. Assert the `&&`-joined form fails.
-T2="$(mktemp -d)"
-cp "$H/session-start" "$T2/session-start"
-printf 'some rules\n' >"$T2/working-rules.md"
-if "$T2/session-start" >/dev/null 2>&1; then
+printf 'some rules\n' >"$T/working-rules.md"
+if out="$("$T/session-start" 2>/dev/null)"; then
   fail "session-start must exit non-zero when using-superpowers.md is missing"
 fi
+[ -z "$out" ] || fail "session-start printed the rules alone when using-superpowers.md is missing: $out"
 
-echo "hook: using-superpowers exact, envelope round-trips, wiring correct, control characters escaped"
+echo "hook: using-superpowers exact, output is both files joined, wiring correct"
