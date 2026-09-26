@@ -17,6 +17,12 @@ jq -e . "$S" >/dev/null 2>&1 || fail "$S is not well-formed JSON"
 # in two buckets is two policies (#53).
 while IFS= read -r repo; do
   [ -n "$repo" ] || continue
+  # A source missing either bucket array would make the two checks below
+  # iterate null and die unnamed under set -e; name the source first.
+  natype="$(jq -r --arg r "$repo" '.sources[] | select(.repo == $r) | (.not_adopted | type)' "$S")"
+  [ "$natype" = "array" ] || fail "$repo: skills.json carries no not_adopted array"
+  vatype="$(jq -r --arg r "$repo" '.sources[] | select(.repo == $r) | (.via_subset_entry | type)' "$S")"
+  [ "$vatype" = "array" ] || fail "$repo: skills.json carries no via_subset_entry array"
   dup="$(jq -r --arg r "$repo" '.sources[] | select(.repo == $r)
     | [.skills[], (.not_adopted[].name), .via_subset_entry[]] | group_by(.) | map(select(length > 1) | .[0]) | .[]' "$S")"
   [ -z "$dup" ] || fail "$repo: a name sits in two buckets: $dup"
