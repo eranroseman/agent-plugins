@@ -112,15 +112,15 @@ jobs:
 
   setup-e2e:
     runs-on: ubuntu-latest
-    # The doctor's freshness check reads the watch's run history; the token
+    # The engine's freshness check reads the watch's run history; the token
     # keeps the shared runner address off the unauthenticated rate limit
     # (spec §12). Read-only, and a red doctor is the second place the
-    # watch's silence shows.
+    # watch's silence shows. The token is in the environment of the two
+    # steps that run the engine and of no other step; the permissions that
+    # scope it stay at job level.
     permissions:
       contents: read
       actions: read
-    env:
-      GITHUB_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -140,12 +140,15 @@ jobs:
       - name: bin/setup against a scratch HOME
         env:
           SD_MARKETPLACE_SOURCE: ${{ github.workspace }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           mkdir -p "$RUNNER_TEMP/home"
           HOME="$RUNNER_TEMP/home" CODEX_HOME="$RUNNER_TEMP/home/.codex" \
             bash bin/setup
 
       - name: bin/doctor reports clean over the same HOME
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           HOME="$RUNNER_TEMP/home" CODEX_HOME="$RUNNER_TEMP/home/.codex" \
             bash bin/doctor
