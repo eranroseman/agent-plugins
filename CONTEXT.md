@@ -5,7 +5,7 @@ One repository states the skills a machine should have on Claude Code and Codex,
 ## Language
 
 **additional context**:
-What the SessionStart hook prints into a session; Claude Code's own name for it.
+What a SessionStart hook adds to a session; Claude Code's own name for the mechanism.
 _Avoid_: payload, payloads
 
 **user**:
