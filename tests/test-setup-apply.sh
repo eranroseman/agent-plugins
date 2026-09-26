@@ -6,7 +6,7 @@
 # add` and the second `plugin list --json` run in order, and a second read
 # that fails leaves no partial list behind. Each CLI is a stub
 # that edits the same registry file the engine reads back, so the DID line
-# is a re-read and the re-check's OK line is the proof. Needs no network:
+# names the command and the re-check's OK line is the proof. Needs no network:
 # every clone is seeded at a wrong sha with no origin, so the clone check
 # fails locally and nothing else reaches out.
 . "$(dirname "$0")/lib.sh"
@@ -145,9 +145,9 @@ run_apply() { # $1 HOME, $2 PATH dir; leaves the output in OUT
 saw() { printf '%s\n' "$OUT" | grep -qF -- "$1"; }
 
 # True iff $1 appears in $OUT strictly after the apply pass's own
-# `--- re-checking ---` marker: the apply pass prints its own OK the moment
-# a stub's edit lands, so grepping the whole of $OUT would pass on that
-# alone and never notice a broken re-check. Fails loudly
+# `--- re-checking ---` marker: the verdict is the re-check's, so grepping
+# the whole of $OUT would pass on a line from the apply pass and never
+# notice a broken re-check. Fails loudly
 # if the marker itself never printed, which would otherwise make the `#*`
 # strip a no-op and silently degrade this back into a whole-$OUT grep.
 rechecked() {
@@ -175,7 +175,7 @@ B1="$T/bin-1"
 fixture_bin "$B1"
 write_claude_stub "$B1"
 run_apply "$H1" "$B1"
-saw "DID:  superpowers@eranroseman is now $sp" || fail "update branch: no DID line for superpowers:"$'\n'"$OUT"
+saw "DID:  ran claude plugin update superpowers@eranroseman" || fail "update branch: no DID line for superpowers:"$'\n'"$OUT"
 rechecked "OK:   superpowers@eranroseman $sp installed" \
   || fail "update branch: the re-check did not report superpowers at $sp:"$'\n'"$OUT"
 saw 'SKIP: codex is not on PATH' || fail "update branch: the Codex half was not skipped with no codex:"$'\n'"$OUT"
@@ -202,8 +202,8 @@ run_apply "$H3" "$B3"
 for p in software-dev sensemaking; do
   [ -f "$H3/.codex/state/added-$p" ] || fail "codex: plugin add did not run for $p:"$'\n'"$OUT"
 done
-saw "DID:  installed codex plugin software-dev $sd" || fail "codex: no DID line for software-dev:"$'\n'"$OUT"
-saw "DID:  installed codex plugin sensemaking $sm" || fail "codex: no DID line for sensemaking:"$'\n'"$OUT"
+saw "DID:  ran codex plugin add software-dev@eranroseman" || fail "codex: no DID line for software-dev:"$'\n'"$OUT"
+saw "DID:  ran codex plugin add sensemaking@eranroseman" || fail "codex: no DID line for sensemaking:"$'\n'"$OUT"
 rechecked "OK:   codex plugin software-dev $sd installed" \
   || fail "codex: the re-check did not report software-dev installed:"$'\n'"$OUT"
 saw 'NOTE: codex codex-cli 0.147.0' || fail "codex: the CLI version was not reported:"$'\n'"$OUT"

@@ -59,9 +59,9 @@ CODEX_LIST=""
 MODE=apply
 FAILURES=0
 
-# Every ok, bad, skip and note bumps this; did does not, because a DID: line
-# never stands alone on any path. Each check is bracketed by a snapshot of
-# it and a reported() call.
+# Every ok, bad, skip, note and did bumps this. A DID: line stands alone:
+# the apply pass acts, and the re-check that follows it gives the verdict.
+# Each check is bracketed by a snapshot of it and a reported() call.
 REPORTED=0
 
 # Checks that could not run, and the tools they wanted. Only `needs` fills
@@ -85,7 +85,10 @@ die() {
   printf 'ERROR: %s\n' "$*" >&2
   exit 2
 }
-did() { printf 'DID:  %s\n' "$*"; }
+did() {
+  printf 'DID:  %s\n' "$*"
+  REPORTED=$((REPORTED + 1))
+}
 skip() {
   printf 'SKIP: %s\n' "$*"
   REPORTED=$((REPORTED + 1))
@@ -266,13 +269,6 @@ ensure_clones() {
       did "checked out $sha in $dir"
     else
       bad "could not check out $sha in $dir"
-      continue
-    fi
-    have="$(git -C "$dir" rev-parse HEAD 2>/dev/null)"
-    if [ "$have" = "$sha" ]; then
-      ok "pinned clone $name is at $sha"
-    else
-      bad "pinned clone $name is at ${have:-an unknown revision}, declared $sha"
     fi
   done <<<"$entries"
   [ "$n" -gt 0 ] || bad "no subset (git-subdir) entry could be read from $MARKETPLACE"
@@ -425,49 +421,44 @@ ensure_claude() {
   }
 
   installed_sd="$(installed_version software-dev)"
-  if [ "$installed_sd" != "$want" ] && applying; then
-    if [ -z "$installed_sd" ]; then
-      # Adding is a clean no-op on re-run, but only add when the marketplace is
-      # unknown: an existing entry may point at a different source than ours.
-      if ! jq -e '.eranroseman' "$KNOWN_MARKETPLACES" >/dev/null 2>&1; then
-        if claude plugin marketplace add "$MARKETPLACE_SOURCE" >/dev/null 2>&1; then
-          did "added the eranroseman marketplace from $MARKETPLACE_SOURCE"
-        else
-          bad "claude plugin marketplace add $MARKETPLACE_SOURCE failed"
-          return
-        fi
-      fi
-      # --scope user, never --scope project: project scope writes a checked-in
-      # .claude/settings.json carrying enabledPlugins and extraKnownMarketplaces.
-      # No -y: claude 2.1.220, the version CI pins, rejects it outright with
-      # "error: unknown option". Where the flag does exist it only waives the
-      # confirmation for a plugin installed by running a marketplace-declared
-      # command, or one fetched through a headersHelper, and this is neither.
-      if claude plugin install software-dev@eranroseman --scope user >/dev/null 2>&1; then
-        did "installed software-dev@eranroseman (with sensemaking and superpowers)"
-      else
-        bad "claude plugin install software-dev@eranroseman failed"
-      fi
-    else
-      # install is a no-op on an already-installed plugin: it prints "already
-      # installed", exits 0, and leaves the old version on disk (measured
-      # 2026-09-05 on claude 2.1.261, both directory- and github-source
-      # marketplaces). update is the only verb that moves it, and it exits 0
-      # when it decides nothing needs moving, so the re-read below is what
-      # reports success.
-      claude plugin update software-dev@eranroseman >/dev/null 2>&1 \
-        || bad "claude plugin update software-dev@eranroseman failed"
-      if [ "$(installed_version software-dev)" = "$want" ]; then
-        did "updated software-dev@eranroseman from $installed_sd to $want"
-      fi
-    fi
-  fi
-
-  installed_sd="$(installed_version software-dev)"
   if [ "$installed_sd" = "$want" ]; then
     ok "software-dev@eranroseman $want installed"
-  else
+  elif ! applying; then
     bad "software-dev@eranroseman is ${installed_sd:-not installed}, declared $want"
+  elif [ -z "$installed_sd" ]; then
+    # Adding is a clean no-op on re-run, but only add when the marketplace is
+    # unknown: an existing entry may point at a different source than ours.
+    if ! jq -e '.eranroseman' "$KNOWN_MARKETPLACES" >/dev/null 2>&1; then
+      if claude plugin marketplace add "$MARKETPLACE_SOURCE" >/dev/null 2>&1; then
+        did "added the eranroseman marketplace from $MARKETPLACE_SOURCE"
+      else
+        bad "claude plugin marketplace add $MARKETPLACE_SOURCE failed"
+        return
+      fi
+    fi
+    # --scope user, never --scope project: project scope writes a checked-in
+    # .claude/settings.json carrying enabledPlugins and extraKnownMarketplaces.
+    # No -y: claude 2.1.220, the version CI pins, rejects it outright with
+    # "error: unknown option". Where the flag does exist it only waives the
+    # confirmation for a plugin installed by running a marketplace-declared
+    # command, or one fetched through a headersHelper, and this is neither.
+    if claude plugin install software-dev@eranroseman --scope user >/dev/null 2>&1; then
+      did "installed software-dev@eranroseman (with sensemaking and superpowers)"
+    else
+      bad "claude plugin install software-dev@eranroseman failed"
+    fi
+  else
+    # install is a no-op on an already-installed plugin: it prints "already
+    # installed", exits 0, and leaves the old version on disk (measured
+    # 2026-09-05 on claude 2.1.261, both directory- and github-source
+    # marketplaces). update is the only verb that moves it, and it exits 0
+    # when it decides nothing needs moving, so the DID line names the command
+    # and the re-check reports the version.
+    if claude plugin update software-dev@eranroseman >/dev/null 2>&1; then
+      did "ran claude plugin update software-dev@eranroseman"
+    else
+      bad "claude plugin update software-dev@eranroseman failed"
+    fi
   fi
 
   # sensemaking installs itself as a dependency of the first install, but a
@@ -477,21 +468,21 @@ ensure_claude() {
   # dependency is the parent install's business. A version the manifest
   # does not carry is a FAIL, never an OK against an empty string (#17).
   want="$(jq -r '.version // empty' "$REPO_ROOT/plugins/sensemaking/.claude-plugin/plugin.json" 2>/dev/null)"
-  if [ -n "$want" ]; then
+  if [ -z "$want" ]; then
+    bad "sensemaking version unreadable from plugins/sensemaking/.claude-plugin/plugin.json"
+  else
     have="$(installed_version sensemaking)"
-    if [ -n "$have" ] && [ "$have" != "$want" ] && applying; then
-      claude plugin update sensemaking@eranroseman >/dev/null 2>&1 \
-        || bad "claude plugin update sensemaking@eranroseman failed"
-      have="$(installed_version sensemaking)"
-      [ "$have" = "$want" ] && did "updated sensemaking@eranroseman to $want"
-    fi
     if [ "$have" = "$want" ]; then
       ok "sensemaking@eranroseman $want installed"
+    elif [ -n "$have" ] && applying; then
+      if claude plugin update sensemaking@eranroseman >/dev/null 2>&1; then
+        did "ran claude plugin update sensemaking@eranroseman"
+      else
+        bad "claude plugin update sensemaking@eranroseman failed"
+      fi
     else
       bad "sensemaking@eranroseman is ${have:-not installed}, declared $want"
     fi
-  else
-    bad "sensemaking version unreadable from plugins/sensemaking/.claude-plugin/plugin.json"
   fi
   # Every subset entry, by its declared version. superpowers arrives as a
   # dependency of the first install; an entry declared after a machine was set
@@ -512,24 +503,20 @@ ensure_claude() {
       continue
     fi
     have="$(installed_version "$name")"
-    if [ "$have" != "$want" ] && applying; then
-      if [ -z "$have" ]; then
-        if claude plugin install "$name@eranroseman" --scope user >/dev/null 2>&1; then
-          did "installed $name@eranroseman"
-        else
-          bad "claude plugin install $name@eranroseman failed"
-        fi
-      else
-        claude plugin update "$name@eranroseman" >/dev/null 2>&1 \
-          || bad "claude plugin update $name@eranroseman failed"
-      fi
-      have="$(installed_version "$name")"
-      [ "$have" = "$want" ] && [ -n "$have" ] && did "$name@eranroseman is now $want"
-    fi
     if [ "$have" = "$want" ]; then
       ok "$name@eranroseman $want installed"
-    else
+    elif ! applying; then
       bad "$name@eranroseman is ${have:-not installed}, declared $want"
+    elif [ -z "$have" ]; then
+      if claude plugin install "$name@eranroseman" --scope user >/dev/null 2>&1; then
+        did "installed $name@eranroseman"
+      else
+        bad "claude plugin install $name@eranroseman failed"
+      fi
+    elif claude plugin update "$name@eranroseman" >/dev/null 2>&1; then
+      did "ran claude plugin update $name@eranroseman"
+    else
+      bad "claude plugin update $name@eranroseman failed"
     fi
   done <<<"$entries"
 }
@@ -563,40 +550,38 @@ ensure_codex() {
       continue
     fi
     got="$(codex_plugin_version "$p")"
-    if [ "$got" != "$want" ] && applying; then
-      if codex plugin marketplace list 2>/dev/null | grep -q '^eranroseman'; then
-        # Never re-run `marketplace add`: it prints "already added" and silently
-        # deletes last_revision. upgrade is a true no-op when nothing moved, and
-        # covers §9 step 1 when the human skipped it.
-        codex plugin marketplace upgrade eranroseman >/dev/null 2>&1 \
-          || bad "codex plugin marketplace upgrade failed"
-      elif codex plugin marketplace add "$CODEX_MARKETPLACE_SOURCE" >/dev/null 2>&1; then
-        did "added the eranroseman marketplace to Codex"
-      else
-        bad "codex plugin marketplace add failed"
-        continue
-      fi
-      # Codex has no dependency concept, so both plugins are named explicitly,
-      # and no update verb, so add is also the upgrade.
-      if ! codex plugin add "$p@eranroseman" >/dev/null 2>&1; then
-        bad "codex plugin add $p@eranroseman failed"
-        continue
-      fi
-      # The DID line reports a re-read of the installed version, never the
-      # command's exit status: add exits 0 having left the old version in
-      # place, and announcing $want there printed a version that the FAIL line
-      # immediately below then contradicted.
-      CODEX_LIST="$(codex plugin list --json 2>/dev/null)" || CODEX_LIST=""
-      got="$(codex_plugin_version "$p")"
-      if [ "$got" = "$want" ]; then
-        did "installed codex plugin $p $got"
-      fi
-    fi
     if [ "$got" = "$want" ]; then
       ok "codex plugin $p $want installed"
-    else
-      bad "codex plugin $p is ${got:-not installed}, declared $want"
+      continue
     fi
+    if ! applying; then
+      bad "codex plugin $p is ${got:-not installed}, declared $want"
+      continue
+    fi
+    if codex plugin marketplace list 2>/dev/null | grep -q '^eranroseman'; then
+      # Never re-run `marketplace add`: it prints "already added" and silently
+      # deletes last_revision. upgrade is a true no-op when nothing moved, and
+      # covers §9 step 1 when the human skipped it.
+      codex plugin marketplace upgrade eranroseman >/dev/null 2>&1 \
+        || bad "codex plugin marketplace upgrade failed"
+    elif codex plugin marketplace add "$CODEX_MARKETPLACE_SOURCE" >/dev/null 2>&1; then
+      did "added the eranroseman marketplace to Codex"
+    else
+      bad "codex plugin marketplace add failed"
+      continue
+    fi
+    # Codex has no dependency concept, so both plugins are named explicitly,
+    # and no update verb, so add is also the upgrade. add exits 0 having left
+    # the old version in place, so the DID line names the command and the
+    # re-check reports the version.
+    if ! codex plugin add "$p@eranroseman" >/dev/null 2>&1; then
+      bad "codex plugin add $p@eranroseman failed"
+      continue
+    fi
+    did "ran codex plugin add $p@eranroseman"
+    # Re-read for the checks after this one, which judge the pool the add
+    # changed; a failed read leaves the list empty, never partial (#40).
+    CODEX_LIST="$(codex plugin list --json 2>/dev/null)" || CODEX_LIST=""
   done
 }
 
@@ -652,13 +637,6 @@ ensure_skills_sh() {
       did "installed $name from $repo#$ref"
     else
       bad "npx skills add $repo#$ref --skill $name failed"
-      continue
-    fi
-    have="$(locked_ref "$name")"
-    if [ "$have" = "$ref" ]; then
-      ok "skills.sh $name at $ref"
-    else
-      bad "after installing $name the lockfile records '${have:-no ref}', declared $ref"
     fi
   done <<<"$lines"
 }
