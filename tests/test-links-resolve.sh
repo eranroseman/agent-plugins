@@ -27,10 +27,10 @@
 #      first is not a directory at any root, nor one git remembers there, so
 #      a misspelled two-segment path is still checked, and so is one under a
 #      directory a move removed;
-#   5. a namespaced path: owner/repo:path or owner/repo@ref:path, the
-#      other-repository convention CONTEXT.md sets, held like a slug to an
-#      owner that is no directory here; a hex revision before the colon
-#      (rev:path); or plugin@marketplace:key;
+#   5. a namespaced path: owner/repo:path or owner/repo@ref:path, the form
+#      for a path in another repository, held like a slug to an owner that
+#      is no directory here; a hex revision before the colon (rev:path); or
+#      plugin@marketplace:key;
 #   6. a path git check-ignore accepts: runtime-only, classified by the file
 #      that ignores it;
 #   7. a path declared absent by decision, in DECLARED_ABSENT below;

@@ -106,6 +106,7 @@ plugins/           the two plugins, software-dev and sensemaking, each with its 
 skills.json        the desired state for skills.sh: sources, refs, skill names
 vendored.json      the desired state for the vendored and forked trees: repo, branch, pinned sha, kind
 .claude-plugin/    the Claude marketplace manifest: the two plugins and the two subset entries, with their pins
+.github/           the CI workflows; their action pins are desired state the watch holds to the tags
 tests/             every check; tests/run.sh runs them and tests/tools.txt pins the tools
 docs/agents/       the conventions the agents read: issue tracker, triage labels, domain docs
 docs/Professional-Editorial-Standards-2024.md   the editorial reference

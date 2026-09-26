@@ -1,6 +1,6 @@
 # agent-plugins
 
-One repository states the skills a machine should have on Claude Code and Codex, converges a machine to that state, reports where a machine differs from it, and watches the upstreams it takes skills from. The words below are the ones its files use for that. A contested entry names the winner and lists the retired forms under _Avoid_; a leading word is pinned so it reads the same in every file.
+One repository states the skills a machine should have on Claude Code and Codex, converges a machine to that state, reports where a machine differs from it, and watches the upstreams it takes skills from. A contested term names the winner and lists the retired forms under _Avoid_.
 
 ## Language
 
@@ -9,7 +9,7 @@ What the SessionStart hook prints into a session; Claude Code's own name for it.
 _Avoid_: payload, payloads
 
 **user**:
-Whoever runs `bin/setup`, or no noun at all. The tool that installs skills is named: `skills.sh`.
+Whoever runs `bin/setup`, or no noun at all.
 _Avoid_: installer, installers
 
 **instruction file**:
@@ -17,7 +17,7 @@ _Avoid_: installer, installers
 _Avoid_: carrier
 
 **desired state**:
-What the repository states should hold: `skills.json` and the marketplace manifest, which `bin/setup` converges a machine to, `vendored.json`, whose pins the watch holds the vendored and forked trees to, and the workflow files, whose action pins the watch holds to their tags. The verb _declare_ is a different word and stays.
+What the repository says a machine and its pinned upstreams should hold: the skills, the plugins, the vendored and forked trees, and the action pins. The verb _declare_ is a different word and stays.
 _Avoid_: declaration, declarations
 
 **first-party**:
@@ -25,7 +25,7 @@ A skill, agent or file written in this repository, as opposed to third-party.
 _Avoid_: authored
 
 **user-invocable only**:
-A skill the user invokes and the model never selects on its own; Claude Code's own `skillOverrides` value. On Claude Code it is `disable-model-invocation: true`, on Codex `allow_implicit_invocation: false`.
+A skill the user invokes and the model never selects on its own.
 _Avoid_: gated
 
 **subset entry**:
@@ -36,8 +36,8 @@ _Avoid_: curated, curation
 How an agent picks a skill for the task in front of it.
 _Avoid_: routing
 
-**Claude Code, Codex, agent CLI**:
-The two, or the generic. A sentence that means one names it; _agent CLI_ appears only where a sentence means either.
+**agent CLI**:
+Claude Code or Codex, where a sentence means either; a sentence that means one names it.
 _Avoid_: harness, harnesses
 
 **historical artifact**:
@@ -45,34 +45,29 @@ A spec once every plan written from it has run, and a plan once it has executed.
 _Avoid_: maintained record, working paper
 
 **vendored**:
-A tree that is upstream's at a pinned commit, held byte-identical by a drift test except for enumerated regions, and updated by re-vendoring. Edits flow in from upstream.
+A tree that is upstream's at a pinned commit, held byte-identical by a drift test except for enumerated regions. Edits flow in from upstream.
 
 **forked**:
-A tree that is first-party and holds named fragments to upstream under a drift test, updated by editing here. Edits flow out from here. _Trees with a drift test_ is the superset of both, and is the formatter's exclusion class.
+A tree that is first-party and holds named fragments to upstream under a drift test. Edits flow out from here.
+
+**tree with a drift test**:
+A vendored or forked tree; the files this repository does not own outright.
 
 ### Leading words
 
 Pinned so they read identically in every file; each recruits a meaning the reader already has.
 
-- **ladder** and **rung**: eliminate the problem, add a mechanism, add a rule, then prose; climb from the top and stop at the first rung that holds.
-- **gate**: a condition that must hold before the next thing runs: the runner's hard gate, a skill's invocation gate, the `claude` and `codex` gates in `bin/setup`, and a milestone's gate.
-- **drift**: an upstream moved past a pin, or a machine differs from the desired state.
-- **spine**: the superpowers process skills, brainstorm to finish.
-- **front door**: `brainstorming`, where a build request enters the spine.
+**ladder** and **rung**:
+Eliminate the problem, add a mechanism, add a rule, then prose; climb from the top and stop at the first rung that holds.
 
-## Relationships
+**gate**:
+A condition that must hold before the next thing runs.
 
-- `bin/` holds what a user runs; `scripts/` holds what CI and the maintainer run.
-- A path in another repository is written `owner/repo:path`, or `owner/repo@ref:path` when the ref matters, so the reference check can tell it from a path here.
-- The desired state lives in `.claude-plugin/marketplace.json` for the plugins and the subset entries, `skills.json` for what `skills.sh` installs, `vendored.json` for the vendored and forked trees' pins, and the workflow files under `.github/workflows/` for the action pins. The watch reads the last two and the engine never does; `bin/setup` converges a machine to the first two, and `bin/doctor` is the same engine in check mode.
+**drift**:
+An upstream moved past a pin, or a machine differs from the desired state.
 
-## Flagged ambiguities
+**spine**:
+The superpowers process skills, brainstorm to finish.
 
-- "installer" meant both a person and a program. Resolved: the person is the **user**; the program is named, `bin/setup` or `skills.sh`.
-- "payload" meant the hook's output here and the hook's input everywhere else. Resolved: **additional context**, the CLI's own word.
-- "vendored" and "forked" were used as if defined. Resolved by the direction edits flow, above.
-- "curated" read as editorial praise for what is a subtraction. Resolved: **subset entry**.
-- "first-party" once meant Anthropic's own marketplace in the 2026-09-04 layout spec. That sense is historical and stays there; here the word means written in this repository.
-- The `upstream` directory read as a copy of an upstream repository and held this repository's own dependency manifest. Resolved: `skills.json` at the root.
-- "gate" was audited for divergent senses on 2026-09-23 and carries one, a precondition, in each of its uses.
-- "admission" and "tracer bullet" were candidates for the leading words and appear in no durable file; dropped.
+**front door**:
+`brainstorming`, where a build request enters the spine.
