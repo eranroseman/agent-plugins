@@ -1862,7 +1862,7 @@ git commit -m "Spell the formatters' lists once, prove scripts/format restores w
 
 **Files:**
 
-- Modify: `.gitignore` (three lines), `tests/test-links-resolve.sh` (the `git log` calls in `history_tier_walk`; the whole-span and command-word order of the `NAME=` strip and the URL test; the class-5 regex; the header's class 5 sentence)
+- Modify: `.gitignore` (three lines), `tests/test-links-resolve.sh` (the `git log` call in `history_tier_walk`; the whole-span and command-word order of the `NAME=` strip and the URL test; the class-5 regex; the header's class 5 sentence)
 
 **Interfaces:**
 
