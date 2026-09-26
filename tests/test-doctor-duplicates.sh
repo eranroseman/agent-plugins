@@ -54,8 +54,8 @@ mkdir -p "$H/.claude/plugins/cache/gone/old/1.0.0/skills/zeta"
 # No codex on this PATH: the Codex pool is not reported, and nothing is added
 # to a marketplace over the network.
 BIN="$H/bin"
-link_tools "$BIN" bash git jq sed awk grep find date readlink basename dirname \
-  mv ln mkdir cp cat sha256sum
+link_tools "$BIN" bash git jq grep find date readlink basename dirname cut \
+  mv ln mkdir cat sha256sum
 out="$(env HOME="$H" CODEX_HOME="$H/.codex" PATH="$BIN" /bin/bash "$DOCTOR" 2>&1 || true)"
 
 printf '%s\n' "$out" | grep -q 'NOTE: Claude: skill beta resolves to 2 different trees' \
@@ -94,7 +94,12 @@ printf '%s\n' "$out" | grep -q 'NOTE: Claude: 2 skill tree(s) hashed; no name re
 # plugin half. A stub codex that exits 1 is that machine. The stub prints
 # partial JSON before it fails, because a failed command's stdout is still
 # captured by $(...).
-printf '#!/usr/bin/env bash\nprintf '"'"'{"installed":[\\n'"'"'\nexit 1\n' >"$BIN/codex" || fail "could not write the codex stub"
+cat >"$BIN/codex" <<'STUB' || fail "could not write the codex stub"
+#!/usr/bin/env bash
+[ "$1" = --version ] && { printf 'codex-cli 0.147.0\n'; exit 0; }
+printf '{"installed":[\n'
+exit 1
+STUB
 chmod +x "$BIN/codex" || fail "could not make the codex stub executable"
 out="$(env HOME="$H2" CODEX_HOME="$H2/.codex" PATH="$BIN" /bin/bash "$DOCTOR" 2>&1 || true)"
 printf '%s\n' "$out" | grep -q 'FAIL: codex plugin list failed' \
@@ -117,6 +122,7 @@ skill "$H2/.codex/plugins/cache/mkt/theta/1.0.0/skills/gamma" "gamma as the thet
 skill "$H2/.codex/plugins/cache/mkt/iota/2.0.0/skills/delta" "delta as the iota plugin ships it"
 cat >"$BIN/codex" <<'STUB' || fail "could not write the succeeding codex stub"
 #!/usr/bin/env bash
+[ "$1" = --version ] && { printf 'codex-cli 0.147.0\n'; exit 0; }
 # Check mode reaches `plugin list --json` and no other codex verb.
 cat <<'JSON'
 {"installed":[

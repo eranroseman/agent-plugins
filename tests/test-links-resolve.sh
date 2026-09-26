@@ -50,7 +50,6 @@ DECLARED_ABSENT=(
   'plugins/ghost/'                 # the suite-and-ci spec's mutation, created and removed inside the mutation
   'tests/test-format-apply.sh'     # named by the names-and-surface spec §18; plan B creates it and drops this line
   '.claude/settings.json'          # the project-scope file `claude plugin install --scope project` would write; named so it is never written
-  'tests/test-doctor-report.sh'    # created by plan B Task 4, which drops this line
   'tests/test-doctor-cache.sh'     # created by plan B Task 5, which drops this line
   'tests/test-doctor-freshness.sh' # created by plan B Task 6, which drops this line
 )

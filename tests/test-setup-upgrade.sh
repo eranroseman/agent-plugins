@@ -60,8 +60,8 @@ done < <(jq -r '.plugins[] | select(.source.source? == "git-subdir")
 # never runs it, and an unexpected call is then a visible FAIL line rather
 # than a network install.
 BIN="$W/bin"
-link_tools "$BIN" bash git jq node claude sed awk grep find date readlink basename dirname \
-  rm mv ln mkdir cp cat sha256sum
+link_tools "$BIN" bash git jq node claude grep find date readlink basename dirname cut \
+  rm mv ln mkdir cat sha256sum
 printf '#!/usr/bin/env bash\nexit 1\n' >"$BIN/npx" || fail "could not write the npx stub"
 chmod +x "$BIN/npx" || fail "could not make the npx stub executable"
 

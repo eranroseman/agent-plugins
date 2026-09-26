@@ -99,9 +99,9 @@ cp -R "$REPO_ROOT/plugins" "$CLAUDE_REPO/" || fail "could not copy the plugins i
 H3="$H/home-claude"
 mkdir -p "$H3/.agents/skills" || fail "could not seed $H3"
 BIN3="$H/bin-claude"
-link_tools "$BIN3" bash git jq sed awk grep find date readlink basename dirname \
-  rm mv ln mkdir cp cat sha256sum
-printf '#!/usr/bin/env bash\nexit 1\n' >"$BIN3/claude" || fail "could not write the claude stub"
+link_tools "$BIN3" bash git jq grep find date readlink basename dirname cut \
+  mv ln mkdir cat sha256sum
+printf '#!/usr/bin/env bash\n[ "$1" = --version ] && { printf "2.1.273 (Claude Code)\\n"; exit 0; }\nexit 1\n' >"$BIN3/claude" || fail "could not write the claude stub"
 chmod +x "$BIN3/claude" || fail "could not make the claude stub executable"
 if out="$(env HOME="$H3" CODEX_HOME="$H3/.codex" PATH="$BIN3" /bin/bash "$CLAUDE_REPO/bin/setup" --check 2>&1)"; then status=0; else status=$?; fi
 [ "$status" -ne 0 ] || fail "non-scalar version with claude on PATH: bin/setup --check exited 0:"$'\n'"$out"
@@ -144,8 +144,8 @@ JSON
 # No lockfile at all, so every declared skill is unpinned and the apply branch
 # runs for each. No codex on this PATH, so that half reports skipped.
 BIN2="$H2/bin"
-link_tools "$BIN2" bash git jq node sed awk grep find date readlink basename dirname \
-  rm mv ln mkdir cp cat sha256sum
+link_tools "$BIN2" bash git jq node grep find date readlink basename dirname cut \
+  rm mv ln mkdir cat sha256sum
 cat >"$BIN2/npx" <<'STUB'
 #!/usr/bin/env bash
 # Drains stdin exactly as the real npx does -- that inheritance is the defect
@@ -155,9 +155,11 @@ printf '%s\n' "$*" >> "$NPX_LOG"
 STUB
 cat >"$BIN2/claude" <<'STUB'
 #!/usr/bin/env bash
-# On PATH for the prerequisite check only: the seeded installed_plugins.json
-# already carries the declared versions, so the Claude half runs no command.
-# Exiting non-zero turns an unexpected invocation into a visible FAIL line.
+# On PATH for the prerequisite check and report_only's version NOTE: the
+# seeded installed_plugins.json already carries the declared versions, so the
+# Claude half runs no other command. Exiting non-zero on anything else turns
+# an unexpected invocation into a visible FAIL line.
+[ "$1" = --version ] && { printf '2.1.273 (Claude Code)\n'; exit 0; }
 exit 1
 STUB
 chmod +x "$BIN2/npx" "$BIN2/claude" || fail "could not make the stubs executable"
@@ -189,15 +191,21 @@ done < <(jq -r '.sources[].skills[]' "$REPO_ROOT/skills.json")
 # wrong reason: with `mv` missing, the dangling link is never moved aside and
 # the test reports a surviving squatter rather than a missing tool.
 BIN="$H/bin"
-link_tools "$BIN" bash git jq sed awk grep find date readlink basename dirname \
-  rm mv ln mkdir cp cat sha256sum
+link_tools "$BIN" bash git jq grep find date readlink basename dirname cut \
+  rm mv ln mkdir cat sha256sum
 # claude, node and npx are stubs that exit 1, on PATH to satisfy require_tools
 # and nothing else: the seeded registry and the pinned lockfile mean no
 # Claude or skills.sh command ever runs, so a real binary would prove nothing
 # a stub does not, and an unexpected invocation becomes a visible FAIL line.
-# This is what makes the test hermetic on a machine without the CLI.
+# claude also answers --version, for report_only's version NOTE. This is what
+# makes the test hermetic on a machine without the CLI.
 for t in claude node npx; do
-  printf '#!/usr/bin/env bash\nexit 1\n' >"$BIN/$t" || fail "could not write the $t stub"
+  if [ "$t" = claude ]; then
+    printf '#!/usr/bin/env bash\n[ "$1" = --version ] && { printf "2.1.273 (Claude Code)\\n"; exit 0; }\nexit 1\n' >"$BIN/$t" \
+      || fail "could not write the $t stub"
+  else
+    printf '#!/usr/bin/env bash\nexit 1\n' >"$BIN/$t" || fail "could not write the $t stub"
+  fi
   chmod +x "$BIN/$t" || fail "could not make the $t stub executable"
 done
 mkdir -p "$H/.claude/plugins"

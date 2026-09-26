@@ -134,7 +134,7 @@ needs() {
 # is a defect in the engine, so it is bad, counted in "N check(s) failed",
 # and not the `for want of:` verdict, which is for a tool the machine lacks.
 # Nested callers bracket their callees at their own sites: report_only
-# prints two NOTE lines before report_duplicates, and report_duplicates
+# prints NOTE lines before report_duplicates, and report_duplicates
 # before report_pool, so a bracket around the outer call alone would see a
 # count and never notice the inner one saying nothing.
 reported() {
@@ -169,9 +169,9 @@ is optional: its half is reported as skipped when the binary is absent.
 bin/doctor requires nothing and reports whatever it cannot check.
 
 Neither ever writes a configuration file by hand. Every settings.json and
-config.toml write is the CLI's own, made by a command run here. Two things are
-deliberately left to you and only reported: the plugin auto-update toggle in
-/plugin, and the telemetry variable documented in the plugin README.
+config.toml write is the CLI's own, made by a command run here. The operator
+decisions are only reported, never made here: the plugin auto-update toggle in
+/plugin, and the variables the plugin README documents.
 EOF
 }
 
@@ -481,19 +481,24 @@ ensure_claude() {
   # parent's update does not carry it (sub-project 2's plan, B2), so a copy
   # behind its manifest moves under its own update. `[ -n "$have" ]` first:
   # update fails against a plugin that is not installed, and a missing
-  # dependency is the parent install's business.
-  want="$(jq -r '.version' "$REPO_ROOT/plugins/sensemaking/.claude-plugin/plugin.json")"
-  have="$(installed_version sensemaking)"
-  if [ -n "$have" ] && [ "$have" != "$want" ] && applying; then
-    claude plugin update sensemaking@eranroseman >/dev/null 2>&1 \
-      || bad "claude plugin update sensemaking@eranroseman failed"
+  # dependency is the parent install's business. A version the manifest
+  # does not carry is a FAIL, never an OK against an empty string (#17).
+  want="$(jq -r '.version // empty' "$REPO_ROOT/plugins/sensemaking/.claude-plugin/plugin.json" 2>/dev/null)"
+  if [ -n "$want" ]; then
     have="$(installed_version sensemaking)"
-    [ "$have" = "$want" ] && did "updated sensemaking@eranroseman to $want"
-  fi
-  if [ "$have" = "$want" ]; then
-    ok "sensemaking@eranroseman $want installed"
+    if [ -n "$have" ] && [ "$have" != "$want" ] && applying; then
+      claude plugin update sensemaking@eranroseman >/dev/null 2>&1 \
+        || bad "claude plugin update sensemaking@eranroseman failed"
+      have="$(installed_version sensemaking)"
+      [ "$have" = "$want" ] && did "updated sensemaking@eranroseman to $want"
+    fi
+    if [ "$have" = "$want" ]; then
+      ok "sensemaking@eranroseman $want installed"
+    else
+      bad "sensemaking@eranroseman is ${have:-not installed}, declared $want"
+    fi
   else
-    bad "sensemaking@eranroseman is ${have:-not installed}, declared $want"
+    bad "sensemaking version unreadable from plugins/sensemaking/.claude-plugin/plugin.json"
   fi
   # Every subset entry, by its declared version. superpowers arrives as a
   # dependency of the first install; an entry declared after a machine was set
@@ -694,10 +699,10 @@ ensure_fresh_clone() {
 }
 
 report_only() {
-  local v set_names="" link actual name before
+  local v src set_names="" link actual before undeclared line F
   needs jq "the settings this script only reports cannot be read" || return
 
-  # 1. The telemetry variable. Setup writes it nowhere: the exposure is one
+  # The telemetry variable. Setup writes it nowhere: the exposure is one
   # browser request per Visual Companion page load, and the write would be the
   # riskiest thing in this script. The plugin README documents what it prevents.
   for v in SUPERPOWERS_DISABLE_TELEMETRY DISABLE_TELEMETRY CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC; do
@@ -713,7 +718,7 @@ report_only() {
     note "no telemetry-disabling variable is set; see the plugin README (this script never sets one)"
   fi
 
-  # 2. Auto-update. A consent decision, made once in /plugin under Marketplaces.
+  # Auto-update. A consent decision, made once in /plugin under Marketplaces.
   if jq -e '.extraKnownMarketplaces.eranroseman.autoUpdate == true' \
     "$HOME/.claude/settings.json" >/dev/null 2>&1; then
     note "marketplace auto-update is on for eranroseman"
@@ -721,7 +726,65 @@ report_only() {
     note "marketplace auto-update is off for eranroseman; turn it on in /plugin if you want releases without an update command"
   fi
 
-  # 3. Redundant Codex links: anything under CODEX_HOME/skills that resolves
+  # The archify update check: its check-update.mjs tests
+  # ARCHIFY_UPDATE_CHECK_DISABLED for exactly the value 1, read from the
+  # environment and from settings.json's env map. This script never sets it;
+  # the plugin README says how to (#50).
+  v="${ARCHIFY_UPDATE_CHECK_DISABLED:-}"
+  src="the environment"
+  if [ -z "$v" ]; then
+    v="$(jq -r '.env.ARCHIFY_UPDATE_CHECK_DISABLED // empty' "$HOME/.claude/settings.json" 2>/dev/null)"
+    src="the env map in ~/.claude/settings.json"
+  fi
+  if [ "$v" = 1 ]; then
+    note "archify's update check is off: ARCHIFY_UPDATE_CHECK_DISABLED=1 in $src"
+  elif [ -z "$v" ]; then
+    note "archify's update check is on: ARCHIFY_UPDATE_CHECK_DISABLED is unset in the environment and in ~/.claude/settings.json; see the plugin README (this script never sets it)"
+  else
+    note "archify's update check is still on: ARCHIFY_UPDATE_CHECK_DISABLED=$v in $src, and check-update.mjs tests for exactly 1"
+  fi
+
+  # Every skills.sh install the desired state does not declare (#54): one
+  # NOTE each, naming the lockfile's source and ref, worded against the
+  # desired state so it stays true once #52 moves names to a subset entry.
+  # The vendored scaffolder's unadapted twin keeps its remedy. Reported,
+  # never removed; a lockfile jq cannot parse is a FAIL, never the all-clear.
+  if [ ! -f "$LOCKFILE" ]; then
+    skip "no skills.sh lockfile at $LOCKFILE; nothing to compare the desired state against"
+  elif ! undeclared="$(jq -r --slurpfile d "$SKILLS_JSON" \
+    '[$d[0].sources[].skills[]] as $want
+     | .skills | to_entries[]
+     | select(.key as $k | $want | index($k) | not)
+     | [.key, (.value.source // "unknown source"), (.value.ref // "no ref")] | @tsv' \
+    "$LOCKFILE" 2>/dev/null)"; then
+    bad "the lockfile at $LOCKFILE could not be parsed, so undeclared installs are unknown"
+  elif [ -z "$undeclared" ]; then
+    note "every skills.sh install in the lockfile is in the skills.sh desired state"
+  else
+    while IFS= read -r line; do
+      [ -n "$line" ] || continue
+      split_tsv "$line"
+      if [ "${F[0]}" = setup-matt-pocock-skills ]; then
+        note "setup-matt-pocock-skills is installed through skills.sh, but this plugin vendors an adapted copy as setup-repository; remove the unadapted one with 'npx skills remove setup-matt-pocock-skills -g'"
+      else
+        note "skills.sh install ${F[0]} (${F[1]} at ${F[2]}) is not in the skills.sh desired state"
+      fi
+    done <<<"$undeclared"
+  fi
+
+  # The two CLIs' versions, as facts: a CLI that renames a verb shows here
+  # before it is a runtime failure (#44). Builtins only after the call, so
+  # the fixture PATH lists need no head.
+  if have claude; then
+    v="$(claude --version 2>/dev/null)"
+    note "claude ${v%%$'\n'*}"
+  fi
+  if have codex; then
+    v="$(codex --version 2>/dev/null)"
+    note "codex ${v%%$'\n'*}"
+  fi
+
+  # Redundant Codex links: anything under CODEX_HOME/skills that resolves
   # into the shared root Codex already reads directly, deduping by resolved
   # path. Reported generically; their removal is sub-project 5's call.
   if [ -d "$CODEX_SKILLS" ]; then
@@ -734,13 +797,6 @@ report_only() {
       esac
     done
     [ "$redundant" -gt 0 ] && note "$redundant link(s) under $CODEX_SKILLS resolve into $SKILL_ROOT, which Codex already reads directly; they are redundant and are left alone"
-  fi
-
-  # 4. A skills.sh copy of a skill this plugin vendors under another name. A
-  # rename is invisible to the by-name check below, so this one stays declared.
-  if [ -f "$LOCKFILE" ] \
-    && jq -e '.skills["setup-matt-pocock-skills"]' "$LOCKFILE" >/dev/null 2>&1; then
-    note "setup-matt-pocock-skills is installed through skills.sh, but this plugin vendors an adapted copy as setup-repository; remove the unadapted one with 'npx skills remove setup-matt-pocock-skills -g'"
   fi
 
   before=$REPORTED

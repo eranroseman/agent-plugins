@@ -190,5 +190,6 @@ saw "DID:  installed codex plugin software-dev $sd" || fail "codex: no DID line 
 saw "DID:  installed codex plugin sensemaking $sm" || fail "codex: no DID line for sensemaking:"$'\n'"$OUT"
 rechecked "OK:   codex plugin software-dev $sd installed" \
   || fail "codex: the re-check did not report software-dev installed:"$'\n'"$OUT"
+saw 'NOTE: codex codex-cli 0.147.0' || fail "codex: the CLI version was not reported:"$'\n'"$OUT"
 
 printf 'setup-apply: the update and install branches of the Claude half and the Codex half ran under stateful stubs\n'

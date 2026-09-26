@@ -15,8 +15,8 @@ trap 'rm -rf "$T"' EXIT
 # names given. Prints the directory.
 bin_without() {
   local dir="$T/bin-without${1:+-$1}" t x skip tools=()
-  for t in bash git jq sed awk grep find date readlink basename dirname \
-    mv ln mkdir cp cat sha256sum; do
+  for t in bash git jq grep find date readlink basename dirname cut \
+    mv ln mkdir cat sha256sum; do
     skip=0
     for x in "$@"; do [ "$t" != "$x" ] || skip=1; done
     [ "$skip" -eq 1 ] || tools+=("$t")
