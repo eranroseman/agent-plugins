@@ -2,9 +2,8 @@
 # The engine's shape: two entry points, one of them a wrapper; a usage text;
 # the documented prerequisite split, with both scripts run under an empty
 # PATH; a doctor that describes an empty machine rather than dying on it; the
-# conditional halves reporting their own absence; the report-only checks;
-# and the README recipes against the usage text. Needs no network and no
-# CLI. The shell lint is tests/test-lint-shell.sh, the upgrade path is
+# conditional halves reporting their own absence; and the report-only
+# checks. Needs no network and no CLI. The shell lint is tests/test-lint-shell.sh, the upgrade path is
 # tests/test-setup-upgrade.sh, and the machines the doctor cannot read are
 # tests/test-doctor-silence.sh.
 . "$(dirname "$0")/lib.sh"
@@ -113,59 +112,4 @@ out="$(env HOME="$H" CODEX_HOME="$H/.codex" PATH="$NOCURL" /bin/bash "$DOCTOR" 2
 printf '%s\n' "$out" | grep -q 'SKIP: the marketplace source is a directory' \
   || fail "a directory marketplace source must skip the staleness check, not fail it"
 
-# Every fenced block in an Install or Update section of either README must
-# appear verbatim in the usage text, so a command cannot be documented in one
-# place and not the other. Scoped to those two headings -- not every fenced
-# block in the file -- so a non-command sample under an unrelated heading (a
-# JSON example under Environment, say) cannot produce a false failure.
-help_text="$("$SETUP" --help 2>&1)" || fail "bin/setup --help failed"
-# Extract fenced blocks whose nearest preceding h2 starts with "Install" or
-# "Update" (so "## Updates" counts too). An h1 or an h2 closes the scope; an
-# h3 stays inside its parent, which is what "every fenced block in the
-# section" means (#18). \036 is the record separator awk prints between
-# blocks; no README carries it.
-extract_scoped_blocks() {
-  awk '
-    !infence && /^##? / { insection = ($0 ~ /^## (Install|Update)/); next }
-    /^```/ { infence = !infence; if (!infence && insection) print "\036"; next }
-    infence && insection { print }
-  ' "$1"
-}
-# The scope rule, proved on a synthetic README carrying all three headings:
-# a block under `### Sub` inside Install is in, blocks after a `# Top` or
-# under `## Other` are out, and a `# comment` line inside a fence does not
-# close the scope.
-S="$H/scope.md"
-printf '%s\n' '# Title' '```' 'h1-before' '```' '## Install' '```sh' 'in-install' '# note' '```' \
-  '### Sub' '```' 'in-sub' '```' '# Top' '```' 'after-h1' '```' '## Update' '```' 'in-update' '```' \
-  '## Other' '```' 'in-other' '```' >"$S" || fail "could not write $S"
-got="$(extract_scoped_blocks "$S" | tr -d '\036' | grep . | tr '\n' ' ')" || true
-[ "$got" = "in-install # note in-sub in-update " ] \
-  || fail "extract_scoped_blocks must keep an h3 inside its section and close on an h1 or h2; got '$got'"
-# $1 the README path, $2 the minimum number of Install/Update blocks it must
-# contribute -- the "found 0" guard from before, now per file, so a renamed
-# heading cannot silently drop a whole README out of coverage.
-check_readme_blocks() {
-  local readme="$1" min="$2" blocks=0 buf=""
-  while IFS= read -r line; do
-    if [ "$line" = "$(printf '\036')" ]; then
-      [ -n "$buf" ] || continue
-      case "$help_text" in
-        *"$buf"*) blocks=$((blocks + 1)) ;;
-        *) fail "a fenced Install/Update block in $readme is missing from bin/setup --help: $buf" ;;
-      esac
-      buf=""
-    elif [ -z "$buf" ]; then
-      buf="$line"
-    else
-      buf="$buf
-$line"
-    fi
-  done < <(extract_scoped_blocks "$readme")
-  [ "$blocks" -ge "$min" ] \
-    || fail "expected at least $min fenced Install/Update block(s) in $readme, found $blocks"
-}
-check_readme_blocks "$REPO_ROOT/README.md" 2
-check_readme_blocks "$REPO_ROOT/plugins/software-dev/README.md" 1
-
-printf 'setup-doctor: two entry points, prerequisites split as documented, recipes match the usage text\n'
+printf 'setup-doctor: two entry points, prerequisites split as documented\n'

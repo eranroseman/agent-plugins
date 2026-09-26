@@ -149,16 +149,8 @@ bin/doctor is the same engine in check mode: it reports and changes nothing.
 Both read the desired state from the checkout the script lives in, and reach
 the machine only through HOME and CODEX_HOME.
 
-Bootstrap on a new machine:
-
-claude plugin marketplace add eranroseman/agent-plugins
-bash ~/.claude/plugins/marketplaces/eranroseman/bin/setup
-
-Update an installed machine:
-
-claude plugin marketplace update eranroseman
-codex plugin marketplace upgrade eranroseman
-bash ~/.claude/plugins/marketplaces/eranroseman/bin/setup
+The commands that install and update a machine are in README.md, at the root
+of this checkout.
 
 bin/setup needs git, jq, node, npx and claude, and refuses without them. codex
 is optional: its half is reported as skipped when the binary is absent.
