@@ -68,7 +68,14 @@ cat >"$H/.agents/.skill-lock.json" <<'JSON'
 }
 JSON
 
-if out="$(env HOME="$H" CODEX_HOME="$H/.codex" bash "$DOCTOR" 2>&1)"; then status=0; else status=$?; fi
+# Reused below for the repair run too: no curl here, so the freshness check
+# (spec §12, #24) plainly skips rather than reaching api.github.com, and this
+# doctor run stays exactly as network-free as its header promises.
+BIN="$H/bin"
+link_tools "$BIN" bash git jq grep find date readlink basename dirname cut \
+  rm mv ln mkdir cat sha256sum
+
+if out="$(env HOME="$H" CODEX_HOME="$H/.codex" PATH="$BIN" /bin/bash "$DOCTOR" 2>&1)"; then status=0; else status=$?; fi
 [ "$status" -eq 1 ] || fail "doctor exited $status on a machine with six seeded faults"
 
 for pat in \
@@ -189,10 +196,8 @@ done < <(jq -r '.sources[].skills[]' "$REPO_ROOT/skills.json")
 # has no origin, so the fetch fails at once and the clone stays reported.
 # Every external the engine runs has to be here, or a repair fails for the
 # wrong reason: with `mv` missing, the dangling link is never moved aside and
-# the test reports a surviving squatter rather than a missing tool.
-BIN="$H/bin"
-link_tools "$BIN" bash git jq grep find date readlink basename dirname cut \
-  rm mv ln mkdir cat sha256sum
+# the test reports a surviving squatter rather than a missing tool. $BIN
+# already carries these, seeded above so the first doctor run needs no curl.
 # claude, node and npx are stubs that exit 1, on PATH to satisfy require_tools
 # and nothing else: the seeded registry and the pinned lockfile mean no
 # Claude or skills.sh command ever runs, so a real binary would prove nothing

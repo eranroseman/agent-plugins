@@ -67,30 +67,37 @@ printf '%s\n' "$out" | grep -q 'the skill root is missing' \
 printf '%s\n' "$out" | grep -q 'for want of: jq' \
   || fail "the doctor under an empty PATH did not name jq in its verdict:"$'\n'"$out"
 
+# Every doctor run below inherited this test's own PATH once, which would now
+# reach the freshness check's api.github.com wherever curl is present (spec
+# §12, #24). This fixture keeps the rest of the real machine's behavior --
+# claude and codex answer for real when this machine has them, the way these
+# checks always exercised them -- and only curl is missing.
+NOCURL="$H/nocurl"
+link_tools "$NOCURL" bash git jq grep find date readlink basename dirname cut mv ln mkdir cat sha256sum
+for t in claude codex; do
+  p="$(command -v "$t" 2>/dev/null)" || continue
+  ln -sf "$p" "$NOCURL/$t" || fail "could not link $t into $NOCURL"
+done
+
 # The doctor on an empty machine: describes it, exits 1, dies on nothing.
-if out="$(env HOME="$H" CODEX_HOME="$H/.codex" bash "$DOCTOR" 2>&1)"; then status=0; else status=$?; fi
+if out="$(env HOME="$H" CODEX_HOME="$H/.codex" PATH="$NOCURL" /bin/bash "$DOCTOR" 2>&1)"; then status=0; else status=$?; fi
 [ "$status" -eq 1 ] || fail "bin/doctor on an empty HOME must exit 1, got $status"
 printf '%s\n' "$out" | grep -q 'FAIL:' || fail "the doctor reported no failure on an empty HOME"
 
-# The Claude half reports its own absence rather than assuming it.
-out="$(env HOME="$H" CODEX_HOME="$H/.codex" PATH="/usr/bin:/bin" bash "$DOCTOR" 2>&1 || true)"
-if command -v claude >/dev/null 2>&1 && [ -x /usr/bin/claude ]; then
-  printf 'NOTE: claude is on the minimal PATH; the gating assertion is not exercised\n'
-else
-  printf '%s\n' "$out" | grep -q 'SKIP: claude' \
-    || fail "with claude off PATH the doctor must report the Claude half as skipped"
-fi
-
-# The Codex half is conditional the same way, and says so.
-if command -v codex >/dev/null 2>&1 && [ -x /usr/bin/codex ]; then
-  printf 'NOTE: codex is on the minimal PATH; the gating assertion is not exercised\n'
-else
-  printf '%s\n' "$out" | grep -q 'SKIP: codex' \
-    || fail "with codex off PATH the doctor must report the Codex half as skipped"
-fi
+# The Claude and Codex halves report their own absence rather than assuming
+# it. This fixture carries the engine's own tools and nothing else, so this
+# run needs no network and exercises the gating assertion on every machine,
+# rather than only on one where neither CLI sits under /usr/bin.
+NOCLI="$H/nocli"
+link_tools "$NOCLI" bash git jq grep find date readlink basename dirname cut mv ln mkdir cat sha256sum
+out="$(env HOME="$H" CODEX_HOME="$H/.codex" PATH="$NOCLI" /bin/bash "$DOCTOR" 2>&1 || true)"
+printf '%s\n' "$out" | grep -q 'SKIP: claude' \
+  || fail "with claude off PATH the doctor must report the Claude half as skipped"
+printf '%s\n' "$out" | grep -q 'SKIP: codex' \
+  || fail "with codex off PATH the doctor must report the Codex half as skipped"
 
 # Report-only checks: present on every run, never repaired.
-out="$(env HOME="$H" CODEX_HOME="$H/.codex" bash "$DOCTOR" 2>&1 || true)"
+out="$(env HOME="$H" CODEX_HOME="$H/.codex" PATH="$NOCURL" /bin/bash "$DOCTOR" 2>&1 || true)"
 printf '%s\n' "$out" | grep -q 'telemetry' \
   || fail "the doctor does not report the telemetry variable"
 printf '%s\n' "$out" | grep -q 'auto-update' \
@@ -102,7 +109,7 @@ mkdir -p "$H/.claude/plugins" || fail "could not create $H/.claude/plugins"
 cat >"$H/.claude/plugins/known_marketplaces.json" <<JSON || fail "could not write known_marketplaces.json"
 {"eranroseman":{"source":{"source":"directory","path":"$REPO_ROOT"},"installLocation":"$REPO_ROOT"}}
 JSON
-out="$(env HOME="$H" CODEX_HOME="$H/.codex" bash "$DOCTOR" 2>&1 || true)"
+out="$(env HOME="$H" CODEX_HOME="$H/.codex" PATH="$NOCURL" /bin/bash "$DOCTOR" 2>&1 || true)"
 printf '%s\n' "$out" | grep -q 'SKIP: the marketplace source is a directory' \
   || fail "a directory marketplace source must skip the staleness check, not fail it"
 

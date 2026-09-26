@@ -112,6 +112,15 @@ jobs:
 
   setup-e2e:
     runs-on: ubuntu-latest
+    # The doctor's freshness check reads the watch's run history; the token
+    # keeps the shared runner address off the unauthenticated rate limit
+    # (spec §12). Read-only, and a red doctor is the second place the
+    # watch's silence shows.
+    permissions:
+      contents: read
+      actions: read
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:

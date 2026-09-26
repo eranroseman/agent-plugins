@@ -698,6 +698,61 @@ ensure_fresh_clone() {
   fi
 }
 
+# Is the watch alive? An empty upstream-drift list means "no drift" or
+# "nothing checked", and only the run history tells them apart (spec §12,
+# #24). One request to the public runs API; curl is optional the way the
+# Codex half is, so its absence is a plain skip and never a need, and so is
+# a response that is not 200 or does not parse. A bearer token travels when
+# GITHUB_TOKEN is set, which CI does, because unauthenticated requests from
+# a shared runner address are rate-limited. 48 hours, because scheduled runs
+# land 4.5 to 6.5 hours after the 06:17 UTC slot and one missed slot is weak
+# evidence. FAIL rather than NOTE: a machine converging to pins nobody is
+# watching is a fact about that machine.
+ensure_watch_fresh() {
+  local url='https://api.github.com/repos/eranroseman/agent-plugins/actions/workflows/upstream-watch.yml/runs?event=schedule&status=completed&per_page=1'
+  local page='https://github.com/eranroseman/agent-plugins/actions/workflows/upstream-watch.yml'
+  local out code body created conclusion now ts age
+  local -a auth=()
+  if ! have curl; then
+    skip "curl is not on PATH, so the watch's run history is unread"
+    return
+  fi
+  needs jq "the watch's run history cannot be parsed" || return
+  [ -z "${GITHUB_TOKEN:-}" ] || auth=(-H "Authorization: Bearer $GITHUB_TOKEN")
+  if ! out="$(curl -sS "${auth[@]}" -H 'Accept: application/vnd.github+json' -w '\n%{http_code}' "$url" 2>/dev/null)"; then
+    skip "could not reach the runs API; the watch's freshness is unanswered"
+    return
+  fi
+  code="${out##*$'\n'}"
+  body="${out%$'\n'*}"
+  if [ "$code" != 200 ]; then
+    skip "the runs API answered $code, not 200; the watch's freshness is unanswered"
+    return
+  fi
+  if ! created="$(printf '%s' "$body" | jq -r '.workflow_runs[0].created_at // empty' 2>/dev/null)"; then
+    skip "the runs API's body did not parse; the watch's freshness is unanswered"
+    return
+  fi
+  if [ -z "$created" ]; then
+    bad "no completed scheduled run of the watch is on record; see $page"
+    return
+  fi
+  conclusion="$(printf '%s' "$body" | jq -r '.workflow_runs[0].conclusion // "none"')"
+  now="$(date -u +%s)"
+  ts="$(date -u -d "$created" +%s 2>/dev/null)" || {
+    skip "the runs API's created_at did not parse: $created"
+    return
+  }
+  age=$(((now - ts) / 3600))
+  if [ "$age" -ge 48 ]; then
+    bad "the watch's last scheduled run was $age hours ago, over 48; see $page"
+  elif [ "$conclusion" != success ]; then
+    bad "the watch's last scheduled run concluded $conclusion, not success; see $page"
+  else
+    ok "the watch ran on schedule $age hour(s) ago and succeeded"
+  fi
+}
+
 report_only() {
   local v src set_names="" link actual before undeclared line F
   needs jq "the settings this script only reports cannot be read" || return
@@ -1058,6 +1113,9 @@ main() {
   before=$REPORTED
   ensure_fresh_clone
   reported "$before" ensure_fresh_clone
+  before=$REPORTED
+  ensure_watch_fresh
+  reported "$before" ensure_watch_fresh
   before=$REPORTED
   ensure_clones
   reported "$before" ensure_clones
