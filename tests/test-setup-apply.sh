@@ -3,7 +3,8 @@
 # fixture had driven (#17): a subset entry one version behind moves under
 # `claude plugin update`; an entry missing from the registry is installed by
 # name; and with codex present, `marketplace upgrade eranroseman`, `plugin
-# add` and the second `plugin list --json` run in order. Each CLI is a stub
+# add` and the second `plugin list --json` run in order, and a second read
+# that fails leaves no partial list behind. Each CLI is a stub
 # that edits the same registry file the engine reads back, so the DID line
 # is a re-read and the re-check's OK line is the proof. Needs no network:
 # every clone is seeded at a wrong sha with no origin, so the clone check
@@ -103,7 +104,8 @@ STUB
 # list` names eranroseman, so the engine takes the upgrade branch;
 # `marketplace upgrade eranroseman` and `plugin add` each record themselves;
 # `plugin list --json` reports 0.0.1 until an add has run, then the declared
-# version. Anything else exits 1.
+# version, or, when $CODEX_HOME/list-breaks-after-add exists, a truncated
+# document and exit 1. Anything else exits 1.
 write_codex_stub() {
   cat >"$1/codex" <<'STUB' || fail "could not write the codex stub"
 #!/usr/bin/env bash
@@ -124,6 +126,10 @@ case "$*" in
     : >"$state/added-${3%@eranroseman}"
     ;;
   'plugin list --json')
+    if [ -f "$CODEX_HOME/list-breaks-after-add" ] && [ -f "$state/added-software-dev" ]; then
+      printf '{"installed":[{"pluginId":"software-dev@eranroseman"'
+      exit 1
+    fi
     printf '{"installed":[{"pluginId":"software-dev@eranroseman","marketplaceName":"eranroseman","name":"software-dev","version":"%s","enabled":true},{"pluginId":"sensemaking@eranroseman","marketplaceName":"eranroseman","name":"sensemaking","version":"%s","enabled":true}]}\n' \
       "$(version_of software-dev)" "$(version_of sensemaking)"
     ;;
@@ -149,6 +155,16 @@ rechecked() {
   recheck="${OUT#*"$marker"}"
   [ "$recheck" != "$OUT" ] || fail "no re-check marker ($marker) in \$OUT:"$'\n'"$OUT"
   printf '%s\n' "$recheck" | grep -qF -- "$1"
+}
+
+# True iff $1 appears in $OUT before that marker: the apply pass alone, for
+# a fault the re-check, a fresh process that reads everything again, would
+# not reproduce.
+applied() {
+  local marker='--- re-checking ---' pass
+  pass="${OUT%%"$marker"*}"
+  [ "$pass" != "$OUT" ] || fail "no re-check marker ($marker) in \$OUT:"$'\n'"$OUT"
+  printf '%s\n' "$pass" | grep -qF -- "$1"
 }
 
 # 1. A subset entry one version behind: the update branch.
@@ -192,4 +208,19 @@ rechecked "OK:   codex plugin software-dev $sd installed" \
   || fail "codex: the re-check did not report software-dev installed:"$'\n'"$OUT"
 saw 'NOTE: codex codex-cli 0.147.0' || fail "codex: the CLI version was not reported:"$'\n'"$OUT"
 
-printf 'setup-apply: the update and install branches of the Claude half and the Codex half ran under stateful stubs\n'
+# 4. The second read fails: after `plugin add`, `plugin list --json` prints
+# a truncated document and exits 1. The list must fall back to empty, or
+# report_duplicates prints the Codex all-clear over a pool missing its
+# plugin half (#40) and ensure_cache judges the Codex cache by it.
+H4="$T/home-4"
+seed_home "$H4"
+write_registry "$H4" "software-dev=$sd" "sensemaking=$sm" "superpowers=$sp" "writing-clearly-and-concisely=$wcc"
+mkdir -p "$H4/.codex/plugins/cache/orphan" || fail "could not seed a Codex plugin cache"
+: >"$H4/.codex/list-breaks-after-add" || fail "could not arm the failing re-read"
+run_apply "$H4" "$B3"
+[ -f "$H4/.codex/state/added-software-dev" ] || fail "codex re-read: plugin add never ran:"$'\n'"$OUT"
+applied 'NOTE: Codex:' && fail "codex re-read: the Codex all-clear spoke for a partial list:"$'\n'"$OUT"
+applied 'SKIP: codex plugin list failed earlier, so the Codex plugin cache is not judged' \
+  || fail "codex re-read: the Codex cache was judged by a partial list:"$'\n'"$OUT"
+
+printf 'setup-apply: the update and install branches of the Claude half and the Codex half ran under stateful stubs; a failed re-read left no partial list\n'
