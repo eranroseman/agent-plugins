@@ -24,25 +24,10 @@ wcc="$(jq -r '.plugins[] | select(.name == "writing-clearly-and-concisely") | .v
 # every skill directory present so the links have targets, and a lockfile
 # pinned at the declared refs so the skills.sh half runs no command.
 seed_home() {
-  local h="$1" name path skill dir
+  local h="$1"
   mkdir -p "$h/.agents/skills" "$h/.claude/plugins" "$h/.codex" || fail "could not seed $h"
-  while IFS="$(printf '\t')" read -r name path skill; do
-    [ -n "$name" ] || continue
-    dir="$h/.local/share/software-dev/upstream/$name"
-    if [ ! -d "$dir/.git" ]; then
-      mkdir -p "$dir" || fail "could not seed $dir"
-      git -C "$dir" init -q || fail "git init failed in $dir"
-      git -C "$dir" -c user.email=t@example.com -c user.name=t \
-        commit -q --allow-empty -m seed || fail "could not seed a commit in $dir"
-    fi
-    mkdir -p "$dir/$path/$skill"
-  done < <(jq -r '.plugins[] | select(.source.source? == "git-subdir") as $p
-                  | $p.skills[] | [$p.name, $p.source.path, (. | sub("^\\./"; ""))] | @tsv' "$MARKETPLACE")
-  jq '{version: 3,
-       skills: (reduce (.sources[] as $s | $s.skills[] |
-         {key: ., value: {source: $s.repo, ref: $s.ref}}) as $e ({}; . + {($e.key): $e.value})),
-       dismissed: {}}' "$REPO_ROOT/skills.json" >"$h/.agents/.skill-lock.json" \
-    || fail "could not synthesize a pinned lockfile"
+  seed_clones "$h"
+  seed_lockfile "$h"
   printf '{"eranroseman":{"source":{"source":"github","repo":"eranroseman/agent-plugins"},"installLocation":"%s"}}\n' "$h/mkt" \
     >"$h/.claude/plugins/known_marketplaces.json" || fail "could not write known_marketplaces.json"
 }
@@ -142,7 +127,6 @@ STUB
 run_apply() { # $1 HOME, $2 PATH dir; leaves the output in OUT
   OUT="$(env HOME="$1" CODEX_HOME="$1/.codex" REPO="$REPO_ROOT" PATH="$2" /bin/bash "$SETUP" 2>&1 || true)"
 }
-saw() { printf '%s\n' "$OUT" | grep -qF -- "$1"; }
 
 # True iff $1 appears in $OUT strictly after the apply pass's own
 # `--- re-checking ---` marker: the verdict is the re-check's, so grepping

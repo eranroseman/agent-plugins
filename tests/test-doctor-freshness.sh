@@ -52,7 +52,6 @@ run_doctor() {
   mkdir -p "$h/.agents/skills" || fail "could not seed $h"
   OUT="$(env -u GITHUB_TOKEN HOME="$h" CODEX_HOME="$h/.codex" PATH="$BIN" CURL_BODY="$b" CURL_CODE="$c" CURL_LOG="$T/curl.log" CURL_HDR="$T/curl.hdr" "$@" /bin/bash "$DOCTOR" 2>&1 || true)"
 }
-saw() { printf '%s\n' "$OUT" | grep -qF -- "$1"; }
 
 fresh="$(date -u -d '5 hours ago' +%Y-%m-%dT%H:%M:%SZ)"
 stale="$(date -u -d '3 days ago' +%Y-%m-%dT%H:%M:%SZ)"

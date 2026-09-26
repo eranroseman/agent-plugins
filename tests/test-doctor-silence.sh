@@ -64,7 +64,6 @@ run_case() {
   [ "$n_said" -eq "$n_fail" ] || fail "$label: the verdict says $n_said failed but $n_fail FAIL: lines were printed:"$'\n'"$OUT"
   return 0
 }
-saw() { printf '%s\n' "$OUT" | grep -q -- "$1"; }
 
 # A HOME whose skill root exists, so every check gets past ensure_links'
 # root guard and reaches the desired state it reads. Prints the path.

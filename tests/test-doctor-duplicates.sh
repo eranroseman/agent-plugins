@@ -19,8 +19,6 @@ C="$H/.claude/skills"
 X="$H/.codex/skills"
 mkdir -p "$A" "$C" "$X" "$H/.claude/plugins" || fail "could not seed $H"
 
-skill() { mkdir -p "$1" && printf -- '---\nname: %s\n---\n%s\n' "$(basename "$1")" "$2" >"$1/SKILL.md"; }
-
 # alpha: one tree, two paths. Same content, so not a finding.
 skill "$A/alpha" "alpha body"
 ln -s "$A/alpha" "$C/alpha"

@@ -30,7 +30,6 @@ run_doctor() {
   # shellcheck disable=SC2086  # the assignments are one word each by construction
   OUT="$(env -u ARCHIFY_UPDATE_CHECK_DISABLED HOME="$home" CODEX_HOME="$home/.codex" PATH="$BIN" "$@" /bin/bash "$DOCTOR" 2>&1 || true)"
 }
-saw() { printf '%s\n' "$OUT" | grep -qF -- "$1"; }
 
 # 1. #50, unset in both places: the check is on, and the README is named.
 run_doctor "$T/h1"
@@ -74,12 +73,7 @@ saw 'every skills.sh install in the lockfile is in the skills.sh desired state' 
   && fail "the none line was printed beside undeclared installs:"$'\n'"$OUT"
 
 # 5. #54: a lockfile that matches the desired state exactly: the none line.
-mkdir -p "$T/h5/.agents" || fail "could not seed h5"
-jq '{version: 3,
-     skills: (reduce (.sources[] as $s | $s.skills[] |
-       {key: ., value: {source: $s.repo, ref: $s.ref}}) as $e ({}; . + {($e.key): $e.value})),
-     dismissed: {}}' "$REPO_ROOT/skills.json" >"$T/h5/.agents/.skill-lock.json" \
-  || fail "could not synthesize the pinned lockfile"
+seed_lockfile "$T/h5"
 run_doctor "$T/h5"
 saw 'NOTE: every skills.sh install in the lockfile is in the skills.sh desired state' \
   || fail "a lockfile matching the desired state did not print the none line:"$'\n'"$OUT"

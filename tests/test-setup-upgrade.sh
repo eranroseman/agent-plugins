@@ -68,13 +68,7 @@ chmod +x "$BIN/npx" || fail "could not make the npx stub executable"
 # A fully pinned lockfile, mirroring tests/test-doctor-faults.sh: without it,
 # ensure_skills_sh would find every declared skill unpinned and try to
 # install all of them over the network on every run of this test.
-mkdir -p "$W/home/.agents" || fail "could not create $W/home/.agents"
-jq '{version: 3,
-     skills: (reduce (.sources[] as $s | $s.skills[] |
-       {key: ., value: {source: $s.repo, ref: $s.ref}}) as $e ({}; . + {($e.key): $e.value})),
-     dismissed: {}}' \
-  "$REPO_ROOT/skills.json" >"$W/home/.agents/.skill-lock.json" \
-  || fail "could not synthesize a pinned lockfile"
+seed_lockfile "$W/home"
 
 want="$(jq -r .version "$REPO_ROOT/$PJ")" || fail "could not read the declared version"
 if out="$(env HOME="$W/home" CODEX_HOME="$W/home/.codex" SD_MARKETPLACE_SOURCE="$W/repo" \

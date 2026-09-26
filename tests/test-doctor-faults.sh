@@ -14,38 +14,12 @@ trap 'rm -rf "$H"' EXIT
 UPSTREAM="$H/.local/share/software-dev/upstream"
 CLONE="$UPSTREAM/superpowers"
 SKILLS="$H/.agents/skills"
-mkdir -p "$CLONE" "$SKILLS" || fail "could not seed $H"
+mkdir -p "$SKILLS" || fail "could not seed $H"
 
-# A clone at the wrong sha: an empty repository with one commit has a HEAD
-# that cannot be the declared one, and needs no network.
-git -C "$CLONE" init -q || fail "git init failed in $CLONE"
-git -C "$CLONE" -c user.email=t@example.com -c user.name=t \
-  commit -q --allow-empty -m seed || fail "could not seed a commit"
-while IFS= read -r s; do
-  mkdir -p "$CLONE/skills/$s"
-done < <(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$MARKETPLACE" | sed 's#^\./##')
-
-# Every other subset entry gets the same treatment: a clone with no origin,
-# at a sha that cannot be the declared one, carrying its skill directories so
-# the links have targets. Without it, apply mode would clone the real upstream
-# over the network into this scratch HOME on every run.
-seed_other_clones() {
-  local name path skill dir
-  while IFS="$(printf '\t')" read -r name path skill; do
-    [ -n "$name" ] || continue
-    [ "$name" != superpowers ] || continue
-    dir="$UPSTREAM/$name"
-    if [ ! -d "$dir/.git" ]; then
-      mkdir -p "$dir" || fail "could not seed $dir"
-      git -C "$dir" init -q || fail "git init failed in $dir"
-      git -C "$dir" -c user.email=t@example.com -c user.name=t \
-        commit -q --allow-empty -m seed || fail "could not seed a commit in $dir"
-    fi
-    mkdir -p "$dir/$path/$skill"
-  done < <(jq -r '.plugins[] | select(.source.source? == "git-subdir") as $p
-                  | $p.skills[] | [$p.name, $p.source.path, (. | sub("^\\./"; ""))] | @tsv' "$MARKETPLACE")
-}
-seed_other_clones
+# Every clone at a sha that cannot be the declared one, with no origin:
+# without them, apply mode would clone the real upstream over the network
+# into this scratch HOME on every run.
+seed_clones "$H"
 
 ln -s "$H/nowhere" "$SKILLS/writing-plans" # dangling
 mkdir -p "$SKILLS/executing-plans"         # a directory where a link belongs
@@ -132,15 +106,8 @@ wcc="$(jq -r '.plugins[] | select(.name == "writing-clearly-and-concisely") | .v
 # of installing anything, so this needs no network.
 H2="$(mktemp -d)"
 trap 'rm -rf "$H" "$H2"' EXIT
-CLONE2="$H2/.local/share/software-dev/upstream/superpowers"
-mkdir -p "$CLONE2" "$H2/.agents/skills" "$H2/.claude/plugins" || fail "could not seed $H2"
-git -C "$CLONE2" init -q || fail "git init failed in $CLONE2"
-git -C "$CLONE2" -c user.email=t@example.com -c user.name=t \
-  commit -q --allow-empty -m seed || fail "could not seed a commit in $CLONE2"
-while IFS= read -r s; do
-  mkdir -p "$CLONE2/skills/$s"
-done < <(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$MARKETPLACE" | sed 's#^\./##')
-UPSTREAM="$H2/.local/share/software-dev/upstream" seed_other_clones
+mkdir -p "$H2/.agents/skills" "$H2/.claude/plugins" || fail "could not seed $H2"
+seed_clones "$H2"
 cat >"$H2/.claude/plugins/installed_plugins.json" <<JSON
 {"version":2,"plugins":{
   "software-dev@eranroseman":[{"scope":"user","version":"$sd"}],
@@ -223,12 +190,7 @@ cat >"$H/.claude/plugins/installed_plugins.json" <<JSON
   "superpowers@eranroseman":[{"scope":"user","version":"$sp"}],
   "writing-clearly-and-concisely@eranroseman":[{"scope":"user","version":"$wcc"}]}}
 JSON
-jq '{version: 3,
-     skills: (reduce (.sources[] as $s | $s.skills[] |
-       {key: ., value: {source: $s.repo, ref: $s.ref}}) as $e ({}; . + {($e.key): $e.value})),
-     dismissed: {}}' \
-  "$REPO_ROOT/skills.json" >"$H/.agents/.skill-lock.json" \
-  || fail "could not synthesize a pinned lockfile"
+seed_lockfile "$H"
 
 # The engine re-checks itself through $BASH, not its shebang, so a deployed
 # copy that lost its mode bit still prints its verdict (#61 M9): this run

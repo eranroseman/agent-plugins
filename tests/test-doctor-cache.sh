@@ -26,8 +26,6 @@ for t in claude node npx; do
   chmod +x "$BIN/$t" || fail "could not make the $t stub executable"
 done
 
-skill() { mkdir -p "$1" && printf -- '---\nname: %s\n---\n%s\n' "$(basename "$1")" "$2" >"$1/SKILL.md"; }
-
 # A HOME with a registered marketplace `mkt`, an installed plugin under it,
 # and five other cache directories, one per verdict.
 seed() {
@@ -47,42 +45,6 @@ JSON
   # gone, held and the scratch clone are old; fresh was modified just now.
   touch -d '2 hours ago' "$cache/gone" "$cache/held" "$cache/temp_subdir_1789739987658_kwt7rv.clone" \
     || fail "could not age the directories"
-}
-
-saw() { printf '%s\n' "$OUT" | grep -qF -- "$1"; }
-
-# Every HOME a $SETUP (apply-mode) run touches needs this or ensure_clones
-# finds no pinned clone on disk and reaches the real network for one (#25): a
-# bare `git init` + an empty commit satisfies the `-d "$dir/.git"` check, and
-# the seeded repo carries no origin remote, so the `git fetch origin`
-# ensure_clones falls back to on a sha mismatch fails against a local
-# nonexistent path instead of a real remote.
-seed_clones() {
-  local h="$1" upstream="$1/.local/share/software-dev/upstream" name path skill dir
-  while IFS="$(printf '\t')" read -r name path skill; do
-    [ -n "$name" ] || continue
-    dir="$upstream/$name"
-    if [ ! -d "$dir/.git" ]; then
-      mkdir -p "$dir" || fail "could not seed $dir"
-      git -C "$dir" init -q || fail "git init failed in $dir"
-      git -C "$dir" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m seed \
-        || fail "could not seed a commit in $dir"
-    fi
-    mkdir -p "$dir/$path/$skill"
-  done < <(jq -r '.plugins[] | select(.source.source? == "git-subdir") as $p
-                  | $p.skills[] | [$p.name, $p.source.path, (. | sub("^\\./"; ""))] | @tsv' "$MARKETPLACE")
-}
-
-# A lockfile pinning every declared skills.sh ref, so ensure_skills_sh sees
-# each already at its declared ref and never calls npx (which is stubbed to
-# fail here anyway, but a real failure is still a wrong reason to fail).
-seed_lockfile() {
-  local h="$1"
-  jq '{version: 3,
-       skills: (reduce (.sources[] as $s | $s.skills[] |
-         {key: ., value: {source: $s.repo, ref: $s.ref}}) as $e ({}; . + {($e.key): $e.value})),
-       dismissed: {}}' "$REPO_ROOT/skills.json" >"$h/.agents/.skill-lock.json" \
-    || fail "could not synthesize a pinned lockfile"
 }
 
 # 1. Check mode: the two deletable directories are FAILs naming the facts,
