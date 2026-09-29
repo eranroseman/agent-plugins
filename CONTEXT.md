@@ -1,6 +1,6 @@
 # agent-plugins
 
-One repository states the skills a machine should have on Claude Code and Codex, converges a machine to that state, reports where a machine differs from it, and watches the upstreams it takes skills from. A contested term names the winner and lists the retired forms under _Avoid_.
+One repository states the skills a machine should have on Claude Code and Codex, delivers them as plugins each agent CLI installs with its own commands, and watches the upstreams it takes skills from. A contested term names the winner and lists the retired forms under _Avoid_.
 
 ## Language
 
@@ -9,7 +9,7 @@ What a SessionStart hook adds to a session; Claude Code's own name for the mecha
 _Avoid_: payload, payloads
 
 **user**:
-Whoever runs `bin/setup`, or no noun at all; a program is called by its name.
+Whoever installs the plugins, or no noun at all; a program is called by its name.
 _Avoid_: installer, installers
 
 **instruction file**:
@@ -29,7 +29,7 @@ A skill the user invokes and the model never selects on its own.
 _Avoid_: gated
 
 **subset entry**:
-A marketplace entry that takes part of an upstream repository at a pinned commit: `superpowers` and `writing-clearly-and-concisely`.
+A marketplace entry that takes part of an upstream repository at a pinned commit.
 _Avoid_: curated, curation
 
 **skill selection**:
@@ -41,14 +41,14 @@ Claude Code or Codex, where a sentence means either; a sentence that means one n
 _Avoid_: harness, harnesses
 
 **historical artifact**:
-A spec once every plan written from it has run, and a plan once it has executed. Its vocabulary and paths are kept current so a reader today can follow it; its content is frozen.
+A spec once every plan written from it has run, and a plan once it has executed. Until then it is a living document; after, its content is frozen and it is read as of its commit.
 _Avoid_: maintained record, working paper
 
 **vendored**:
 A tree that is upstream's at a pinned commit, held byte-identical by a drift test except for enumerated regions. Edits flow in from upstream.
 
 **forked**:
-A tree that is first-party and holds named fragments to upstream under a drift test. Edits flow out from here.
+A tree or file that is first-party and began as a copy of an upstream. Nothing holds it to that upstream; the upstream is watched for updates worth porting by hand. Edits flow out from here.
 
 ### Leading words
 
