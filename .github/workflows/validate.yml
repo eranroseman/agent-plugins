@@ -3,6 +3,11 @@ name: validate
 on:
   push:
   pull_request:
+  schedule:
+    # Daily, so an agent CLI release that changes install behavior shows within
+    # a day rather than at the next push (spec §14). The validate job runs too,
+    # the price of one workflow for #70's pre-check.
+    - cron: "41 6 * * *"
 
 # Read-only everywhere: nothing here pushes, comments or writes (spec §9.1).
 # upstream-watch scopes its own.
@@ -142,3 +147,26 @@ jobs:
         run: |
           HOME="$RUNNER_TEMP/home" CODEX_HOME="$RUNNER_TEMP/home/.codex" \
             bash bin/doctor
+
+  install:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+
+      # The newest stable release of each agent CLI, not a pin (Q54): Claude
+      # Code's `stable` dist-tag, since `latest` has run a build the stable
+      # channel did not; Codex's `latest`, since its package has no `stable`.
+      # The script logs both versions before any install.
+      - name: Install the newest stable agent CLIs
+        run: npm install -g @anthropic-ai/claude-code@stable @openai/codex@latest
+
+      # The README's install blocks, run as written against this checkout
+      # into a scratch HOME under RUNNER_TEMP, then the assertions (spec §14).
+      - name: Install through the README's blocks and assert what loaded
+        run: tests/install-check.sh

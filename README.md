@@ -30,11 +30,21 @@ Four marketplace entries:
 
 ## Install
 
-One command adds the marketplace, and the script it delivers does the rest. It
+The marketplace installs with each agent CLI's own commands, and the script it delivers does the rest. It
 is safely re-runnable, and `bin/doctor` is the same engine in check mode.
 
-```sh
+```sh install-claude
 claude plugin marketplace add eranroseman/agent-plugins
+claude plugin install software-dev@eranroseman
+```
+
+```sh install-codex
+codex plugin marketplace add eranroseman/agent-plugins && for p in software-dev sensemaking superpowers writing-clearly-and-concisely; do codex plugin add "$p@eranroseman"; done
+```
+
+Then the script converges the rest, the pinned clones and the skills.sh set:
+
+```sh
 bash ~/.claude/plugins/marketplaces/eranroseman/bin/setup
 ```
 
@@ -64,9 +74,20 @@ reports the operator decisions it never makes for you.
 The marketplace clone carries both the new desired state and the new copy of the
 script, so it is refreshed first and the script re-run from it:
 
-```sh
+```sh update-claude
 claude plugin marketplace update eranroseman
+claude plugin update software-dev@eranroseman
+claude plugin install software-dev@eranroseman
+claude plugin update sensemaking@eranroseman
+claude plugin update superpowers@eranroseman
+claude plugin update writing-clearly-and-concisely@eranroseman
+```
+
+```sh update-codex
 codex plugin marketplace upgrade eranroseman
+```
+
+```sh
 bash ~/.claude/plugins/marketplaces/eranroseman/bin/setup
 ```
 
