@@ -113,6 +113,43 @@ seed_lockfile() {
     || fail "could not synthesize a pinned lockfile"
 }
 
+# ---- The marketplace's subset entries (spec §6) -----------------------------
+# One line per git-subdir entry: name, url, path, ref, sha, version,
+# tab-separated; version empty when the entry declares none.
+entry_rows() {
+  jq -r '.plugins[] | select(.source.source? == "git-subdir")
+         | [.name, .source.url, .source.path, .source.ref, .source.sha, (.version // "")] | @tsv' "$MARKETPLACE" \
+    || fail "could not read the subset entries from $MARKETPLACE"
+}
+
+# The last segment of each path the entry $1 lists, one per line: the skill
+# names both agent CLIs show under the entry's prefix. split/last rather than
+# a basename pipe, which drew a false SIGPIPE failure under pipefail in scratch.
+entry_skills() {
+  jq -r --arg n "$1" '.plugins[] | select(.name == $n) | .skills[]? | split("/") | last' "$MARKETPLACE" \
+    || fail "could not read the skills of the entry $1 from $MARKETPLACE"
+}
+
+# ---- Shipped texts (spec §10.2) ----------------------------------------------
+# Every text an agent reads from a local plugin: the markdown under every
+# skill, every plugin agent, and every skill's Codex policy file, copies and
+# forks included; not READMEs, which name retired skills on purpose. Read by
+# tests/test-plugin-skills.sh's scan and by tests/install-check.sh's check of
+# superpowers: references (T47). Tracked, not present, like checked().
+shipped_texts() {
+  git -C "$REPO_ROOT" ls-files 'plugins/*/skills/**/*.md' 'plugins/*/agents/*.md' 'plugins/*/skills/*/agents/openai.yaml'
+}
+
+# The frontmatter `name` of the SKILL.md in the directory $1 equals the
+# directory's name, which both agent CLIs dispatch by. $2 labels the failure.
+skill_name_matches() {
+  local dir="$1" label="${2:-$1}" name
+  [ -f "$dir/SKILL.md" ] || fail "$label has no SKILL.md"
+  name="$(awk 'NR == 1 && $0 != "---" { exit } NR > 1 && $0 == "---" { exit } /^name:/ { sub(/^name:[ ]*/, ""); print; exit }' "$dir/SKILL.md")"
+  [ "$name" = "$(basename "$dir")" ] \
+    || fail "$label: frontmatter name '$name' is not the directory name '$(basename "$dir")'; both agent CLIs dispatch by name"
+}
+
 # ---- Ownership (spec §4; #61 M7) -------------------------------------------
 # Every list of "the files we own" comes from checked() below. One class of
 # tracked file is excluded: the files a drift test holds to upstream, where a
