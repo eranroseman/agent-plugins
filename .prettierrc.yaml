@@ -2,14 +2,13 @@
 # file lists tests/lib.sh derives (spec §8.1). No .prettierignore: the list is
 # the scope, and an ignore file would restate the vendored set a second time.
 
-# tests/test-vendored-scaffolder.sh holds two sections of AGENTS.md
-# byte-identical to a block inside the vendored setup-repository/SKILL.md,
-# which no formatter may touch; with `always` the formatter and that drift
-# test become mutually unsatisfiable (§8.4).
+# The block the scaffolder setup-matt-pocock-skills writes and the two
+# sections of AGENTS.md it copies are kept in step by hand (#21); a rewrap of
+# one would make the next hand-sync a diff of line breaks.
 proseWrap: preserve
 
 # Fenced blocks quote other files verbatim -- the AGENTS.md block in the
-# specs, the README recipes tests/test-setup-doctor.sh compares byte for byte
-# against `bin/setup --help` -- and quoted material must not be restyled by
-# the document quoting it. Quoted: a bare `off` is YAML for false.
+# scaffolder, the README's install blocks that the install job runs as
+# written -- and quoted material must not be restyled by the document quoting
+# it. Quoted: a bare `off` is YAML for false.
 embeddedLanguageFormatting: "off"

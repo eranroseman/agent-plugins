@@ -14,7 +14,7 @@ confused situation into one people can act on together — noticing what does
 not fit, naming it, and closing the gap between what someone knows and what
 they need to know. **It is not a synonym for reading, analysis, or
 documentation.** `consistency-audit` reads a repository's corpus and its
-configuration from `docs/agents/`; `setup-repository` declares a
+configuration from `docs/agents/`; `setup-matt-pocock-skills` declares a
 repository's conventions. Both are about software and both live in
 `software-dev`, whatever a "reading versus building" split would suggest.
 

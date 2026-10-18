@@ -12,14 +12,12 @@ What it ships:
   fires on build requests and no longer competes with `grilling`. The
   provenance header at the top of `SKILL.md` names the commit. Do not
   hand-edit the skill; re-vendor from upstream to update it.
-- `skills/setup-repository/`: mattpocock/skills' repository scaffolder
-  (`setup-matt-pocock-skills` upstream), vendored at tag `v1.2.3` and renamed.
-  It writes the `## Agent skills` block to `AGENTS.md` and leaves `CLAUDE.md` as
-  a one-line `@AGENTS.md` import, so Codex reads the same rules Claude does; it
-  asks which git convention the repo uses; and the block it writes carries that
-  convention, the design ladder, and the task-reports rule. User-invocable only.
-  The provenance header at the top of `SKILL.md` names the commit and every
-  local change.
+- `skills/setup-matt-pocock-skills/`: a fork of mattpocock/skills' repository
+  scaffolder, first-party since the fork. It writes the `## Agent skills`
+  block to `AGENTS.md` and leaves `CLAUDE.md` as a one-line `@AGENTS.md`
+  import, so Codex reads the same rules Claude does; it asks which git
+  convention the repo uses; and the block it writes carries that convention,
+  the design ladder, and the task-reports rule. User-invocable only.
 - `skills/consistency-audit/` and `agents/consistency-audit-inspector.md`:
   a first-party audit, user-invocable only, that reads a repository whole for
   contradictions, duplication, drifted terms and stale claims, refutes every
@@ -139,6 +137,6 @@ the commands to run.
 ## License
 
 MIT. The vendored `skills/brainstorming/` is MIT, © 2025 Jesse Vincent;
-`skills/setup-repository/` and `skills/diagnosing-bugs/` are MIT, © 2026 Matt
+`skills/setup-matt-pocock-skills/` and `skills/diagnosing-bugs/` are MIT, © 2026 Matt
 Pocock; the two templates under `skills/finding-duplicate-functions/scripts/`
 are MIT, © 2025 Jesse Vincent. See `LICENSE`.

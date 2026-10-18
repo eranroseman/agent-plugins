@@ -130,7 +130,6 @@ GUARDED=(
   $'^plugins/sensemaking/skills/adhd/\ttests/test-vendored-adhd.sh'
   $'^plugins/software-dev/skills/brainstorming/\ttests/test-vendored-brainstorming.sh'
   $'^plugins/software-dev/skills/diagnosing-bugs/\ttests/test-vendored-diagnosing-bugs.sh'
-  $'^plugins/software-dev/skills/setup-repository/\ttests/test-vendored-scaffolder.sh'
   $'^plugins/software-dev/skills/finding-duplicate-functions/scripts/[a-z-]+-prompt\\.md$\ttests/test-vendored-duplicates.sh'
   $'^plugins/software-dev/hooks/using-superpowers\\.md$\ttests/test-hook.sh'
 )
