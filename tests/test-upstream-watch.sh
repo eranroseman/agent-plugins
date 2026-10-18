@@ -9,8 +9,9 @@
 #      current, and prereleases, -dev builds and a parallel tag series never
 #      count (Q66);
 #   2. tag and branch pins (Q29, T1, T39): a tag entry behind its newest
-#      stable tag, a branch entry behind its tip, and a branch tree behind its
-#      tip each exit 1 and are named; all current exit 0.
+#      stable tag, a tag entry whose tag was re-cut onto another commit, a
+#      branch entry behind its tip, and a branch tree behind its tip each
+#      exit 1 and are named; all current exit 0.
 # Needs no network.
 . "$(dirname "$0")/lib.sh"
 
@@ -27,6 +28,7 @@ TAG_SHA="1111111111111111111111111111111111111111"
 BRANCH_SHA="2222222222222222222222222222222222222222"
 TREE_SHA="3333333333333333333333333333333333333333"
 NEWER="4444444444444444444444444444444444444444"
+TAG_OBJ="5555555555555555555555555555555555555555"
 
 # The fixture desired state. The tag entry's version is upstream's, the
 # branch entry's is this repository's; neither matters to the watch.
@@ -71,7 +73,7 @@ printf '{"sources":[{"repo":"example/skills-upstream","ref":"v1.0.0","skills":["
   || fail "could not write the fixture skills.json"
 
 # The git stub: `ls-remote` answered from answers.tsv (url, refname, sha);
-# with no refspec it lists the tags of the url, as `--tags --refs` does. Any
+# with no ref argument it lists the tags of the url, as `--tags --refs` does. Any
 # other verb is exit 99, so the watch cannot reach a real remote from here.
 cat >"$W/bin/git" <<'STUB'
 #!/usr/bin/env bash
@@ -93,16 +95,19 @@ STUB
 chmod +x "$W/bin/git" || fail "could not make the git stub executable"
 export ANSWERS="$W/answers.tsv"
 
-# $1 the tag entry's newest tag set, one sha for every tag listed; $2 the
-# branch tip; $3 the tree tip. The tag entry's tags: a stable release, a
-# newer stable release, prereleases, a -dev build and a parallel series.
-write_answers() { # $1 newest stable tag name, $2 its sha, $3 branch tip, $4 tree tip
+# The tag entry's tags: a prerelease, a -dev build and a parallel series, all
+# lightweight; v2.16.0 annotated, so its own line names a tag object and its
+# peeled line (^{}) names the commit; and, when $1 is another tag, that tag
+# lightweight at $2. A watch that read the tag object, not the peel, would
+# see TAG_OBJ where the pin says TAG_SHA.
+write_answers() { # $1 newest stable tag name, $2 its sha, $3 branch tip, $4 tree tip, $5 the commit v2.16.0 peels to (default TAG_SHA)
   {
-    for t in archify-dsh-v0.1.0 v2.17.0-dev.1 v2.16.1-rc.1 v2.16.0-beta v2.15.0 v2.16.0 "$1"; do
+    for t in archify-dsh-v0.1.0 v2.17.0-dev.1 v2.16.1-rc.1 v2.16.0-beta v2.15.0; do
       printf '%s\trefs/tags/%s\t%s\n' "$TAG_URL" "$t" "$TAG_SHA"
     done
-    printf '%s\trefs/tags/%s\t%s\n' "$TAG_URL" "$1" "$2"
-    printf '%s\trefs/tags/v2.16.0\t%s\n' "$TAG_URL" "$TAG_SHA"
+    printf '%s\trefs/tags/v2.16.0\t%s\n' "$TAG_URL" "$TAG_OBJ"
+    printf '%s\trefs/tags/v2.16.0^{}\t%s\n' "$TAG_URL" "${5:-$TAG_SHA}"
+    [ "$1" = v2.16.0 ] || printf '%s\trefs/tags/%s\t%s\n' "$TAG_URL" "$1" "$2"
     printf '%s\trefs/heads/main\t%s\n' "$BRANCH_URL" "$3"
     printf '%s\trefs/heads/main\t%s\n' "$TREE_URL" "$4"
     printf '%s\trefs/tags/v1.0.0\t%s\n' "$SKILLS_URL" "$TREE_SHA"
@@ -139,6 +144,14 @@ run_watch
 [ "$status" -eq 1 ] || fail "a tag entry behind a new stable tag must exit 1, got $status:"$'\n'"$out"
 grep -qF -- 'the newest stable tag is `v2.17.0`' <<<"$out" || fail "the new tag was not named:"$'\n'"$out"
 grep -qF 'tagged' <<<"$out" || fail "the drifted entry was not named:"$'\n'"$out"
+# The tag entry at the newest stable tag, but the tag was re-cut: it peels to
+# another commit than the pinned sha.
+write_answers v2.16.0 "$TAG_SHA" "$BRANCH_SHA" "$TREE_SHA" "$NEWER"
+run_watch
+[ "$status" -eq 1 ] || fail "a tag re-cut onto another commit must exit 1, got $status:"$'\n'"$out"
+grep -qF -- "\`$NEWER\`" <<<"$out" || fail "the commit the tag names now was not reported:"$'\n'"$out"
+grep -qF -- "\`$TAG_SHA\`" <<<"$out" || fail "the pinned sha was not reported:"$'\n'"$out"
+grep -qF 'tagged' <<<"$out" || fail "the re-cut tag's entry was not named:"$'\n'"$out"
 # The branch entry behind its tip.
 write_answers v2.16.0 "$TAG_SHA" "$NEWER" "$TREE_SHA"
 run_watch

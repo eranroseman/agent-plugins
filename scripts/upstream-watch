@@ -63,7 +63,8 @@ newest_tag_of() {
 # One pin's line. $1 what is pinned, in backticks already; $2 URL; $3 ref;
 # $4 sha; $5 the bump advice for a drifted pin, one sentence. A branch pin
 # is current when the branch's tip is the sha; a tag pin when the tag is the
-# repository's newest stable tag.
+# repository's newest stable tag and names the sha (a re-cut tag, or a bump
+# that moved the ref and not the sha, is drift).
 compare_pin() {
   local what="$1" url="$2" ref="$3" sha="$4" advice="$5" resolved kind tip newest
   [ "${#sha}" -eq 40 ] || die "no 40-character sha for $what"
@@ -81,11 +82,14 @@ compare_pin() {
       ;;
     tag)
       newest="$(newest_tag_of "$url")" || exit 2
-      if [ "$ref" = "$newest" ]; then
-        report "- $what pinned at tag \`$ref\` (\`$sha\`), the newest stable tag. Nothing to do."
-      else
+      if [ "$ref" != "$newest" ]; then
         report "- $what pinned at tag \`$ref\`; the newest stable tag is \`$newest\`. $advice"
         DRIFT=1
+      elif [ "$tip" != "$sha" ]; then
+        report "- $what pinned at tag \`$ref\` (\`$sha\`); the tag names \`$tip\` now. $advice"
+        DRIFT=1
+      else
+        report "- $what pinned at tag \`$ref\` (\`$sha\`), the newest stable tag. Nothing to do."
       fi
       ;;
   esac
