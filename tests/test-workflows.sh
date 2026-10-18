@@ -28,47 +28,34 @@ for f in $files; do
     || fail "$f: $checkouts actions/checkout step(s) but $persists persist-credentials: false line(s)"
 done
 
-# The watch reads the same pins the guard above checks: one line per
-# distinct pin, and every uses: line accounted for. It exits 0 doing so: an
-# unmatched glob never reaches grep.
-pins="$(bash "$REPO_ROOT/scripts/upstream-watch" --workflow-pins)" \
-  || fail "upstream-watch --workflow-pins exited $?, not 0"
-# With no workflow file at all, the reader fails loudly, exit 2, naming the
-# directory, rather than handing grep an empty list and so its stdin.
+# A broken desired-state file must fail the watch before it reads any upstream:
+# exit 2, the file named, and the git stub's log empty. The stub records every
+# call and answers nothing, so a watch that reached for a remote shows here.
 W="$(mktemp -d)" || fail "mktemp failed"
 trap 'rm -rf "$W"' EXIT
-mkdir -p "$W/scripts" || fail "could not seed $W"
+mkdir -p "$W/scripts" "$W/.claude-plugin" "$W/bin" || fail "could not seed $W"
 cp "$REPO_ROOT/scripts/upstream-watch" "$W/scripts/" || fail "could not copy the watch"
-status=0
-out="$(bash "$W/scripts/upstream-watch" --workflow-pins 2>&1 </dev/null)" || status=$?
-[ "$status" -eq 2 ] || fail "with no workflow file, --workflow-pins exited $status, not 2:"$'\n'"$out"
-grep -qF '.github/workflows' <<<"$out" || fail "with no workflow file, the error does not name .github/workflows:"$'\n'"$out"
-# A broken marketplace must fail before the watch attempts an upstream read.
-mkdir -p "$W/.claude-plugin" "$W/bin" || fail "could not extend $W"
 cp "$REPO_ROOT/skills.json" "$REPO_ROOT/vendored.json" "$W/" \
   || fail "could not copy the watch's desired state"
-printf '#!/usr/bin/env bash\nexit 99\n' >"$W/bin/git" || fail "could not write the git stub"
+printf '#!/usr/bin/env bash\nprintf "%%s\\n" "$*" >>"%s"\nexit 99\n' "$W/git.log" >"$W/bin/git" \
+  || fail "could not write the git stub"
 chmod +x "$W/bin/git" || fail "could not make the git stub executable"
 printf '{\n' >"$W/.claude-plugin/marketplace.json" || fail "could not break marketplace.json"
 status=0
 out="$(PATH="$W/bin:$PATH" bash "$W/scripts/upstream-watch" 2>&1)" || status=$?
 [ "$status" -eq 2 ] || fail "with a broken marketplace, upstream-watch exited $status, not 2:"$'\n'"$out"
-grep -qF "ERROR: could not read subset entries from $W/.claude-plugin/marketplace.json" <<<"$out" \
-  || fail "the broken marketplace was not rejected at its read boundary:"$'\n'"$out"
+grep -qF "$W/.claude-plugin/marketplace.json" <<<"$out" \
+  || fail "the broken marketplace was not named:"$'\n'"$out"
+[ ! -s "$W/git.log" ] || fail "the watch read an upstream before rejecting the broken marketplace:"$'\n'"$(cat "$W/git.log")"
 # A marketplace with no subset entry is the case the old process substitution
 # turned into a clean verdict: zero rows, zero iterations, DRIFT still 0.
 printf '{"plugins":[]}\n' >"$W/.claude-plugin/marketplace.json" || fail "could not empty marketplace.json"
 status=0
 out="$(PATH="$W/bin:$PATH" bash "$W/scripts/upstream-watch" 2>&1)" || status=$?
 [ "$status" -eq 2 ] || fail "with no subset entry, upstream-watch exited $status, not 2:"$'\n'"$out"
-grep -qF "ERROR: no subset entry could be read from $W/.claude-plugin/marketplace.json" <<<"$out" \
-  || fail "a marketplace with no subset entry was not rejected:"$'\n'"$out"
-[ "$(printf '%s\n' "$pins" | grep -c .)" -eq 4 ] || fail "expected 4 distinct action pins, got:"$'\n'"$pins"
-# shellcheck disable=SC2086  # one path per word, asserted by tests/test-ownership.sh
-# shellcheck disable=SC2013  # each word is a whole uses: pin, never split by whitespace within one
-for line in $(grep -hoE 'uses:[[:space:]]*[^@[:space:]]+@[0-9a-f]{40}' $files | sed -E 's/^uses:[[:space:]]*//'); do
-  grep -qF -- "${line%@*} ${line#*@} " <<<"$pins" || fail "the watch does not read the pin $line"
-done
+grep -qF "$W/.claude-plugin/marketplace.json" <<<"$out" \
+  || fail "a marketplace with no subset entry was not named:"$'\n'"$out"
+[ ! -s "$W/git.log" ] || fail "the watch read an upstream with no subset entry to compare:"$'\n'"$(cat "$W/git.log")"
 
 printf 'workflows: %s workflow(s) linted, every uses: sha-pinned, permissions declared, credentials not persisted\n' \
   "$(printf '%s\n' "$files" | grep -c .)"

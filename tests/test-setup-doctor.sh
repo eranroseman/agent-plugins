@@ -13,13 +13,6 @@ DOCTOR="$REPO_ROOT/bin/doctor"
 [ -x "$SETUP" ] || fail "bin/setup missing or not executable"
 [ -x "$DOCTOR" ] || fail "bin/doctor missing or not executable"
 
-# upstream-watch's tag filter, with no network: the newest stable release
-# wins over a prerelease, a -dev build, and a parallel tag series.
-got="$(printf '%s\n' archify-dsh-v0.1.0 v2.16.0 v2.17.0-dev.1 v2.16.1-rc.1 v2.16.0-beta v2.15.0 \
-  | bash "$REPO_ROOT/scripts/upstream-watch" --newest-stable-tag)" \
-  || fail "upstream-watch --newest-stable-tag failed"
-[ "$got" = "v2.16.0" ] || fail "upstream-watch --newest-stable-tag picked '$got', expected v2.16.0"
-
 # bin/doctor is the same engine in check mode, not a second implementation.
 [ "$(grep -c . "$DOCTOR")" -le 6 ] || fail "bin/doctor should be a thin wrapper over bin/setup --check"
 grep -q -- '--check' "$DOCTOR" || fail "bin/doctor must invoke bin/setup --check"

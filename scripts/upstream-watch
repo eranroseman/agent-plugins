@@ -1,12 +1,19 @@
 #!/usr/bin/env bash
 # Compare this repository's declared pins against their upstreams and print a
-# markdown report. Never bumps a pin and never opens a pull request: a bump is
-# a human decision made on a branch with scripts/bump-superpowers.
+# markdown report. Never bumps a pin: a bump is a manual edit of the file that
+# declares it, a hand copy of upstream's changes, and test-upstream.sh saying
+# whether the copy is right (spec §12).
 #
 #   exit 0   everything matches
 #   exit 1   something upstream moved; the report says what
 #   exit 2   the run itself failed, which must be loud: a dead detector looks
 #            exactly like a healthy repository
+#
+# One ref resolution serves every pin (T39): a ref is a branch when
+# refs/heads/<ref> resolves, else a tag when refs/tags/<ref>^{} or the bare
+# tag does. A branch pin is compared with its branch's tip; a tag pin with its
+# repository's newest stable tag. A ref that is both or neither is exit 2.
+# The action pins are Dependabot's (.github/dependabot.yml), not the watch's.
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -26,42 +33,63 @@ report() { printf '%s\n' "$*"; }
 # -rc and -dev.N suffixes are excluded because `sort -V` would otherwise rank
 # an upcoming version's prerelease above the newest stable release and report
 # it as drift indefinitely; a parallel tag series with its own prefix (archify
-# publishes archify-dsh-v0.1.0 beside its releases) sorts below a real release
+# published archify-dsh-v0.1.0 beside its releases) sorts below a real release
 # regardless -- `printf 'archify-dsh-v9.9.9\nv2.16.0\n' | sort -V` puts
 # v2.16.0 last -- and is excluded because the anchor admits nothing before the
 # version, not because of how it would sort.
 newest_stable_tag() { grep -E '^v?[0-9]+(\.[0-9]+)+$' | sort -V | tail -1; }
 
-# Exposed so the filter can be tested without the network.
-if [ "${1:-}" = "--newest-stable-tag" ]; then
-  newest_stable_tag
-  exit 0
-fi
-
-# Every action pin in the workflow files, `uses: owner/repo@sha # vX.Y.Z`,
-# as `owner/repo sha tag`, one line per distinct pin. The workflow file is
-# the desired state; no copy is kept (spec §14). The file list is built
-# under nullglob, so an unmatched *.yaml never reaches grep as a literal
-# path, and an empty list is exit 2, since grep given no file reads stdin.
-workflow_pins() {
-  local -a files
-  mapfile -t files < <(
-    shopt -s nullglob
-    for f in "$REPO_ROOT"/.github/workflows/*.yml "$REPO_ROOT"/.github/workflows/*.yaml; do
-      printf '%s\n' "$f"
-    done
-  )
-  [ "${#files[@]}" -gt 0 ] || die "no workflow file under $REPO_ROOT/.github/workflows"
-  grep -hoE 'uses:[[:space:]]*[^@[:space:]]+@[0-9a-f]{40}[[:space:]]*#[[:space:]]*v[0-9]+(\.[0-9]+)*' "${files[@]}" \
-    | sed -E 's/^uses:[[:space:]]*([^@]+)@([0-9a-f]{40})[[:space:]]*#[[:space:]]*(v[0-9.]+)$/\1 \2 \3/' \
-    | sort -u
+# $1 a URL, $2 a ref. Prints `branch<TAB>sha` or `tag<TAB>sha`; dies when the
+# ref is both or neither. For a tag, the sha is the commit it names: the
+# peeled object of an annotated tag, the tag itself for a lightweight one.
+resolve_ref() {
+  local url="$1" ref="$2" head tag
+  head="$(git ls-remote "$url" "refs/heads/$ref" | cut -f1)"
+  tag="$(git ls-remote --tags "$url" "refs/tags/$ref^{}" | cut -f1)"
+  [ -n "$tag" ] || tag="$(git ls-remote --tags "$url" "refs/tags/$ref" | cut -f1)"
+  if [ -n "$head" ] && [ -n "$tag" ]; then die "$url: $ref is both a branch and a tag"; fi
+  if [ -z "$head" ] && [ -z "$tag" ]; then die "could not resolve $url $ref as a branch or a tag"; fi
+  if [ -n "$head" ]; then printf 'branch\t%s\n' "$head"; else printf 'tag\t%s\n' "$tag"; fi
 }
 
-# Exposed so the parse can be tested without the network.
-if [ "${1:-}" = "--workflow-pins" ]; then
-  workflow_pins
-  exit $?
-fi
+# $1 a URL. The newest stable tag there, or exit 2.
+newest_tag_of() {
+  local t
+  t="$(git ls-remote --tags --refs "$1" | awk -F/ '{print $NF}' | newest_stable_tag)"
+  [ -n "$t" ] || die "could not resolve the newest stable tag of $1"
+  printf '%s\n' "$t"
+}
+
+# One pin's line. $1 what is pinned, in backticks already; $2 URL; $3 ref;
+# $4 sha; $5 the bump advice for a drifted pin, one sentence. A branch pin
+# is current when the branch's tip is the sha; a tag pin when the tag is the
+# repository's newest stable tag.
+compare_pin() {
+  local what="$1" url="$2" ref="$3" sha="$4" advice="$5" resolved kind tip newest
+  [ "${#sha}" -eq 40 ] || die "no 40-character sha for $what"
+  resolved="$(resolve_ref "$url" "$ref")" || exit 2
+  kind="${resolved%%$'\t'*}"
+  tip="${resolved#*$'\t'}"
+  case "$kind" in
+    branch)
+      if [ "$tip" = "$sha" ]; then
+        report "- $what pinned at \`$sha\`, which is \`$ref\`'s tip. Nothing to do."
+      else
+        report "- $what pinned at \`$sha\`; $ref is \`$tip\`. $advice"
+        DRIFT=1
+      fi
+      ;;
+    tag)
+      newest="$(newest_tag_of "$url")" || exit 2
+      if [ "$ref" = "$newest" ]; then
+        report "- $what pinned at tag \`$ref\` (\`$sha\`), the newest stable tag. Nothing to do."
+      else
+        report "- $what pinned at tag \`$ref\`; the newest stable tag is \`$newest\`. $advice"
+        DRIFT=1
+      fi
+      ;;
+  esac
+}
 
 [ -f "$MARKETPLACE" ] || die "missing $MARKETPLACE"
 [ -f "$SKILLS_JSON" ] || die "missing $SKILLS_JSON"
@@ -72,45 +100,24 @@ report ""
 report "Generated $(date -u '+%Y-%m-%d %H:%M UTC'). This issue is updated in place."
 report ""
 
-# 1. Each subset entry: the pinned sha against the tip of its declared ref.
-# superpowers also lists its newest tag and names its bump script; the other
-# entries have no version to mirror, so a bump edits sha and version together
-# by hand (spec section 6.4).
+# 1. Each subset entry, by its ref. A bump edits .claude-plugin/marketplace.json
+# and moves ref, sha and version together (spec §12.3).
+report "### subset entries"
+report ""
 subset_rows="$(jq -r '.plugins[] | select(.source.source? == "git-subdir")
                       | [.name, .source.url, .source.ref, .source.sha] | @tsv' "$MARKETPLACE")" \
   || die "could not read subset entries from $MARKETPLACE"
 [ -n "$subset_rows" ] || die "no subset entry could be read from $MARKETPLACE"
 while IFS="$(printf '\t')" read -r name url ref sha; do
   [ -n "$name" ] || continue
-  [ "${#sha}" -eq 40 ] || die "no 40-character sha for $name in $MARKETPLACE"
-  head_sha="$(git ls-remote "$url" "refs/heads/$ref" | cut -f1)"
-  [ -n "$head_sha" ] || die "could not resolve $url $ref"
-  report "### $name ($url)"
-  report ""
-  if [ "$head_sha" = "$sha" ]; then
-    report "- Pinned at \`$sha\`, which is $ref. Nothing to do."
-  else
-    report "- Pinned at \`$sha\`; $ref is \`$head_sha\`."
-    if [ "$name" = superpowers ]; then
-      report "- Bump with \`scripts/bump-superpowers $head_sha\`, then read the diff to"
-      report "  \`hooks/using-superpowers.md\` and \`skills/brainstorming/\` before merging."
-    else
-      report "- Bump by editing \`.claude-plugin/marketplace.json\`: move \`sha\` and \`version\` together, then update the pinned pair in \`tests/test-subset-$name.sh\`."
-    fi
-    DRIFT=1
-  fi
-  if [ "$name" = superpowers ]; then
-    latest_tag="$(git ls-remote --tags --refs "$url" | awk -F/ '{print $NF}' | newest_stable_tag)"
-    [ -n "$latest_tag" ] || die "could not resolve the newest stable tag of $url"
-    report "- Latest upstream tag: \`$latest_tag\`."
-  fi
-  report ""
+  compare_pin "\`$name\` ($url)" "$url" "$ref" "$sha" \
+    "Bump by editing \`.claude-plugin/marketplace.json\`: move \`ref\`, \`sha\` and \`version\` together, \`version\` from upstream's manifest at the new pin where it has one and by hand otherwise; then run test-upstream.sh, which names each new upstream skill to list or exclude."
 done <<<"$subset_rows"
+report ""
 
-# 1b. Each vendored or forked tree: the pinned sha against the tip of the
+# 1b. Each vendored or forked tree: the pinned sha against the tip of its
 # declared branch (vendored.json). A bump is a human decision: edit
-# vendored.json, re-vendor or re-diff the tree, update the records the drift
-# test holds to it.
+# vendored.json, re-copy or re-diff the tree, and run test-upstream.sh.
 report "### vendored and forked trees"
 report ""
 tree_rows="$(jq -r 'to_entries[] | select(.key != "$comment") | [.key, .value.repo, .value.branch, .value.sha, .value.kind] | @tsv' "$VENDORED_JSON")" \
@@ -118,19 +125,12 @@ tree_rows="$(jq -r 'to_entries[] | select(.key != "$comment") | [.key, .value.re
 [ -n "$tree_rows" ] || die "no vendored or forked tree could be read from $VENDORED_JSON"
 while IFS="$(printf '\t')" read -r tree repo branch sha kind; do
   [ -n "$tree" ] || continue
-  [ "${#sha}" -eq 40 ] || die "no 40-character sha for $tree in $VENDORED_JSON"
-  head_sha="$(git ls-remote "https://github.com/$repo.git" "refs/heads/$branch" | cut -f1)"
-  [ -n "$head_sha" ] || die "could not resolve $repo $branch"
-  if [ "$head_sha" = "$sha" ]; then
-    report "- \`$tree\` ($kind from \`$repo\`) pinned at \`$sha\`, which is $branch. Nothing to do."
-  else
-    report "- \`$tree\` ($kind from \`$repo\`) pinned at \`$sha\`; $branch is \`$head_sha\`. Bump by editing \`vendored.json\`, then re-vendor the tree (a forked tree: re-diff its carried fragments) and update the sha in its SKILL.md header, its PROVENANCE.md if any, and the plugin LICENSE; the drift test holds them equal."
-    DRIFT=1
-  fi
+  compare_pin "\`$tree\` ($kind from \`$repo\`)" "https://github.com/$repo.git" "$branch" "$sha" \
+    "Bump by editing \`vendored.json\`, then re-copy the tree from the new pin (a forked tree: read its upstream diff and port what is worth it)."
 done <<<"$tree_rows"
 report ""
 
-# 2. Each skills.sh source: the declared ref against the newest tag.
+# 2. Each skills.sh source: the declared ref against the newest stable tag.
 report "### skills.sh sources"
 report ""
 source_rows="$(jq -r '.sources[] | [.repo, .ref] | @tsv' "$SKILLS_JSON")" \
@@ -138,9 +138,7 @@ source_rows="$(jq -r '.sources[] | [.repo, .ref] | @tsv' "$SKILLS_JSON")" \
 [ -n "$source_rows" ] || die "no skills.sh source could be read from $SKILLS_JSON"
 while IFS="$(printf '\t')" read -r repo ref; do
   [ -n "$repo" ] || continue
-  newest="$(git ls-remote --tags --refs "https://github.com/$repo.git" \
-    | awk -F/ '{print $NF}' | newest_stable_tag)"
-  [ -n "$newest" ] || die "could not list tags for $repo"
+  newest="$(newest_tag_of "https://github.com/$repo.git")" || exit 2
   if [ "$newest" = "$ref" ]; then
     report "- \`$repo\` pinned at \`$ref\`, the newest tag."
   else
@@ -148,69 +146,6 @@ while IFS="$(printf '\t')" read -r repo ref; do
     DRIFT=1
   fi
 done <<<"$source_rows"
-report ""
-
-# 3. openai/codex: the two constants the Codex hook posture rests on. A change
-# to either would start offering Codex a hook through the Claude manifest's
-# declared path, silently reversing a shipped decision.
-report "### openai/codex constants"
-report ""
-codex_tag="$(git ls-remote --tags --refs https://github.com/openai/codex.git 'refs/tags/rust-v0.*' \
-  | awk -F/ '{print $NF}' | grep -v -- '-alpha' | grep -v -- '-beta' | sort -V | tail -1)"
-[ -n "$codex_tag" ] || die "could not resolve the latest openai/codex release tag"
-loader="$(curl -sfL "https://raw.githubusercontent.com/openai/codex/$codex_tag/codex-rs/core-plugins/src/loader.rs")" \
-  || die "could not fetch loader.rs at $codex_tag"
-protocol="$(curl -sfL "https://raw.githubusercontent.com/openai/codex/$codex_tag/codex-rs/exec-server-protocol/src/protocol.rs")" \
-  || die "could not fetch protocol.rs at $codex_tag"
-report "Checked at \`$codex_tag\`."
-report ""
-# Matched with `case`, not `printf | grep -q`. The pipe form is one small
-# upstream commit away from breaking: the match is on line 69, so grep -q exits
-# almost immediately, and everything after it has to fit in the pipe. loader.rs
-# is 68,754 bytes at rust-v0.153.4 against a 64 KiB pipe buffer plus whatever
-# grep already read, so today the write just completes and the check passes
-# (measured 2026-09-05). A few hundred bytes more and printf takes SIGPIPE,
-# `pipefail` makes the pipeline 141, and the watch reports a constant that has
-# not changed as changed, every day, in the one check nobody would think to
-# doubt. `case` needs no pipe and cannot fail that way.
-if case "$loader" in
-  *'const DEFAULT_HOOKS_CONFIG_FILE: &str = "hooks/hooks.json";'*) true ;;
-  *) false ;;
-esac then
-  report "- \`DEFAULT_HOOKS_CONFIG_FILE\` is still \`hooks/hooks.json\`."
-else
-  report "- **\`DEFAULT_HOOKS_CONFIG_FILE\` changed.** Nothing sits at the old fallback path any more, so Codex may now be offered a hook. Re-read the hook spec section 6.2."
-  DRIFT=1
-fi
-first_manifest="$(printf '%s' "$protocol" \
-  | awk '/DISCOVERABLE_PLUGIN_MANIFEST_PATHS/ { found = 1; next } found && /"/ { gsub(/[ ",]/, ""); print; exit }')"
-if [ "$first_manifest" = ".codex-plugin/plugin.json" ]; then
-  report "- \`.codex-plugin/plugin.json\` is still first in \`DISCOVERABLE_PLUGIN_MANIFEST_PATHS\`."
-else
-  report "- **Manifest order changed:** first entry is now \`${first_manifest:-unreadable}\`. Codex may read the Claude manifest, which declares a hook. Re-read the hook spec section 6.2."
-  DRIFT=1
-fi
-report ""
-
-# 4. The action pins: each sha against what its tag names. An annotated tag
-# is peeled; a lightweight one resolves bare, which is what the four current
-# releases are.
-report "### action pins"
-report ""
-while read -r repo sha tag; do
-  [ -n "$repo" ] || continue
-  resolved="$(git ls-remote --tags "https://github.com/$repo.git" "refs/tags/$tag^{}" | cut -f1)"
-  [ -n "$resolved" ] || resolved="$(git ls-remote --tags "https://github.com/$repo.git" "refs/tags/$tag" | cut -f1)"
-  [ -n "$resolved" ] || die "could not resolve $repo tag $tag"
-  if [ "$resolved" = "$sha" ]; then
-    report "- \`$repo@$tag\` is pinned at its tag's commit."
-  else
-    report "- **\`$repo\` is pinned at \`$sha\`, but \`$tag\` is \`$resolved\`.** Edit the \`uses:\` line in the workflow."
-    DRIFT=1
-  fi
-done < <(workflow_pins)
-n_pins="$(workflow_pins | grep -c .)"
-[ "$n_pins" -gt 0 ] || die "no action pin was read from the workflow files"
 report ""
 
 if [ "$DRIFT" -eq 0 ]; then

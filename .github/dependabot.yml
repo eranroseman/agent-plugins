@@ -1,0 +1,11 @@
+# Dependabot watches the Actions pins (spec §12.2, T50): it moves a sha-pinned
+# `uses:` line to the action's newest release together with the version
+# comment beside it, and moves a sha with no tag to the latest commit. Daily,
+# the watch's own cadence. tests/test-workflows.sh still holds that every
+# `uses:` is pinned by sha.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: daily
