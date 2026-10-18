@@ -49,8 +49,7 @@ product needs it (the placement rule in `plugins/sensemaking/README.md`).
 It was custodied in `harness-backup` before that, under that repository's
 rule of holding what no tool reproduces; that repository is retired.
 
-`tests/test-vendored-duplicates.sh` holds the two carried templates
-byte-identical to upstream at the commit above, so a drift there is a
-failing test rather than a note nobody re-reads. Nothing watches upstream
+The two carried templates are linted like the rest of the repository, and
+no test holds them to upstream at the commit above. Nothing watches upstream
 for changes to the parts that were rewritten; that is the cost of a fork,
 and it was taken because the upstream extractor returns nothing for Python.

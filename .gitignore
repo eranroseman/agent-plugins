@@ -4,8 +4,8 @@
 .superpowers/
 
 # The vendored finding-duplicate-functions skill ships Python. A stray
-# __pycache__ or ruff cache under it breaks tests/test-vendored-duplicates.sh,
-# which asserts an exact file set against upstream.
+# __pycache__ or ruff cache under it would be an untracked file in a tracked
+# tree, which the reference check and the formatters would then read.
 __pycache__/
 *.pyc
 .ruff_cache/

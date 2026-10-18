@@ -6,7 +6,7 @@ Run this prompt **once per category** that has 3+ functions.
 
 ## Prompt Template
 
-```
+````text
 You are analyzing functions in the "{CATEGORY}" category for semantic duplicates.
 
 Semantic duplicates are functions that serve the SAME PURPOSE even if:
@@ -76,17 +76,21 @@ Return a JSON array of duplicate groups:
 ## Functions in "{CATEGORY}" Category
 
 <INSERT_CATEGORY_FUNCTIONS_HERE>
-```
+
+````
 
 ## Usage
 
 1. First run categorization (see categorize-prompt.md)
-2. Filter categorized.json to get functions for one category:
-   ```bash
-   jq '[.[] | select(.category == "validation")]' categorized.json > validation-functions.json
-   ```
+2. Filter categorized.json to get functions for one category, with the `jq` command below
 3. Replace `{CATEGORY}` with the category name
 4. Replace `<INSERT_CATEGORY_FUNCTIONS_HERE>` with the filtered JSON
 5. Dispatch opus subagent with the prompt
 6. Repeat for each category with 3+ functions
 7. Combine outputs into final report
+
+The filter for one category:
+
+```bash
+jq '[.[] | select(.category == "validation")]' categorized.json > validation-functions.json
+```

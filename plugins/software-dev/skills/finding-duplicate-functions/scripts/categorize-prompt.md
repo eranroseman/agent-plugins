@@ -4,7 +4,7 @@ Use this prompt with a **haiku** subagent for cost-effective categorization.
 
 ## Prompt Template
 
-```
+```text
 Read the function catalog at <CATALOG_PATH> and categorize each function.
 
 Assign each function to exactly ONE category based on its primary purpose.
@@ -53,7 +53,7 @@ Do NOT truncate or summarize - write ALL entries.
 
 ## Usage
 
-1. Run extraction: `./extract-functions.sh src/ -o catalog.json`
+1. Run extraction: `python3 ./extract-functions.py <SOURCE_DIR> -o catalog.json`
 2. Dispatch haiku subagent with the prompt above, replacing:
    - `<CATALOG_PATH>` with path to catalog.json
    - `<OUTPUT_PATH>` with desired output path (e.g., `categorized.json`)

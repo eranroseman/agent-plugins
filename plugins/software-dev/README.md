@@ -31,8 +31,7 @@ What it ships:
   when a bug resists reproduction.
 - `skills/finding-duplicate-functions/`: a rewritten fork of
   obra/superpowers-lab's skill, for Python. Its `PROVENANCE.md` records what
-  changed; only its two prompt templates are upstream's, and the drift test
-  holds them there.
+  changed.
 - `hooks/session-start`, Claude Code only: a SessionStart hook that injects
   `hooks/using-superpowers.md`, upstream's `using-superpowers` text with its one
   `superpowers:brainstorming` reference repointed at
