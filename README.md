@@ -130,7 +130,7 @@ vendored.json      one record per upstream repository copied or forked from: its
 tests/             every check; tests/run.sh runs them and tests/tools.txt pins the tools
 docs/agents/       the conventions the agents read: issue tracker, triage labels, domain docs
 docs/Professional-Editorial-Standards-2024.md   the editorial reference
-docs/superpowers/  historical artifacts: specs and plans as executed; vocabulary and paths current, content frozen
+docs/superpowers/  historical artifacts: specs and plans, each read as of its commit
 CONTEXT.md         the vocabulary: contested terms with their retired forms, and the leading words
 AGENTS.md          the agents' instruction file; CLAUDE.md imports it
 ```

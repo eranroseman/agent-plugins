@@ -31,17 +31,17 @@ upstream_ref() { entry_field_for_repo ref "$1"; }
 # One line per record of vendored.json: repo, ref, sha, tab-separated, the
 # pin resolved: a record carries both ref and sha, or neither and takes its
 # entry's; one without the other fails, so a record that loses its sha by
-# mistake is never skipped. Every record carries trees and forks, {} when
-# empty. jq hands the fields over joined by the unit separator, which is not
-# IFS whitespace, so a record's empty ref and sha survive the read.
+# mistake is never skipped. Every record carries a repo, and trees and forks,
+# {} when empty; one without fails, so no record is skipped. jq hands the
+# fields over joined by the unit separator, which is not IFS whitespace, so a
+# record's empty ref and sha survive the read.
 record_rows() {
   local repo ref sha
   jq -e '.records | type == "array" and length > 0' "$VENDORED_JSON" >/dev/null 2>&1 \
     || fail "$VENDORED_JSON carries no records array"
-  jq -e '[.records[] | (.trees | type == "object") and (.forks | type == "object")] | all' "$VENDORED_JSON" >/dev/null 2>&1 \
-    || fail "a record in $VENDORED_JSON lacks a trees or forks object"
+  jq -e '[.records[] | (.repo | type == "string" and length > 0) and (.trees | type == "object") and (.forks | type == "object")] | all' "$VENDORED_JSON" >/dev/null 2>&1 \
+    || fail "a record in $VENDORED_JSON lacks a repo, a trees object or a forks object"
   while IFS=$'\x1f' read -r repo ref sha; do
-    [ -n "$repo" ] || continue
     if [ -z "$ref" ] && [ -z "$sha" ]; then
       ref="$(upstream_ref "$repo")"
       sha="$(upstream_sha "$repo")"

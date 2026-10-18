@@ -14,7 +14,7 @@ Fork of `finding-duplicate-functions` in
 [obra/superpowers-lab](https://github.com/obra/superpowers-lab) (MIT). The
 upstream extractor is TypeScript/JavaScript and returns zero functions against
 Python; phase 1 is rewritten and a structural pre-filter added. The two prompt
-templates in `scripts/` are upstream, unchanged.
+templates in `scripts/` began as upstream's.
 
 ## The Iron Law
 

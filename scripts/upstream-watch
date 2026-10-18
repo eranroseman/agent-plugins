@@ -140,7 +140,7 @@ record_rows="$(jq -r '.records[] | [.repo, (.ref // ""), (.sha // ""), ((.trees 
   || die "could not read the records from $VENDORED_JSON"
 [ -n "$record_rows" ] || die "no record could be read from $VENDORED_JSON"
 while IFS=$'\x1f' read -r repo ref sha trees forks; do
-  [ -n "$repo" ] || continue
+  [ -n "$repo" ] || die "a record in $VENDORED_JSON carries no repo"
   url="https://github.com/$repo.git"
   # shellcheck disable=SC2086  # the paths are space-separated by construction and carry no whitespace
   fork_list="$(printf '`%s` ' $forks)"

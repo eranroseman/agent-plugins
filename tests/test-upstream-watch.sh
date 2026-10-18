@@ -153,7 +153,7 @@ write_answers v2.17.0 "$NEWER" "$BRANCH_SHA" "$TREE_SHA"
 run_watch
 [ "$status" -eq 1 ] || fail "a tag entry behind a new stable tag must exit 1, got $status:"$'\n'"$out"
 grep -qF -- 'the newest stable tag is `v2.17.0`' <<<"$out" || fail "the new tag was not named:"$'\n'"$out"
-grep -qF 'tagged' <<<"$out" || fail "the drifted entry was not named:"$'\n'"$out"
+grep -qE -- '^- `tagged` .*; the newest stable tag is `v2\.17\.0`' <<<"$out" || fail "the drifted entry was not named on its drift line:"$'\n'"$out"
 # The tag entry at the newest stable tag, but the tag was re-cut: it peels to
 # another commit than the pinned sha.
 write_answers v2.16.0 "$TAG_SHA" "$BRANCH_SHA" "$TREE_SHA" "$NEWER"
@@ -161,18 +161,18 @@ run_watch
 [ "$status" -eq 1 ] || fail "a tag re-cut onto another commit must exit 1, got $status:"$'\n'"$out"
 grep -qF -- "\`$NEWER\`" <<<"$out" || fail "the commit the tag names now was not reported:"$'\n'"$out"
 grep -qF -- "\`$TAG_SHA\`" <<<"$out" || fail "the pinned sha was not reported:"$'\n'"$out"
-grep -qF 'tagged' <<<"$out" || fail "the re-cut tag's entry was not named:"$'\n'"$out"
+grep -qE -- "^- \`tagged\` .*; the tag names \`$NEWER\` now" <<<"$out" || fail "the re-cut tag's entry was not named on its drift line:"$'\n'"$out"
 # The branch entry behind its tip.
 write_answers v2.16.0 "$TAG_SHA" "$NEWER" "$TREE_SHA"
 run_watch
 [ "$status" -eq 1 ] || fail "a branch entry behind its tip must exit 1, got $status:"$'\n'"$out"
 grep -qF -- "main is \`$NEWER\`" <<<"$out" || fail "the branch entry's drift does not name the tip:"$'\n'"$out"
-grep -qF 'branched' <<<"$out" || fail "the drifted branch entry was not named:"$'\n'"$out"
+grep -qE -- "^- \`branched\` .*; main is \`$NEWER\`" <<<"$out" || fail "the drifted branch entry was not named on its drift line:"$'\n'"$out"
 # The tree behind its tip.
 write_answers v2.16.0 "$TAG_SHA" "$BRANCH_SHA" "$NEWER"
 run_watch
 [ "$status" -eq 1 ] || fail "a tree behind its tip must exit 1, got $status:"$'\n'"$out"
-grep -qF 'example/tree-upstream' <<<"$out" || fail "the drifted record was not named:"$'\n'"$out"
+grep -qE -- "^- \`example/tree-upstream\` .*; main is \`$NEWER\`" <<<"$out" || fail "the drifted record was not named on its drift line:"$'\n'"$out"
 # All current again: exit 0.
 write_answers v2.16.0 "$TAG_SHA" "$BRANCH_SHA" "$TREE_SHA"
 run_watch

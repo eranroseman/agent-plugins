@@ -3,9 +3,9 @@
 # unrelated commit in this repository's history.
 .superpowers/
 
-# The vendored finding-duplicate-functions skill ships Python. A stray
-# __pycache__ or ruff cache under it would be an untracked file in a tracked
-# tree, which the reference check and the formatters would then read.
+# The forked finding-duplicate-functions skill ships Python. A stray
+# __pycache__ or ruff cache under it is one `git add -A` from being committed
+# and shipped with the plugin.
 __pycache__/
 *.pyc
 .ruff_cache/

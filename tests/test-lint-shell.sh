@@ -4,8 +4,8 @@
 # Two exclusions, both structural rather than per-site: SC1091 because the
 # tests source lib.sh through a path shellcheck cannot follow, and SC2016
 # because the expected-output strings are single-quoted on purpose and must
-# not expand. The vendored skills' scripts are upstream's and are covered by
-# the drift tests instead.
+# not expand. The copied skills' scripts are upstream's and tests/test-upstream.sh
+# holds them to upstream instead.
 # needs: shellcheck
 . "$(dirname "$0")/lib.sh"
 

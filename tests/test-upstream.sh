@@ -214,6 +214,9 @@ for r in "${DECLARED[@]}"; do
 done
 
 # ---- The records -------------------------------------------------------------
+# Captured first: read through process substitution, a record_rows failure
+# would end the loop early and be lost, and the run would go red only later.
+rows="$(record_rows)"
 while IFS=$'\t' read -r repo ref sha; do
   [ -n "$repo" ] || continue
   url="https://github.com/$repo.git"
@@ -233,7 +236,7 @@ while IFS=$'\t' read -r repo ref sha; do
   done < <(record_map forks "$repo")
   check_copyright "$repo" "$U"
   RECORDS=$((RECORDS + 1))
-done < <(record_rows)
+done <<<"$rows"
 [ "$RECORDS" -gt 0 ] || fail "vendored.json holds no record"
 
 # A section for a repository no record holds.
