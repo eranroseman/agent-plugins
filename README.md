@@ -103,7 +103,7 @@ bin/               the two commands a user runs: setup, and doctor, its check mo
 scripts/           what CI and the maintainer run: the upstream watch and the formatter
 plugins/           the two plugins, software-dev and sensemaking, each with its own README
 skills.json        the desired state for skills.sh: sources, refs, skill names
-vendored.json      the desired state for the vendored and forked trees: repo, branch, pinned sha, kind
+vendored.json      one record per upstream repository copied or forked from: its pin, its copies and its forks
 .claude-plugin/    the Claude marketplace manifest: the two plugins and the two subset entries, with their pins
 .github/           the CI workflows, whose action pins Dependabot moves (dependabot.yml)
 tests/             every check; tests/run.sh runs them and tests/tools.txt pins the tools

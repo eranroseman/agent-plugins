@@ -114,24 +114,49 @@ subset_rows="$(jq -r '.plugins[] | select(.source.source? == "git-subdir")
 [ -n "$subset_rows" ] || die "no subset entry could be read from $MARKETPLACE"
 while IFS="$(printf '\t')" read -r name url ref sha; do
   [ -n "$name" ] || continue
-  compare_pin "\`$name\` ($url)" "$url" "$ref" "$sha" \
-    "Bump by editing \`.claude-plugin/marketplace.json\`: move \`ref\`, \`sha\` and \`version\` together, \`version\` from upstream's manifest at the new pin where it has one and by hand otherwise; then run test-upstream.sh, which names each new upstream skill to list or exclude."
+  repo="${url#https://github.com/}"
+  repo="${repo%.git}"
+  trees="$(jq -r --arg r "$repo" '.records[] | select(.repo == $r) | .trees | keys | join(" ")' "$VENDORED_JSON")"
+  forks="$(jq -r --arg r "$repo" '.records[] | select(.repo == $r) | .forks | to_entries | map(.value) | join(" ")' "$VENDORED_JSON")"
+  # shellcheck disable=SC2086  # space-separated paths with no whitespace of their own
+  tree_list="$(printf '`%s` ' $trees)"
+  # shellcheck disable=SC2086  # as above
+  fork_list="$(printf '`%s` ' $forks)"
+  compare_pin "\`$name\` ($url)${forks:+ (forks: $fork_list)}" "$url" "$ref" "$sha" \
+    "Bump by editing \`.claude-plugin/marketplace.json\`: move \`ref\`, \`sha\` and \`version\` together, \`version\` from upstream's manifest at the new pin where it has one and by hand otherwise${trees:+; re-copy $tree_list from the new pin, keeping the declared changes}${forks:+; read the diff of $fork_list and port what is worth it}; then run test-upstream.sh, which names each new upstream skill to list or exclude. Bump the version of each plugin whose shipped files moved: Claude Code updates only on a version change."
 done <<<"$subset_rows"
 report ""
 
-# 1b. Each vendored or forked tree: the pinned sha against the tip of its
-# declared branch (vendored.json). A bump is a human decision: edit
-# vendored.json, re-copy or re-diff the tree, and run test-upstream.sh.
+# 1b. Each record of vendored.json with a pin of its own: its sha against its
+# branch's tip, or its tag against the newest stable tag. A record without a
+# pin takes its subset entry's and is reported on the entry's line above
+# (T24). Each line names the record's copies and the upstream paths of its
+# forks, whose diff a bump reads (Q36).
 report "### vendored and forked trees"
 report ""
-tree_rows="$(jq -r 'to_entries[] | select(.key != "$comment") | [.key, .value.repo, .value.branch, .value.sha, .value.kind] | @tsv' "$VENDORED_JSON")" \
-  || die "could not read vendored or forked trees from $VENDORED_JSON"
-[ -n "$tree_rows" ] || die "no vendored or forked tree could be read from $VENDORED_JSON"
-while IFS="$(printf '\t')" read -r tree repo branch sha kind; do
-  [ -n "$tree" ] || continue
-  compare_pin "\`$tree\` ($kind from \`$repo\`)" "https://github.com/$repo.git" "$branch" "$sha" \
-    "Bump by editing \`vendored.json\`, then re-copy the tree from the new pin (a forked tree: read its upstream diff and port what is worth it)."
-done <<<"$tree_rows"
+# The fields are joined by the unit separator, which is not IFS whitespace, so
+# the empty ref and sha of a record without a pin survive the read; a tab would collapse.
+record_rows="$(jq -r '.records[] | [.repo, (.ref // ""), (.sha // ""), ((.trees | keys) | join(" ")), ((.forks | to_entries | map(.value)) | join(" "))] | join("\u001f")' "$VENDORED_JSON")" \
+  || die "could not read the records from $VENDORED_JSON"
+[ -n "$record_rows" ] || die "no record could be read from $VENDORED_JSON"
+while IFS=$'\x1f' read -r repo ref sha trees forks; do
+  [ -n "$repo" ] || continue
+  url="https://github.com/$repo.git"
+  # shellcheck disable=SC2086  # the paths are space-separated by construction and carry no whitespace
+  fork_list="$(printf '`%s` ' $forks)"
+  # shellcheck disable=SC2086  # as above
+  tree_list="$(printf '`%s` ' $trees)"
+  if [ -z "$ref" ] && [ -z "$sha" ]; then
+    n="$(jq -r --arg u "$url" '[.plugins[] | select(.source.source? == "git-subdir" and .source.url == $u)] | length' "$MARKETPLACE")" \
+      || die "could not read $MARKETPLACE"
+    [ "$n" -eq 1 ] || die "$repo carries no pin of its own and $n subset entries pin it; exactly one must"
+    report "- \`$repo\`: pinned through its subset entry above${forks:+; forks to re-read at a bump: $fork_list}"
+    continue
+  fi
+  if [ -z "$ref" ] || [ -z "$sha" ]; then die "$repo carries one of ref and sha without the other"; fi
+  compare_pin "\`$repo\`${trees:+ (copies: $tree_list)}${forks:+ (forks: $fork_list)}" "$url" "$ref" "$sha" \
+    "Bump by editing \`vendored.json\`: move \`ref\` and \`sha\`; re-copy each copy from the new pin, keeping its declared changes; for a copy upstream no longer has, remove it or move its path to \`forks\`; read the diff of each fork's upstream path${forks:+ ($fork_list)} and port what is worth it; then run test-upstream.sh. Bump the version of each plugin whose shipped files moved: Claude Code updates only on a version change."
+done <<<"$record_rows"
 report ""
 
 # 2. Each skills.sh source: the declared ref against the newest stable tag.

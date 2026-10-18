@@ -9,10 +9,12 @@
 
 V="$REPO_ROOT/plugins/software-dev/skills/diagnosing-bugs"
 [ -d "$V" ] || fail "missing $V"
-guards plugins/software-dev/skills/diagnosing-bugs/SKILL.md plugins/software-dev/skills/diagnosing-bugs/agents/openai.yaml
 
-REF="v1.2.3"
-SHA="6acc160e4e0cd062dbbbd7a1b26ae92855edf07e" # the commit v1.2.3 peels to
+row="$(record_rows | awk -F'\t' '$1 == "mattpocock/skills"')"
+REF="$(cut -f2 <<<"$row")"
+SHA="$(cut -f3 <<<"$row")"
+[ -n "$REF" ] || fail "vendored.json declares no ref for mattpocock/skills"
+[ "${#SHA}" -eq 40 ] || fail "vendored.json declares no 40-character sha for mattpocock/skills (got '$SHA')"
 # One upstream state for the whole mattpocock set: the vendored copy and the
 # skills.sh install must come from the same tag, or a bump moves one without
 # the other.

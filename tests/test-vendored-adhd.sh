@@ -9,14 +9,14 @@
 
 V="$REPO_ROOT/plugins/sensemaking/skills/adhd"
 [ -d "$V" ] || fail "missing $V"
-guards plugins/sensemaking/skills/adhd/SKILL.md plugins/sensemaking/skills/adhd/agents/openai.yaml
 
 # Pinned in vendored.json: the repository's HEAD on 2026-09-06, since its
 # only tag, v0.1.4, predates both this SKILL.md text and the plugin manifest.
 # Every in-tree record that also carries the sha is held to the declared one
 # before anything is fetched, so a bump that forgets a record fails by name
 # whether or not the sha is reachable (#56).
-SHA="$(vendored_sha plugins/sensemaking/skills/adhd)"
+SHA="$(record_rows | awk -F'\t' '$1 == "UditAkhourii/adhd" { print $3 }')"
+[ "${#SHA}" -eq 40 ] || fail "vendored.json declares no 40-character sha for UditAkhourii/adhd (got '$SHA')"
 grep -q "Vendored from https://github.com/UditAkhourii/adhd at commit $SHA\$" "$V/SKILL.md" \
   || fail "SKILL.md's provenance header does not carry the declared sha $SHA"
 grep -q "at commit $SHA)" "$REPO_ROOT/plugins/sensemaking/LICENSE" \

@@ -5,7 +5,7 @@
 . "$(dirname "$0")/lib.sh"
 
 [ -f "$MARKETPLACE" ] || fail "missing $MARKETPLACE"
-sha="$(upstream_sha)"
+sha="$(upstream_sha obra/superpowers)"
 [ "${#sha}" -eq 40 ] || fail "superpowers entry has no 40-char sha (got '$sha')"
 
 UP="$(fetch_upstream)"

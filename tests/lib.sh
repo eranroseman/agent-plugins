@@ -4,29 +4,63 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MARKETPLACE="$REPO_ROOT/.claude-plugin/marketplace.json"
+VENDORED_JSON="$REPO_ROOT/vendored.json"
 
 fail() {
   printf 'FAIL: %s\n' "$*" >&2
   exit 1
 }
 
-# The pinned obra/superpowers sha, read from the one place it is declared.
-upstream_sha() {
-  jq -r '.plugins[] | select(.name == "superpowers") | .source.sha' "$MARKETPLACE"
+# ---- Pins: the subset entries and the records (spec §6, §7.2) ---------------
+# The one git-subdir entry whose source.url is the repository $2's, as
+# https://github.com/<owner>/<repo>.git: its field $1 (sha, or ref). A record
+# without a pin of its own takes its pin here (T24); no match, or more than
+# one, fails.
+entry_field_for_repo() {
+  local field="$1" repo="$2" vals n
+  vals="$(jq -r --arg u "https://github.com/$repo.git" --arg f "$field" \
+    '.plugins[] | select(.source.source? == "git-subdir" and .source.url == $u) | .source[$f]' "$MARKETPLACE")" \
+    || fail "could not read $MARKETPLACE"
+  n="$(printf '%s\n' "$vals" | grep -c . || true)"
+  [ "$n" -eq 1 ] || fail "$n subset entries pin $repo; a record without a pin of its own needs exactly one"
+  printf '%s\n' "$vals"
+}
+upstream_sha() { entry_field_for_repo sha "$1"; }
+upstream_ref() { entry_field_for_repo ref "$1"; }
+
+# One line per record of vendored.json: repo, ref, sha, tab-separated, the
+# pin resolved: a record carries both ref and sha, or neither and takes its
+# entry's; one without the other fails, so a record that loses its sha by
+# mistake is never skipped. Every record carries trees and forks, {} when
+# empty. jq hands the fields over joined by the unit separator, which is not
+# IFS whitespace, so a record's empty ref and sha survive the read.
+record_rows() {
+  local repo ref sha
+  jq -e '.records | type == "array" and length > 0' "$VENDORED_JSON" >/dev/null 2>&1 \
+    || fail "$VENDORED_JSON carries no records array"
+  jq -e '[.records[] | (.trees | type == "object") and (.forks | type == "object")] | all' "$VENDORED_JSON" >/dev/null 2>&1 \
+    || fail "a record in $VENDORED_JSON lacks a trees or forks object"
+  while IFS=$'\x1f' read -r repo ref sha; do
+    [ -n "$repo" ] || continue
+    if [ -z "$ref" ] && [ -z "$sha" ]; then
+      ref="$(upstream_ref "$repo")"
+      sha="$(upstream_sha "$repo")"
+    elif [ -z "$ref" ] || [ -z "$sha" ]; then
+      fail "the $repo record carries one of ref and sha without the other"
+    fi
+    [ "${#sha}" -eq 40 ] || fail "$repo: the pinned sha is not 40 characters: '$sha'"
+    printf '%s\t%s\t%s\n' "$repo" "$ref" "$sha"
+  done < <(jq -r '.records[] | [.repo, (.ref // ""), (.sha // "")] | join("\u001f")' "$VENDORED_JSON")
 }
 
-# The pinned sha of a vendored or forked tree, $1 its repository-relative
-# path, read from vendored.json, the one place it is declared; fails unless
-# it is 40 characters. The subset entries keep upstream_sha(), since the
-# marketplace pins them; the two mattpocock trees keep their literal until
-# #52 gives them a subset entry.
-vendored_sha() {
-  local sha
-  sha="$(jq -r --arg t "$1" '.[$t].sha // empty' "$REPO_ROOT/vendored.json")" \
-    || fail "could not read vendored.json"
-  [ "${#sha}" -eq 40 ] || fail "vendored.json declares no 40-char sha for $1 (got '$sha')"
-  printf '%s\n' "$sha"
+# The pairs of the $1 map (trees or forks) of the record $2: local path, then
+# upstream path, tab-separated, one per line.
+record_map() {
+  jq -r --arg m "$1" --arg r "$2" '.records[] | select(.repo == $r) | .[$m] | to_entries[] | [.key, .value] | @tsv' "$VENDORED_JSON"
 }
+# Every copy's path, and every fork's, one per line, across every record.
+tree_keys() { jq -r '.records[].trees | keys[]' "$VENDORED_JSON"; }
+fork_keys() { jq -r '.records[].forks | keys[]' "$VENDORED_JSON"; }
 
 # Shallow-fetch $1 (a git URL) at commit $2 into $3 and print the path.
 # Reuses an existing checkout whose HEAD already matches. Every git command is
@@ -54,8 +88,7 @@ fetch_pinned() {
 # obra/superpowers at the pinned sha. Override the location with UPSTREAM_DIR.
 fetch_upstream() {
   local sha
-  sha="$(upstream_sha)" || fail "could not read the pinned sha from $MARKETPLACE"
-  [ "${#sha}" -eq 40 ] || fail "no 40-char pinned sha in $MARKETPLACE (got '$sha')"
+  sha="$(upstream_sha obra/superpowers)"
   fetch_pinned https://github.com/obra/superpowers.git "$sha" \
     "${UPSTREAM_DIR:-${TMPDIR:-/tmp}/software-dev-upstream-superpowers}"
 }
@@ -150,57 +183,20 @@ skill_name_matches() {
     || fail "$label: frontmatter name '$name' is not the directory name '$(basename "$dir")'; both agent CLIs dispatch by name"
 }
 
-# ---- Ownership (spec §4; #61 M7) -------------------------------------------
+# ---- Ownership (spec §7.2, Q62) ---------------------------------------------
 # Every list of "the files we own" comes from checked() below. One class of
-# tracked file is excluded: the files a drift test holds to upstream, where a
-# pin constrains the bytes and the paired test asserts them. One table, one row
-# per pattern: the pattern, anchored at the start of the path, a tab, then
-# the test that guards it. A guard binds itself to its row by calling
-# guards() on one line with the paths it holds to upstream, and
-# tests/test-ownership.sh reads that line, so a row cannot name a test that
-# checks something else. #21 may devendor a tree: that edits this table and
-# nothing else. adhd/agents/openai.yaml is first-party but sits inside a
-# vendored directory; the directory is excluded whole, because the drift
-# test's file-set assertion governs it and tests/test-plugin-skills.sh
-# already asserts the one policy line the file exists to carry.
-GUARDED=(
-  $'^plugins/sensemaking/skills/adhd/\ttests/test-vendored-adhd.sh'
-  $'^plugins/software-dev/skills/diagnosing-bugs/\ttests/test-vendored-diagnosing-bugs.sh'
-)
-EXCLUDED="$(
-  IFS='|'
-  set -- "${GUARDED[@]%%$'\t'*}"
-  printf '%s' "$*"
-)"
-
-# The pattern of the row whose guard is $1, a path relative to REPO_ROOT.
-# Prints it; fails unless exactly one row names that guard.
-guarded_pattern() {
-  local guard="$1" row n=0 pat=""
-  for row in "${GUARDED[@]}"; do
-    [ "${row#*$'\t'}" = "$guard" ] || continue
-    n=$((n + 1))
-    pat="${row%%$'\t'*}"
-  done
-  [ "$n" -eq 1 ] || fail "$n row(s) of the table in tests/lib.sh name $guard as their guard; exactly one must"
-  printf '%s\n' "$pat"
-}
-
-# Called by a drift test, on one line, with the repository-relative paths it
-# is about to hold to upstream. The test is bound to its row: exactly one row
-# names it, and every path given is tracked and matches that row's pattern.
-# Before any fetch, so a broken binding fails without a network.
-guards() {
-  local me="tests/${BASH_SOURCE[1]##*/}" pat p
-  pat="$(guarded_pattern "$me")" || exit 1
-  [ "$#" -gt 0 ] || fail "$me calls guards with no path"
-  for p in "$@"; do
-    printf '%s\n' "$p" | grep -qE "$pat" \
-      || fail "$me guards $p, which its row's pattern '$pat' does not match"
-    git -C "$REPO_ROOT" ls-files --error-unmatch -- "$p" >/dev/null 2>&1 \
-      || fail "$me guards $p, which is not a tracked file"
-  done
-}
+# tracked file is excluded: a copy, a tree in a record's `trees` map, which is
+# upstream's bytes at the pin and is held there by tests/test-upstream.sh. A
+# fork is first-party and is linted. The exclusion is derived from
+# vendored.json, so a copy that leaves the records joins the linters the same
+# moment, and tests/test-ownership.sh holds the derivation: every trees key a
+# tracked directory checked() does not list, every forks key one it lists.
+EXCLUDED="$(jq -r '[.records[].trees | keys[]] | map("^" + . + "/") | join("|")' "$REPO_ROOT/vendored.json")" \
+  || {
+    printf 'FAIL: could not derive the excluded trees from vendored.json\n' >&2
+    exit 1
+  }
+[ -n "$EXCLUDED" ] || EXCLUDED='^$'
 
 # Tracked files this repository owns, one path per line relative to
 # REPO_ROOT. Arguments are git pathspecs: checked '*.md', or

@@ -1,17 +1,34 @@
 {
-  "$comment": "The vendored and forked trees, each pinned to an upstream commit (CONTEXT.md defines the two kinds by which way edits flow). scripts/upstream-watch reports when the declared branch moves past a pin; tests/test-vendored-*.sh read their sha here and hold every in-tree record to it. bin/setup never reads this file.",
-  "plugins/sensemaking/skills/adhd": {
-    "repo": "UditAkhourii/adhd",
-    "branch": "main",
-    "sha": "16dc239ff186b869372e75095cfa58fc0ee89927",
-    "upstream_path": "skills/adhd",
-    "kind": "vendored"
-  },
-  "plugins/software-dev/skills/finding-duplicate-functions": {
-    "repo": "obra/superpowers-lab",
-    "branch": "main",
-    "sha": "51111f74f24058117752d9aa917cb19859f8ec86",
-    "upstream_path": "skills/finding-duplicate-functions",
-    "kind": "forked"
-  }
+  "$comment": "One record per upstream repository this repository copies or forks from. trees maps each copy's path here to its path upstream: upstream's bytes at the pin, held there by tests/test-upstream.sh except for the declared changes that test lists, and excluded from the linters. forks maps each fork's path here to the upstream path it began from: first-party, linted, held by nothing, its upstream watched for changes worth porting. A record carries ref and sha, or neither and takes the pin of the one subset entry in .claude-plugin/marketplace.json whose source.url is its repository. Read by tests/lib.sh and scripts/upstream-watch.",
+  "records": [
+    {
+      "repo": "mattpocock/skills",
+      "ref": "v1.2.3",
+      "sha": "6acc160e4e0cd062dbbbd7a1b26ae92855edf07e",
+      "trees": {
+        "plugins/software-dev/skills/diagnosing-bugs": "skills/engineering/diagnosing-bugs"
+      },
+      "forks": {
+        "plugins/software-dev/skills/setup-matt-pocock-skills": "skills/engineering/setup-matt-pocock-skills"
+      }
+    },
+    {
+      "repo": "UditAkhourii/adhd",
+      "ref": "main",
+      "sha": "16dc239ff186b869372e75095cfa58fc0ee89927",
+      "trees": {
+        "plugins/sensemaking/skills/adhd": "skills/adhd"
+      },
+      "forks": {}
+    },
+    {
+      "repo": "obra/superpowers-lab",
+      "ref": "main",
+      "sha": "51111f74f24058117752d9aa917cb19859f8ec86",
+      "trees": {},
+      "forks": {
+        "plugins/software-dev/skills/finding-duplicate-functions": "skills/finding-duplicate-functions"
+      }
+    }
+  ]
 }

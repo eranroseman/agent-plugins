@@ -4,13 +4,14 @@
 # so the cases exercise the call sites the scheduled run uses, not a mode.
 # The watch is copied into a scratch root beside a fixture marketplace with
 # two git-subdir entries, one on a tag and one on a branch, a fixture
-# vendored.json and a fixture skills.json. The cases:
+# vendored.json with one branch record and one record without a pin, matching
+# the tag entry, and a fixture skills.json. The cases:
 #   1. the stable-tag filter: a tag entry pinned at the newest stable tag is
 #      current, and prereleases, -dev builds and a parallel tag series never
 #      count (Q66);
 #   2. tag and branch pins (Q29, T1, T39): a tag entry behind its newest
 #      stable tag, a tag entry whose tag was re-cut onto another commit, a
-#      branch entry behind its tip, and a branch tree behind its tip each
+#      branch entry behind its tip, and a branch record behind its tip each
 #      exit 1 and are named; all current exit 0.
 # Needs no network.
 . "$(dirname "$0")/lib.sh"
@@ -20,7 +21,7 @@ trap 'rm -rf "$W"' EXIT
 mkdir -p "$W/scripts" "$W/.claude-plugin" "$W/bin" || fail "could not seed $W"
 cp "$REPO_ROOT/scripts/upstream-watch" "$W/scripts/" || fail "could not copy the watch"
 
-TAG_URL="https://example.invalid/tag-upstream.git"
+TAG_URL="https://github.com/example/tag-upstream.git"
 BRANCH_URL="https://example.invalid/branch-upstream.git"
 TREE_URL="https://github.com/example/tree-upstream.git"
 SKILLS_URL="https://github.com/example/skills-upstream.git"
@@ -55,17 +56,24 @@ write_marketplace() { # $1 the tag entry's ref, $2 its sha, $3 the branch entry'
 }
 JSON
 }
-write_vendored() { # $1 the tree's sha
+write_vendored() { # $1 the branch record's sha
   cat >"$W/vendored.json" <<JSON
 {
   "\$comment": "fixture",
-  "plugins/p/skills/three": {
-    "repo": "example/tree-upstream",
-    "branch": "main",
-    "sha": "$1",
-    "upstream_path": "skills/three",
-    "kind": "vendored"
-  }
+  "records": [
+    {
+      "repo": "example/tree-upstream",
+      "ref": "main",
+      "sha": "$1",
+      "trees": { "plugins/p/skills/three": "skills/three" },
+      "forks": { "plugins/p/skills/five": "skills/five" }
+    },
+    {
+      "repo": "example/tag-upstream",
+      "trees": { "plugins/p/skills/six": "skills/six" },
+      "forks": {}
+    }
+  ]
 }
 JSON
 }
@@ -128,6 +136,8 @@ run_watch
 [ "$status" -eq 0 ] || fail "with every pin current the watch exited $status, not 0:"$'\n'"$out"
 grep -qF -- '`v2.16.0`' <<<"$out" || fail "the current tag entry's line does not name its tag:"$'\n'"$out"
 grep -qF 'Everything matches' <<<"$out" || fail "a clean run must say so:"$'\n'"$out"
+grep -qF -- 'skills/five' <<<"$out" || fail "the record's fork path is not named on its line:"$'\n'"$out"
+grep -qF -- 'pinned through its subset entry' <<<"$out" || fail "the record without a pin is not reported through its entry:"$'\n'"$out"
 # Pinned one stable release back: exit 1, and the line names v2.16.0, never a
 # prerelease or the parallel series.
 write_marketplace v2.15.0 "$TAG_SHA" "$BRANCH_SHA"
@@ -162,7 +172,7 @@ grep -qF 'branched' <<<"$out" || fail "the drifted branch entry was not named:"$
 write_answers v2.16.0 "$TAG_SHA" "$BRANCH_SHA" "$NEWER"
 run_watch
 [ "$status" -eq 1 ] || fail "a tree behind its tip must exit 1, got $status:"$'\n'"$out"
-grep -qF 'plugins/p/skills/three' <<<"$out" || fail "the drifted tree was not named:"$'\n'"$out"
+grep -qF 'example/tree-upstream' <<<"$out" || fail "the drifted record was not named:"$'\n'"$out"
 # All current again: exit 0.
 write_answers v2.16.0 "$TAG_SHA" "$BRANCH_SHA" "$TREE_SHA"
 run_watch
@@ -174,4 +184,4 @@ run_watch
 [ "$status" -eq 2 ] || fail "a ref that is both a branch and a tag must exit 2, got $status:"$'\n'"$out"
 grep -qF 'both a branch and a tag' <<<"$out" || fail "the double ref was not named:"$'\n'"$out"
 
-printf 'upstream-watch: offline, the stable-tag filter holds and tag, branch and tree pins each report drift and clean\n'
+printf 'upstream-watch: offline, the stable-tag filter holds and tag, branch and record pins each report drift and clean\n'
