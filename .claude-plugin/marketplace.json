@@ -7,7 +7,7 @@
     {
       "name": "software-dev",
       "source": "./plugins/software-dev",
-      "description": "Glue over superpowers and mattpocock/skills: narrowed brainstorming, the repository scaffolder, the consistency audit, diagnosing-bugs, finding-duplicate-functions, plus a SessionStart hook on Claude Code.",
+      "description": "The repository scaffolder, the consistency audit and its inspector, diagnosing-bugs and finding-duplicate-functions.",
       "category": "development"
     },
     {

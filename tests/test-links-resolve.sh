@@ -49,8 +49,7 @@ cd "$REPO_ROOT" || fail "could not cd to the repository root"
 # An entry whose only referents sit under docs/superpowers has no reader left
 # and goes (T18).
 DECLARED_ABSENT=(
-  'hooks/hooks.json' # the path Codex loads by fallback: named so nothing sits there (Task 5 deletes its last reader, the plugin README's paragraph, and this line with it)
-  'docs/adr/'        # docs/agents/domain.md names it; this repository keeps no ADRs (#26, #37)
+  'docs/adr/' # docs/agents/domain.md names it; this repository keeps no ADRs (#26, #37)
 )
 
 docs="$(checked_markdown ':(exclude)docs/superpowers')"

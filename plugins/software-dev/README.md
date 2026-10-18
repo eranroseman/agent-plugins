@@ -1,17 +1,12 @@
 # software-dev
 
-Eran Roseman's glue plugin for software development. It vendors skills from
-three upstream packs — obra/superpowers, mattpocock/skills, and
-obra/superpowers-lab — rewrites one of those skills into a fork, and carries
-a first-party skill and agent, each with its own provenance below.
+Eran Roseman's glue plugin for software development. It carries a fork of
+mattpocock/skills' repository scaffolder, a copy of its debugging loop, a
+rewritten fork of obra/superpowers-lab's duplicate finder, and a first-party
+audit with its agent, each with its provenance below.
 
 What it ships:
 
-- `skills/brainstorming/`: obra/superpowers' `brainstorming` skill, vendored
-  at a pinned commit with one change, a narrowed `description` so that it
-  fires on build requests and no longer competes with `grilling`. The
-  provenance header at the top of `SKILL.md` names the commit. Do not
-  hand-edit the skill; re-vendor from upstream to update it.
 - `skills/setup-matt-pocock-skills/`: a fork of mattpocock/skills' repository
   scaffolder, first-party since the fork. It writes the `## Agent skills`
   block to `AGENTS.md` and leaves `CLAUDE.md` as a one-line `@AGENTS.md`
@@ -32,12 +27,6 @@ What it ships:
 - `skills/finding-duplicate-functions/`: a rewritten fork of
   obra/superpowers-lab's skill, for Python. Its `PROVENANCE.md` records what
   changed.
-- `hooks/session-start`, Claude Code only: a SessionStart hook that injects
-  `hooks/using-superpowers.md`, upstream's `using-superpowers` text with its one
-  `superpowers:brainstorming` reference repointed at
-  `software-dev:brainstorming`, followed by `hooks/working-rules.md`,
-  this plugin's own working rules. The Claude manifest declares the hook as
-  `hooks/claude-hooks.json`.
 
 What it depends on (Claude Code installs all three automatically on a first
 install; `bin/setup` adds a newly declared one to a machine that already has
@@ -67,38 +56,7 @@ installs this plugin, with its `sensemaking`, `superpowers` and
 `writing-clearly-and-concisely` dependencies, on Claude Code, and on Codex too
 when `codex` is on `PATH`.
 
-Codex gets the skills and no hook, by design. Codex follows the skills
-without a session-start injection: obra/superpowers removed its own Codex hook
-in v6.1.0 for that reason, and the reference machine ran two months of Codex
-sessions with superpowers and no injection. Nothing exists at the path Codex
-loads by fallback, `hooks/hooks.json`, so no hook is offered on any Codex
-build that keeps its documented fallback path and manifest order.
-
 ## Environment
-
-Nothing here needs configuring to work. Two optional variables are worth
-knowing about, and no setup step sets either for you.
-
-The brainstorming skill's Visual Companion is an opt-in browser view, offered
-only when a question is genuinely clearer shown than described. When its page
-loads, it renders a logo from `primeradiant.com`, with the superpowers version
-in the query string. Your browser therefore reveals its address, user agent,
-and the time of the request, though the referrer is suppressed. That URL is the
-only external address in the whole skill.
-
-To render the page without it, set any one of `SUPERPOWERS_DISABLE_TELEMETRY`,
-`DISABLE_TELEMETRY`, or `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` to any value
-other than `0`, `false`, `no`, or `off`. On Claude Code an `env` entry in
-`~/.claude/settings.json` reaches the session; on Codex a line in `~/.profile`
-does, since its shell runs `bash -lc`. `~/.bashrc` does not work, because it
-returns early for non-interactive shells.
-
-Setting it prevents exactly one thing: the `<img>` tag on the Visual Companion's
-page. Set, the page renders without the logo and the caption changes; unset, one
-browser request goes to `primeradiant.com` per page load. No setup step writes
-the variable for you — the write would touch a file the CLI owns, for a request
-that has never fired on a machine that has never accepted the offer. If you
-never accept it, the request never happens.
 
 `archify`, installed through skills.sh at a pinned tag, runs a version check
 once per authoring session: after the first candidate diagram it runs its
@@ -107,10 +65,8 @@ packaged `tt-a1i/archify:scripts/check-update.mjs`, which fetches a small manife
 a newer release exists it shows one notice and continues. The skill's own
 text rules the rest: if the command cannot run it continues without a word,
 it never downloads, installs or executes an update, and silence is never
-consent. To turn the check off, set `ARCHIFY_UPDATE_CHECK_DISABLED=1` in the
-same place as the telemetry variable above; `check-update.mjs` tests exactly
-that value. No setup step sets it for you, for the same reason as the
-telemetry variable: a network-behavior decision belongs to you. `bin/doctor`
+consent. To turn the check off, set `ARCHIFY_UPDATE_CHECK_DISABLED=1` in the `env` map of `~/.claude/settings.json` on Claude Code, or in `~/.profile` on Codex; `check-update.mjs` tests exactly
+that value. No setup step sets it for you: a network-behavior decision belongs to you. `bin/doctor`
 reports the variable's state.
 
 ## Updates
@@ -135,7 +91,6 @@ the commands to run.
 
 ## License
 
-MIT. The vendored `skills/brainstorming/` is MIT, © 2025 Jesse Vincent;
-`skills/setup-matt-pocock-skills/` and `skills/diagnosing-bugs/` are MIT, © 2026 Matt
+MIT. `skills/setup-matt-pocock-skills/` and `skills/diagnosing-bugs/` are MIT, © 2026 Matt
 Pocock; the two templates under `skills/finding-duplicate-functions/scripts/`
 are MIT, © 2025 Jesse Vincent. See `LICENSE`.

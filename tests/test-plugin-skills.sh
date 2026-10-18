@@ -5,16 +5,13 @@
 #   - a user-invocable-only skill carries both gates, the field Claude reads and the yaml
 #     policy Codex reads, never one without the other;
 #   - every <plugin>:<skill> reference in a SKILL.md resolves to something an
-#     install actually gets, so a repointed or vendored skill cannot leave a
-#     dangling name behind (the class of superpowers:brainstorming, which the
-#     subset entry excludes);
+#     install gets; superpowers: tokens are carved out for the install job;
 #   - consistency-audit ships with its inspector, the inspector carries no
 #     permissionMode, and the skill names the inspector by the name a plugin
 #     agent actually resolves to.
 # Needs no network.
 . "$(dirname "$0")/lib.sh"
 
-subset="$(jq -r '.plugins[] | select(.name == "superpowers") | .skills[]' "$MARKETPLACE" | sed 's#^\./##')"
 checked=0
 
 for skill in "$REPO_ROOT"/plugins/*/skills/*/; do
@@ -39,8 +36,8 @@ for skill in "$REPO_ROOT"/plugins/*/skills/*/; do
     s="${ref#*:}"
     case "$p" in
       superpowers)
-        printf '%s\n' "$subset" | grep -qxF -- "$s" \
-          || fail "$plugin:$name names $ref, which the superpowers subset entry does not list"
+        # Carved out (Q87, T47): no entry here lists obra's skills. tests/install-check.sh
+        # asserts each superpowers: token against the superpowers the README's blocks install.
         ;;
       software-dev | sensemaking)
         # A skill, or a plugin agent, which resolves by the same prefix.
@@ -51,10 +48,6 @@ for skill in "$REPO_ROOT"/plugins/*/skills/*/; do
   done < <(grep -o '\b\(superpowers\|software-dev\|sensemaking\):[a-z][a-z0-9-]*' "$md" | sort -u)
 done
 [ "$checked" -ge 3 ] || fail "expected at least 3 plugin skills, found $checked"
-
-# rethink-audit: the one repointed reference.
-RA="$REPO_ROOT/plugins/sensemaking/skills/rethink-audit/SKILL.md"
-grep -q 'software-dev:brainstorming' "$RA" || fail "rethink-audit does not name software-dev:brainstorming"
 
 # consistency-audit and its inspector.
 CA="$REPO_ROOT/plugins/software-dev/skills/consistency-audit/SKILL.md"

@@ -1,7 +1,7 @@
 {
   "name": "software-dev",
   "version": "0.8.0",
-  "description": "Glue over superpowers and mattpocock/skills for Claude Code and Codex: narrowed brainstorming, the repository scaffolder, the consistency audit, diagnosing-bugs, and finding-duplicate-functions.",
+  "description": "The repository scaffolder, the consistency audit, diagnosing-bugs and finding-duplicate-functions, for Claude Code and Codex.",
   "author": { "name": "Eran Roseman", "url": "https://github.com/eranroseman" },
   "homepage": "https://github.com/eranroseman/agent-plugins",
   "repository": "https://github.com/eranroseman/agent-plugins",
@@ -11,14 +11,14 @@
   "interface": {
     "displayName": "Software Development",
     "shortDescription": "Software-development skills for Claude Code and Codex",
-    "longDescription": "Narrowed brainstorming front door over the superpowers spine and mattpocock's engineering skills, plus the repository scaffolder, a refuted-before-reported consistency audit, a reproduction-first debugging loop, and a Python duplicate-function finder.",
+    "longDescription": "The repository scaffolder for mattpocock's engineering skills, a refuted-before-reported consistency audit, a reproduction-first debugging loop, and a Python duplicate-function finder.",
     "developerName": "Eran Roseman",
     "category": "Developer Tools",
     "capabilities": ["Instructions"],
     "websiteURL": "https://github.com/eranroseman/agent-plugins",
     "defaultPrompt": [
-      "Let's build a feature.",
-      "Design this change before we implement it."
+      "Set up this repository for the engineering skills.",
+      "Audit this repository for inconsistencies."
     ]
   }
 }

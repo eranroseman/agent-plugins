@@ -61,7 +61,6 @@ overrides:
       - "bin/*"
       - "scripts/*"
       - "tests/*.sh"
-      - "plugins/software-dev/hooks/session-start"
       - "**/*.yml"
       - "**/*.yaml"
     languageId: shellscript

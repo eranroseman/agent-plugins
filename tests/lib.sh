@@ -128,9 +128,7 @@ seed_lockfile() {
 # already asserts the one policy line the file exists to carry.
 GUARDED=(
   $'^plugins/sensemaking/skills/adhd/\ttests/test-vendored-adhd.sh'
-  $'^plugins/software-dev/skills/brainstorming/\ttests/test-vendored-brainstorming.sh'
   $'^plugins/software-dev/skills/diagnosing-bugs/\ttests/test-vendored-diagnosing-bugs.sh'
-  $'^plugins/software-dev/hooks/using-superpowers\\.md$\ttests/test-hook.sh'
 )
 EXCLUDED="$(
   IFS='|'
@@ -181,8 +179,8 @@ checked() {
 }
 
 # The shell files: every checked file whose first line is the bash shebang.
-# By shebang, not extension: the two commands under bin/, the three scripts
-# and the hook have none. Arguments narrow the list the same way checked's
+# By shebang, not extension: the two commands under bin/ and the two scripts
+# have none. Arguments narrow the list the same way checked's
 # do. A tracked file absent from the working tree is a FAIL by name, not a
 # silently shorter list: head's failure is not swallowed (#61 M4).
 checked_shell() {

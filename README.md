@@ -23,7 +23,7 @@ a pin, and never moves one itself.
 
 Four marketplace entries:
 
-- `software-dev`: the glue plugin, for anyone building software with an agent; its README names every skill, hook and agent it ships and where each came from. Depends on the three entries below.
+- `software-dev`: the glue plugin, for anyone building software with an agent; its README names every skill and agent it ships and where each came from. Depends on the three entries below.
 - `sensemaking`: skills for thinking work that is not code, shared with `research-vault`; its README says which plugin holds a skill, and why.
 - `superpowers`: obra/superpowers at a pinned commit, a subset entry, Claude Code only; Codex reaches the same skills by symlink, created by `bin/setup` as described in Install below.
 - `writing-clearly-and-concisely`: softaworks/agent-toolkit's one skill of that name, a subset entry at a pinned commit, Claude Code only, with the same Codex symlink.
@@ -55,8 +55,8 @@ skills.sh set installed at its declared refs.
 
 Three things it deliberately does not do. It never enables plugin auto-update
 — that is a consent decision you make once in `/plugin` under Marketplaces.
-And it never sets the telemetry variable documented in the plugin README, or
-the update-check variable documented there, for the same reason. `bin/doctor`
+And it never sets the telemetry-disabling variables, or the update-check
+variable documented in the plugin README, for the same reason. `bin/doctor`
 reports the operator decisions it never makes for you.
 
 ## Update
@@ -100,7 +100,7 @@ as an artifact, and runs `bin/setup` end to end against a scratch `HOME`.
 
 ```text
 bin/               the two commands a user runs: setup, and doctor, its check mode
-scripts/           what CI and the maintainer run: the upstream watch, the superpowers bump, the formatter
+scripts/           what CI and the maintainer run: the upstream watch and the formatter
 plugins/           the two plugins, software-dev and sensemaking, each with its own README
 skills.json        the desired state for skills.sh: sources, refs, skill names
 vendored.json      the desired state for the vendored and forked trees: repo, branch, pinned sha, kind
