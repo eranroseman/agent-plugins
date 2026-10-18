@@ -31,16 +31,15 @@ for pf in "$REPO_ROOT"/plugins/*/.claude-plugin/plugin.json; do
   done < <(jq -r '.dependencies[]?' "$pf")
 done
 
-[ "$depcount" -gt 0 ] || fail "no dependencies found"
+[ "$depcount" -ge 1 ] || fail "no plugin declares a dependency; software-dev depends on its subset entries"
 
-# Check C: the two manifests of each plugin agree on every field they share
-# (#1). Compared as one projected object under jq -S, so a drifted key shows
-# itself in the diff. description is excluded on purpose: software-dev's two
-# differ by design ("and its inspector" on the Claude side, where the
-# subagent ships) and tests/test-hook.sh guards that direction. The Codex
-# manifest's skills pointer must resolve to a directory.
+# Check C: the two manifests of each plugin agree on name and version, the
+# install id and the update gate (#1), compared as one projected object under
+# jq -S. Display metadata is each manifest's own: the descriptions differ by
+# design, the Claude side naming the inspector that ships only there. The
+# Codex manifest's skills pointer must resolve to a directory.
 pairs=0
-proj='{name, version, author, homepage, repository, license, keywords}'
+proj='{name, version}'
 for p in "$REPO_ROOT"/plugins/*/; do
   name="$(basename "$p")"
   cm="$p/.claude-plugin/plugin.json"

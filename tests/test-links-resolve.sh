@@ -4,7 +4,7 @@
 # uses, a path in backticks. A token in backticks is a
 # candidate when it contains a slash; a trailing :N, :N-M or :N,M is dropped,
 # and so is a leading ./. It resolves at the document's own directory, the
-# repository root, or a plugin root (plugins/*/), so a spec or plan may name a
+# repository root, or a plugin root (plugins/*/), so a document may name a
 # path plugin-relative. Fenced blocks are not scanned, for either form: a tree
 # diagram is a picture, not a reference, and a quoted manifest or command
 # output is frozen.
@@ -14,7 +14,7 @@
 # skipped for a URL; a word that is not shaped like a path is command syntax,
 # counted.
 #
-# What does not resolve is one of eight classes, each counted and printed so
+# What does not resolve is one of seven classes, each counted and printed so
 # a zero is visible, or it fails naming the file, line and token:
 #   1. a URL;
 #   2. a name that is not a working-tree path by its shape: ~ (home), $
@@ -34,10 +34,11 @@
 #   6. a path git check-ignore accepts: runtime-only, classified by the file
 #      that ignores it;
 #   7. a path declared absent by decision, in DECLARED_ABSENT below;
-#   8. under docs/superpowers/ only, the history tier: a path git shows
-#      deleted on this branch's history passes, since git history is the
-#      archive; a renamed path fails naming its successor at HEAD, followed
-#      through later renames; a path with no history is a typo and fails.
+#
+# Documents under docs/superpowers are not scanned: a spec or a plan is a
+# historical artifact, read as of its commit (Q18), and git history is its
+# archive. The history tier below still serves class 4: a two-segment path
+# a move removed is this repository's, not an owner/repo slug.
 . "$(dirname "$0")/lib.sh"
 
 cd "$REPO_ROOT" || fail "could not cd to the repository root"
@@ -45,16 +46,14 @@ cd "$REPO_ROOT" || fail "could not cd to the repository root"
   || fail "the history tier reads every commit and this clone is shallow; fetch the history (actions/checkout: fetch-depth: 0)"
 
 # Paths named because they must not exist, or absent by a recorded decision.
+# An entry whose only referents sit under docs/superpowers has no reader left
+# and goes (T18).
 DECLARED_ABSENT=(
-  'hooks/hooks.json'        # the path Codex loads by fallback: named so nothing sits there
-  'docs/adr/'               # docs/agents/domain.md names it; this repository keeps no ADRs (#26, #37)
-  '.github/actionlint.yaml' # the runner-label override ubuntu-latest makes unnecessary (names-and-surface spec §14)
-  'bin/setpu'               # the names-and-surface spec's example of a typo this test must catch
-  'plugins/ghost/'          # the suite-and-ci spec's mutation, created and removed inside the mutation
-  '.claude/settings.json'   # the project-scope file `claude plugin install --scope project` would write; named so it is never written
+  'hooks/hooks.json' # the path Codex loads by fallback: named so nothing sits there (Task 5 deletes its last reader, the plugin README's paragraph, and this line with it)
+  'docs/adr/'        # docs/agents/domain.md names it; this repository keeps no ADRs (#26, #37)
 )
 
-docs="$(checked_markdown)"
+docs="$(checked_markdown ':(exclude)docs/superpowers')"
 [ -n "$docs" ] || fail "checked_markdown() listed nothing; the ownership derivation went vacuous"
 
 # ---- paths in backticks ----------------------------------------------------
@@ -117,32 +116,8 @@ history_tier_walk() {
   done
 }
 
-# A line that names a renamed path beside its successor is a rename record,
-# not a stale reference: $1 the line, $2 the successor at HEAD. The successor
-# counts when a span on the line names it, its basename, or a directory it
-# sits under.
-names_successor() {
-  local line="$1" new="$2" rest span dir
-  rest="$line"
-  while [[ $rest =~ $BACKTICK_SPAN ]]; do
-    span="${BASH_REMATCH[1]}"
-    rest="${rest#*"${BASH_REMATCH[0]}"}"
-    span="${span%/}"
-    [ -n "$span" ] || continue
-    [ "$span" = "$new" ] && return 0
-    [ "$span" = "${new##*/}" ] && return 0
-    dir="${new%/*}"
-    while [ "$dir" != "$new" ] && [ -n "$dir" ]; do
-      [ "$span" = "$dir" ] && return 0
-      case "$dir" in */*) dir="${dir%/*}" ;; *) break ;; esac
-    done
-  done
-  return 1
-}
-
-n_ok=0 n_url=0 n_shape=0 n_glob=0 n_slug=0 n_ns=0 n_ignored=0 n_declared=0 n_history=0 n_renamed=0 n_syntax=0
+n_ok=0 n_url=0 n_shape=0 n_glob=0 n_slug=0 n_ns=0 n_ignored=0 n_declared=0 n_syntax=0
 failures=""
-cur_line=""
 
 # classify()'s two shape checks and the main loop's word check, kept in
 # variables and matched unquoted so bash reads them as regex ([[ =~ ]]);
@@ -158,7 +133,7 @@ BACKTICK_SPAN='`([^`]*)`'
 
 # $1 document, $2 line number, $3 the span as written, $4 the token to check.
 classify() {
-  local doc="$1" n="$2" raw="$3" tok="$4" r first isdir key verdict
+  local doc="$1" n="$2" raw="$3" tok="$4" r first isdir key
   case "$tok" in
     *://* | mailto:*)
       n_url=$((n_url + 1))
@@ -220,28 +195,6 @@ classify() {
       return
     fi
   done
-  case "$doc" in
-    docs/superpowers/*)
-      while IFS= read -r r; do
-        if [ "$r" = . ]; then history_tier "$tok"; else history_tier "$r/$tok"; fi
-        verdict="$TIER_VERDICT"
-        case "$verdict" in
-          deleted)
-            n_history=$((n_history + 1))
-            return
-            ;;
-          renamed*)
-            if names_successor "$cur_line" "${verdict#renamed }"; then
-              n_renamed=$((n_renamed + 1))
-              return
-            fi
-            failures="$failures"$'\n'"$doc:$n: \`$raw\` names a file that was renamed; it is now ${verdict#renamed }"
-            return
-            ;;
-        esac
-      done < <(roots_for "$(dirname "$doc")")
-      ;;
-  esac
   failures="$failures"$'\n'"$doc:$n: \`$raw\` does not resolve at the document's directory, the repository root or any plugin root"
 }
 
@@ -259,7 +212,6 @@ for f in $docs; do
   fence=""
   while IFS= read -r line; do
     n=$((n + 1))
-    cur_line="$line"
     case "$line" in
       '```'* | '~~~'*)
         run="${line%%[^\`~]*}"
@@ -324,5 +276,5 @@ for f in $docs; do
 done
 
 [ -z "$failures" ] || fail "these references do not resolve:$failures"
-printf 'links-resolve: %s link(s) and %s backticked path(s) resolve across %s document(s); skipped %s URL(s), %s by shape, %s placeholder(s), %s slug(s), %s namespaced, %s ignored, %s declared absent, %s deleted in history, %s renamed beside the successor, %s command word(s)\n' \
-  "$links" "$n_ok" "$scanned" "$n_url" "$n_shape" "$n_glob" "$n_slug" "$n_ns" "$n_ignored" "$n_declared" "$n_history" "$n_renamed" "$n_syntax"
+printf 'links-resolve: %s link(s) and %s backticked path(s) resolve across %s document(s); skipped %s URL(s), %s by shape, %s placeholder(s), %s slug(s), %s namespaced, %s ignored, %s declared absent, %s command word(s)\n' \
+  "$links" "$n_ok" "$scanned" "$n_url" "$n_shape" "$n_glob" "$n_slug" "$n_ns" "$n_ignored" "$n_declared" "$n_syntax"

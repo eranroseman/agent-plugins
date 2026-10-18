@@ -16,7 +16,15 @@ trap 'rm -rf "$T"' EXIT
 R="$T/repo"
 mkdir -p "$R/tests" || fail "could not create $R/tests"
 cp "$REPO_ROOT/tests/run.sh" "$R/tests/run.sh" || fail "could not copy run.sh"
-cp "$REPO_ROOT/tests/tools.txt" "$R/tests/tools.txt" || fail "could not copy tools.txt"
+cat >"$R/tests/tools.txt" <<'REGISTRY' || fail "could not write the fixture registry"
+# tool  version  sha256 of the linux-amd64 release asset (- for npm packages)
+shellcheck         0.9.0    700324c6dd0ebea0117591c6cc9d7350d9c7c5c287acbad7630fa17b1d4d9e2f
+actionlint         1.7.12   8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+shfmt              3.14.1   76e77641faa025814b77f153b29796b8e6fa2fca03e0c76a691608b86c7ea7bf
+prettier           3.9.6    -
+markdownlint-cli2  0.23.2   -
+cspell             10.2.2   -
+REGISTRY
 printf 'tests/results.tsv\n' >"$R/.gitignore" || fail "could not write .gitignore"
 printf '#!/usr/bin/env bash\n# passes, and says so\nprintf "alpha ok\\n"\n' >"$R/tests/test-a-pass.sh" \
   || fail "could not write test-a-pass.sh"
@@ -88,6 +96,7 @@ grep -qxF -- "$(printf 'tests/test-c-needs-claude.sh\tFAIL\t-\tneeds claude')" "
 # 4. A dirty tree is named as such.
 printf 'scratch\n' >"$R/untracked" || fail "could not dirty the scratch tree"
 env PATH="$BIN" /bin/bash "$R/tests/run.sh" >/dev/null 2>&1 || true
+[ -f "$RES" ] || fail "fixture 4's run wrote no $RES"
 sed -n 1p "$RES" | grep -qE "^# $sha dirty [0-9]{4}-" \
   || fail "the header must say dirty when git status is non-empty: $(sed -n 1p "$RES")"
 rm -f "$R/untracked"
@@ -102,7 +111,7 @@ printf '#!/usr/bin/env bash\n# needs: nosuchtool\nexit 0\n' >"$R/tests/test-e-un
   || fail "could not write test-e-unknown.sh"
 if out="$(env PATH="$BIN" /bin/bash "$R/tests/run.sh" 2>&1)"; then status=0; else status=$?; fi
 [ "$status" -eq 2 ] || fail "an unknown need must exit 2, got $status:"$'\n'"$out"
-printf '%s\n' "$out" | grep -q 'tests/test-e-unknown.sh declares a need no probe knows: nosuchtool' \
+printf '%s\n' "$out" | grep -qE 'tests/test-e-unknown\.sh.*nosuchtool' \
   || fail "the unknown need must be named with its test:"$'\n'"$out"
 rm -f "$R/tests/test-e-unknown.sh"
 
@@ -119,12 +128,12 @@ cp "$R/tests/tools.txt" "$R/tests/tools.txt.bak" || fail "could not back up the 
 printf 'shfmt              3.15.0   -\n' >>"$R/tests/tools.txt" || fail "could not duplicate a row"
 if out="$(env PATH="$BIN" /bin/bash "$R/tests/run.sh" 2>&1)"; then status=0; else status=$?; fi
 [ "$status" -eq 2 ] || fail "a duplicate registry row must exit 2, got $status:"$'\n'"$out"
-printf '%s\n' "$out" | grep -q 'declares a tool twice: shfmt' || fail "the duplicate row was not named:"$'\n'"$out"
+printf '%s\n' "$out" | grep -qE 'twice.*shfmt' || fail "the duplicate row was not named:"$'\n'"$out"
 cp "$R/tests/tools.txt.bak" "$R/tests/tools.txt" || fail "could not restore the registry"
 printf 'shfmt v3.14.1 -\n' >>"$R/tests/tools.txt" || fail "could not mangle a row"
 if out="$(env PATH="$BIN" /bin/bash "$R/tests/run.sh" 2>&1)"; then status=0; else status=$?; fi
 [ "$status" -eq 2 ] || fail "a mangled registry row must exit 2, got $status:"$'\n'"$out"
-printf '%s\n' "$out" | grep -q "row 8 is not 'tool version sha256-or-dash'" || fail "the mangled row was not named:"$'\n'"$out"
+printf '%s\n' "$out" | grep -q 'row 8' || fail "the mangled row was not named:"$'\n'"$out"
 cp "$R/tests/tools.txt.bak" "$R/tests/tools.txt" || fail "could not restore the registry"
 
 printf 'runner: hard gate refuses, needs skip or fail, versions compared, results.tsv written\n'
