@@ -1,16 +1,9 @@
 ---
 name: adhd
-description: Parallel divergent ideation under five isolated cognitive frames, scored, clustered, deepened. Costs 5 to 10x one answer.
+description: Parallel divergent ideation for coding agents. Spawns N isolated branches under different cognitive frames (regulator, biology, speedrunner, 10-year-old, $0 budget), scores, clusters, prunes traps, and deepens top survivors. Use on /adhd, "ADHD mode", brainstorm/ideate intents, or open-ended design, architecture, naming, API/SDK surface, and fuzzy-debugging decisions. Skip for syntax, lookups, bugs with known root cause, or closed phrasing ("quick", "standard", "canonical", "textbook"). Full pre-flight gate is in the skill body.
 license: MIT
 disable-model-invocation: true
 ---
-<!-- Vendored from https://github.com/UditAkhourii/adhd at commit 16dc239ff186b869372e75095cfa58fc0ee89927
-     path: skills/adhd/ (the repository's only skill; its tag v0.1.4 predates this text and the plugin manifest)
-     MIT, (c) 2026 ADHD contributors. Local changes: the description above, shortened to 121 characters so
-     Codex shows it whole, and the invocation gate, disable-model-invocation: true, paired with
-     policy.allow_implicit_invocation: false in agents/openai.yaml. Nothing else is edited.
-     SOURCE-SPEC.md, named below, sits at the upstream repository's root and is not vendored here.
--->
 
 # ADHD
 

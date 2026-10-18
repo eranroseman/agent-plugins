@@ -20,12 +20,11 @@ What it ships:
   two independent readers per slice. On Codex, where a plugin cannot ship a
   subagent, it runs as one reader and says so.
 - `skills/diagnosing-bugs/`: mattpocock/skills' reproduction-first debugging
-  loop, vendored at tag `v1.2.3` with one change, a 69-character description
-  that Codex shows whole and that no longer shares a trigger word with
-  `superpowers:systematic-debugging`. Model-invoked: it should fire unprompted
-  when a bug resists reproduction.
+  loop, copied at the pin `vendored.json` records, with one change, a description that
+  no longer shares a trigger word with `superpowers:systematic-debugging`.
+  Model-invoked: it should fire unprompted when a bug resists reproduction.
 - `skills/finding-duplicate-functions/`: a rewritten fork of
-  obra/superpowers-lab's skill, for Python. Its `PROVENANCE.md` records what
+  obra/superpowers-lab's skill, for Python. The plugin LICENSE records what
   changed.
 
 What it depends on (Claude Code installs all three automatically on a first

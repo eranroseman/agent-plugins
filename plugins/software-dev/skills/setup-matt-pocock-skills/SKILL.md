@@ -4,15 +4,6 @@ description: Configure this repo for the engineering skills — set up its issue
 disable-model-invocation: true
 ---
 
-<!-- Vendored from https://github.com/mattpocock/skills at tag v1.2.3, commit 6acc160e4e0cd062dbbbd7a1b26ae92855edf07e
-     path: skills/engineering/setup-matt-pocock-skills/
-     MIT, (c) 2026 Matt Pocock. Local changes: in this file, the frontmatter
-     name and description, the title, the triage detection in step 1, the
-     tracker explainer's skill list, the file-pick rule under '4. Write',
-     Section D in step 2, and the Agent skills block it writes; in
-     agents/openai.yaml, the Codex display name.
--->
-
 # Setup Matt Pocock Skills
 
 Scaffold the per-repo configuration that the engineering skills assume:

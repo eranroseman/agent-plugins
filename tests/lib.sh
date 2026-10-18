@@ -82,6 +82,8 @@ fetch_pinned() {
   git -C "$dir" fetch -q --depth 1 origin "$sha" \
     || fail "could not fetch $url at $sha into $dir (no network, or the pinned sha is gone)"
   git -C "$dir" checkout -q FETCH_HEAD || fail "could not check out FETCH_HEAD in $dir"
+  [ "$(git -C "$dir" rev-parse HEAD)" = "$sha" ] \
+    || fail "$url: the checkout's HEAD is $(git -C "$dir" rev-parse HEAD), not the pinned $sha; an annotated tag's object was pinned where its commit should be"
   printf '%s\n' "$dir"
 }
 
@@ -91,6 +93,15 @@ fetch_upstream() {
   sha="$(upstream_sha obra/superpowers)"
   fetch_pinned https://github.com/obra/superpowers.git "$sha" \
     "${UPSTREAM_DIR:-${TMPDIR:-/tmp}/software-dev-upstream-superpowers}"
+}
+
+# The commit the tag $2 names at $1, a URL: the peeled object of an annotated
+# tag, the tag itself for a lightweight one; empty when there is no such tag.
+peel_tag() {
+  local sha
+  sha="$(git ls-remote --tags "$1" "refs/tags/$2^{}" | cut -f1)"
+  [ -n "$sha" ] || sha="$(git ls-remote --tags "$1" "refs/tags/$2" | cut -f1)"
+  printf '%s\n' "$sha"
 }
 
 # A fixture PATH: $1 is the directory, created if absent, and every later

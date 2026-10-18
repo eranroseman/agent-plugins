@@ -39,9 +39,9 @@ maintain ADRs and a glossary — project artifacts, not general ones.
 - `adhd`: parallel divergent ideation under five isolated cognitive frames,
   scored, clustered and deepened. About ten agent calls and five to ten times
   the cost of one answer, so it is user-invocable only, on Claude Code and
-  Codex alike: `/adhd <problem>`. Vendored from `UditAkhourii/adhd` at a
-  pinned commit; the provenance header at the top of `SKILL.md` names it and
-  the two local changes.
+  Codex alike: `/adhd <problem>`. Copied from `UditAkhourii/adhd` at the pin
+  `vendored.json` records, with one change, the invocation gate; the plugin
+  LICENSE names it.
 
 ## Install
 

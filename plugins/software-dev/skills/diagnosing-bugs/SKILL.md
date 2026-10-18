@@ -2,12 +2,6 @@
 name: diagnosing-bugs
 description: Use when a bug resists reproduction, or for a performance regression.
 ---
-<!-- Vendored from https://github.com/mattpocock/skills at tag v1.2.3, commit 6acc160e4e0cd062dbbbd7a1b26ae92855edf07e
-     path: skills/engineering/diagnosing-bugs/
-     MIT, (c) 2026 Matt Pocock. The only local change is the description in the frontmatter above:
-     69 characters, so Codex shows it whole, and disjoint from systematic-debugging's triggers.
-     Do not hand-edit below this line; re-vendor from upstream to update.
--->
 
 # Diagnosing Bugs
 

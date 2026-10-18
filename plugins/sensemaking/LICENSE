@@ -21,15 +21,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ----------------------------------------------------------------------
-
-skills/adhd/ is vendored from https://github.com/UditAkhourii/adhd (directory
-skills/adhd/, at commit 16dc239ff186b869372e75095cfa58fc0ee89927) and remains
-under its original license:
-
-MIT License
+https://github.com/UditAkhourii/adhd
+skills/adhd: copied, with two declared changes, the invocation gate in its frontmatter and the Codex policy file agents/openai.yaml
 
 Copyright (c) 2026 ADHD contributors
 
+----------------------------------------------------------------------
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
