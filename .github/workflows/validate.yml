@@ -36,20 +36,10 @@ jobs:
       - name: Install Claude Code CLI
         run: npm install -g @anthropic-ai/claude-code@2.1.220
 
-      # Codex ships validate_plugin.py inside the CLI's system skills, which a
-      # fresh runner does not have. The same two files live in openai/codex
-      # (Apache-2.0); fetch them at a pinned sha. tests/test-codex-validate.sh
-      # asserts the sha256 of both files against the constants it records, so
-      # this copy and a local codex-cli copy are held to the same bytes.
-      - name: Fetch the Codex plugin validator
-        run: |
-          pip install pyyaml==6.0.3
-          mkdir -p "$RUNNER_TEMP/codex-validator"
-          for f in validate_plugin.py identifier_validation.py; do
-            curl -sfL "https://raw.githubusercontent.com/openai/codex/f3f6922519fa38487c8250c2b8a670a39a2cf9ff/codex-rs/skills/src/assets/samples/plugin-creator/scripts/$f" \
-              -o "$RUNNER_TEMP/codex-validator/$f"
-          done
-          echo "CODEX_PLUGIN_VALIDATOR=$RUNNER_TEMP/codex-validator/validate_plugin.py" >> "$GITHUB_ENV"
+      # tests/test-codex-validate.sh fetches its own pinned validator from
+      # openai/codex (Q69); it still needs pyyaml.
+      - name: Install pyyaml
+        run: pip install pyyaml==6.0.3
 
       # The suite's optional tools at exactly the versions tests/tools.txt
       # declares (spec §9.5): npm packages by version, release binaries by the

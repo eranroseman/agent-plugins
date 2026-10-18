@@ -86,10 +86,9 @@ this machine may lack: each such check is skipped with a line naming the
 tool, and the run ends by summing what it did not verify. The versions those
 checks are held to are declared in `tests/tools.txt`; the three npm tools
 install with `npm install -g <tool>@<version>`, the three binaries from their
-release pages. The Codex manifest check needs `python3` with `pyyaml` and the
-validator `codex-cli` installs, or a copy fetched by the recipe in
-`.github/workflows/validate.yml` and named by `CODEX_PLUGIN_VALIDATOR`. The
-pin and drift checks fetch from GitHub; offline, they fail rather than skip.
+release pages. The Codex manifest check needs `python3` with `pyyaml` and
+fetches Codex's validator from GitHub at a pinned commit, as the pin and drift
+checks fetch their upstreams; offline, they fail rather than skip.
 
 Every run writes `tests/results.tsv`, one row per check under a header naming
 the commit; a report cites that file rather than pasting output.

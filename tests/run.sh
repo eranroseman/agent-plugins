@@ -9,7 +9,7 @@
 # substrate cannot run without them, so absent one no test's verdict means
 # anything, and the run refuses with the complete list, exit 2. Everything
 # else is a need: a test declares it on one line of its header comment,
-# `# needs: claude` or `# needs: python3 pyyaml codex-validator`; each name
+# `# needs: claude` or `# needs: python3 pyyaml`; each name
 # is probed once per run, and a test whose need is unmet does not run. The
 # six lint and format tools are held to the versions in tests/tools.txt: a
 # version that differs is unmet, and the line names both. A need no probe
@@ -91,7 +91,7 @@ registry_version() {
 # One probe per need, run once and remembered. On an unmet need WANT holds
 # what was needed ("claude", "shfmt 3.14.1") and FOUND what was there ("" when
 # absent, "3.8.0" on a version mismatch); on a met need WANT is empty. A name
-# the registry lists is held to its version; the other four are probed by
+# the registry lists is held to its version; the other three are probed by
 # presence. $2 is the declaring test, for the error on an unknown name.
 declare -A WANT=() FOUND=()
 probe() {
@@ -117,10 +117,6 @@ probe() {
       ;;
     pyyaml)
       python3 -c 'import yaml' >/dev/null 2>&1 || WANT[$need]="pyyaml"
-      ;;
-    codex-validator)
-      [ -f "${CODEX_PLUGIN_VALIDATOR:-$HOME/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py}" ] \
-        || WANT[$need]="codex-validator (the file codex-cli installs, or a copy fetched by the recipe in .github/workflows/validate.yml, named by CODEX_PLUGIN_VALIDATOR)"
       ;;
     *)
       printf 'ERROR: %s declares a need no probe knows: %s\n' "$2" "$need" >&2
