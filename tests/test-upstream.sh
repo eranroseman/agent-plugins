@@ -56,7 +56,7 @@ DECLARED=(
 # no longer has fails; so does a listed skill that is also excluded.
 declare -A EXCLUSIONS=(
   [superpowers]=$'brainstorming\tthe narrowed copy that excluded it left with Q78; the entry itself leaves with the README\'s obra lines'
-  [writing-clearly-and-concisely]=''
+  ["writing-clearly-and-concisely"]=''
 )
 
 cache_for() { printf '%s/software-dev-upstream-%s\n' "${TMPDIR:-/tmp}" "$(tr / - <<<"$1")"; }
@@ -81,16 +81,16 @@ compare_file() {
   loc="$(cat "$lf")"
   up="$(cat "$uf")"
   while IFS=$'\t' read -r kind anchor reason; do
-    [ "$kind" = added ] && [ "$anchor" != '<file>' ] || continue
+    if [ "$kind" != added ] || [ "$anchor" = '<file>' ]; then continue; fi
     n="$(grep -cxF -- "$anchor" <<<"$loc" || true)"
     [ "$n" -eq 1 ] || fail "$key: the declared addition '$anchor' appears $n times locally, not once"
-    if grep -qxF -- "$anchor" <<<"$up"; then fail "$key: the declared addition '$anchor' is present upstream at the pin; retire the declaration"; fi
+    if grep -qxF -- "$anchor" <<<"$up"; then fail "$key: the declared addition '$anchor' is present upstream at the pin; retire the declared change"; fi
     loc="$(grep -vxF -- "$anchor" <<<"$loc" || true)"
   done <<<"$rows"
   while IFS=$'\t' read -r kind anchor reason; do
     [ "$kind" = line ] || continue
     n="$(grep -cxF -- "$anchor" <<<"$up" || true)"
-    [ "$n" -eq 1 ] || fail "$key: the declared line's upstream side appears $n times upstream at the pin, not once; retire or re-anchor the declaration ($reason)"
+    [ "$n" -eq 1 ] || fail "$key: the declared line's upstream side appears $n times upstream at the pin, not once; retire or re-anchor the declared change ($reason)"
     pos="$(grep -nxF -- "$anchor" <<<"$up" | cut -d: -f1)"
     [ "$(sed -n "${pos}p" <<<"$loc")" != "$anchor" ] \
       || fail "$key: the declared change at line $pos was reverted; it equals upstream's line ($reason)"
@@ -157,7 +157,10 @@ check_copyright() {
     diff <(printf '%s\n' "$want") <(printf '%s\n' "$got") \
       || fail "plugins/$p/LICENSE's section for $repo does not carry upstream's Copyright line(s) at the pin (upstream above, ours below)"
     SECTIONS=$((SECTIONS + 1))
-  done < <({ record_map trees "$repo"; record_map forks "$repo"; } | cut -f1 | cut -d/ -f2 | sort -u)
+  done < <({
+    record_map trees "$repo"
+    record_map forks "$repo"
+  } | cut -f1 | cut -d/ -f2 | sort -u)
 }
 
 # T44, for the record $2 whose pin is the entry $1's: every upstream skill name
@@ -165,7 +168,7 @@ check_copyright() {
 # $3), a copy or a fork names as /name or in backticks is delivered by a
 # marketplace entry.
 sibling_names() {
-  local entry="$1" repo="$2" U="$3" path="$4" listed="$5" up_names="$6" delivered files f names n
+  local repo="$2" U="$3" path="$4" listed="$5" up_names="$6" delivered files f names n
   delivered="$({
     for d in "$REPO_ROOT"/plugins/*/skills/*/; do basename "$d"; done
     while IFS=$'\t' read -r e _; do
@@ -177,7 +180,10 @@ sibling_names() {
       [ -n "$lp" ] || continue
       find "$U/$path/$lp" -name '*.md' -type f
     done <<<"$listed"
-    { record_map trees "$repo"; record_map forks "$repo"; } | cut -f1 | while IFS= read -r k; do
+    {
+      record_map trees "$repo"
+      record_map forks "$repo"
+    } | cut -f1 | while IFS= read -r k; do
       git -C "$REPO_ROOT" ls-files -- "$k" | grep '\.md$' | sed "s#^#$REPO_ROOT/#"
     done
   })"
@@ -286,7 +292,10 @@ while IFS=$'\t' read -r name url path ref sha version; do
     if entry_skills "$name" | grep -qxF -- "$s"; then fail "$name: $s is both listed and excluded"; fi
     EXCLUDED_N=$((EXCLUDED_N + 1))
   done <<<"$excl"
-  diff <(printf '%s\n' "$up_names") <({ entry_skills "$name"; printf '%s\n' "$excl" | cut -f1; } | grep . | sort) \
+  diff <(printf '%s\n' "$up_names") <({
+    entry_skills "$name"
+    printf '%s\n' "$excl" | cut -f1
+  } | grep . | sort) \
     || fail "$name: the skill directories under $path at the pin (above) are not the listed skills plus the declared exclusions (below); list or exclude each new skill with its reason"
   if jq -e --arg r "$repo" '.records[] | select(.repo == $r) | (has("sha") | not)' "$VENDORED_JSON" >/dev/null 2>&1; then
     sibling_names "$name" "$repo" "$U" "$path" "$listed" "$up_names"
