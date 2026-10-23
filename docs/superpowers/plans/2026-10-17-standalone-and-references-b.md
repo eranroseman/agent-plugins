@@ -208,12 +208,10 @@ Two more edits to `tests/test-upstream.sh` from plan A's audit. `compare_file` r
 Red first: a second newline appended to `plugins/software-dev/skills/adhd/SKILL.md`. Expected FAIL `the last bytes differ`. Revert. And the sibling-name check must not go vacuous once a record resolves through an entry: after the entries loop, add
 
 ```bash
-if jq -e '[.records[] | has("sha") | not] | any' "$VENDORED_JSON" >/dev/null 2>&1; then
-  [ "$SIBLINGS" -gt 0 ] || fail "a record resolves through an entry, yet no sibling name was checked"
-fi
+[ "$SIBLINGS" -gt 0 ] || fail "no sibling name was checked; the mattpocock record resolves through its entry, so the check must run"
 ```
 
-and the header's sentence `Before such a record exists the check is vacuous, and the summary line says so.` becomes `Before such a record exists the check does not run; once one does, it must check at least one name.`
+unconditional, since from this commit the mattpocock record is pinless by design and a re-pin that silently switched the check off is the regression the floor exists for (Task 10's mutation 12 is its red-first). The header's sentence `Before such a record exists the check is vacuous, and the summary line says so.` becomes `The mattpocock record resolves through its entry, so the check runs on every suite run and must check at least one name.`
 
 Red first (T44), in the working tree, since a clone of HEAD would not hold the pinless record: `git mv plugins/software-dev/skills/setup-matt-pocock-skills plugins/software-dev/skills/setup-repository` and change `vendored.json`'s forks key to match; run `bash tests/test-upstream.sh`. Expected FAIL naming `wayfinder/SKILL.md` or `triage/SKILL.md` and `setup-matt-pocock-skills, a mattpocock/skills skill no marketplace entry delivers`. Move the fork back and restore the key. Then, with the gitlab span still reading `` `pr` ``: Expected FAIL naming `issue-tracker-gitlab.md` and `pr`. Reword, run again.
 
@@ -226,7 +224,7 @@ Expected: PASS: the mattpocock entry at its pin with twenty-two exclusions, the 
 git rm -rq bin tests/test-setup-apply.sh tests/test-setup-doctor.sh tests/test-setup-upgrade.sh tests/test-doctor-cache.sh tests/test-doctor-duplicates.sh tests/test-doctor-faults.sh tests/test-doctor-freshness.sh tests/test-doctor-report.sh tests/test-doctor-silence.sh skills.json tests/test-skills-pin.sh plugins/software-dev/README.md
 ```
 
-`tests/lib.sh`: delete `saw`, `skill`, `seed_clones` and `seed_lockfile` with their comments, and `fetch_upstream` with its comment (its last caller was `tests/test-setup-upgrade.sh`; `upstream_sha` stays, as `record_rows`' resolver); in `checked_shell`'s comment, `the two commands under bin/ and the two scripts have none` becomes `the two scripts have none`. `link_tools` stays for `tests/test-runner.sh`.
+`tests/lib.sh`: delete `saw`, `skill`, `seed_clones` and `seed_lockfile` with their comments, and `fetch_upstream` with its comment (its last caller was `tests/test-setup-upgrade.sh`; `upstream_sha` and `upstream_ref` stay, both called by `record_rows` to resolve a pinless record); in `checked_shell`'s comment, `the two commands under bin/ and the two scripts have none` becomes `the two scripts have none`. `link_tools` stays for `tests/test-runner.sh`.
 
 `tests/test-ownership.sh`: delete the line `grep -qx 'bin/setup' <<<"$shell" || fail "checked_shell() does not list bin/setup, a shell file with no extension"`; the derived shebang check below it holds the property.
 
@@ -773,7 +771,7 @@ details_names() {
 }
 ```
 
-and the entry cache lookup uses `find` rather than a glob, so zero caches fail as such: `cache="$(find "$CODEX_HOME/plugins/cache/eranroseman/$name" -mindepth 1 -maxdepth 1 -type d 2>/dev/null)"`, with the message `expected one installed cache for $name, found:` unchanged.
+Since `fail` inside a command substitution ends only the subshell, every call site captures first and fails on the status, then passes the set on: in the two Claude Code loops, `got="$(details_names "$name@eranroseman" Skills)" || fail "claude plugin details $name@eranroseman failed"` before `expect_equal "claude: $name's skills" "$want_skills" "$got"`, the same shape for the Agents line and for the entries' Skills line, and in Step 4's `superpowers_references`, `claude_sp="$(details_names superpowers@superpowers-marketplace Skills)" || fail "claude plugin details superpowers@superpowers-marketplace failed"`. Red first: with `claude` renamed off `PATH` after the install, `install-check.sh --assert` must fail at the first `details_names` call, not pass the Agents check with an empty set. And the entry cache lookup uses `find` rather than a glob, so zero caches fail as such: `cache="$(find "$CODEX_HOME/plugins/cache/eranroseman/$name" -mindepth 1 -maxdepth 1 -type d 2>/dev/null)"`, with the message `expected one installed cache for $name, found:` unchanged.
 
 Then `tests/install-check.sh` deletes its own definition of that function and keeps its calls; `tests/test-codex-validate.sh`'s `grep -qx '  allow_implicit_invocation: false' "$y" || continue` becomes `user_invocable_only "$y" || continue`; and `tests/test-plugin-skills.sh`'s gate pairing reads `user_invocable_only "$skill/agents/openai.yaml" && codex_gate=true`.
 
@@ -1430,7 +1428,7 @@ The checks of `tests/test-upstream.sh` and `tests/lib.sh` that have never been s
 
 1. `strict`: the `mattpocock` entry's `strict` set to `true`. Expected FAIL `strict must be false`.
 2. `version`: the entry's `version` set to `1.3.0`. Expected FAIL `version 1.3.0 is not upstream's 1.3.1`.
-3. The tag peel: the entry's `sha` set to `24fe0ef7737efae15c87225755e9f6f5965e4888` with its last character changed. Expected FAIL `the tag v1.3.1 names 24fe0ef7737efae15c87225755e9f6f5965e4888, not the pinned ...`.
+3. The tag peel: the entry's `sha` set to `6acc160e4e0cd062dbbbd7a1b26ae92855edf07e` (`v1.2.3`'s commit, which fetches) with `ref` left at `v1.3.1`. Expected FAIL `the tag v1.3.1 names 24fe0ef7737efae15c87225755e9f6f5965e4888, not the pinned 6acc160e4e0cd062dbbbd7a1b26ae92855edf07e`.
 4. `fetch_pinned`'s HEAD assertion: the entry's `ref` left and its `sha` set to the tag object `0b6cee10f260a2e048279cf737bfd3e37b1fce0b` (`git ls-remote --tags https://github.com/mattpocock/skills.git refs/tags/v1.3.1` prints it). Expected FAIL from `fetch_pinned` naming the checkout's HEAD and `an annotated tag's object`, or from the peel check if the fetch itself is refused; either is red for the right reason.
 5. The `added` rule: the `disable-model-invocation: true` line removed from `plugins/software-dev/skills/adhd/SKILL.md`. Expected FAIL `the declared addition 'disable-model-invocation: true' appears 0 times locally`.
 6. The layout check's manifest half: the synthetic upstream of plan A's Task 8 Step 5 item 6, with a `pkg/.claude-plugin/plugin.json` added. Expected FAIL `a plugin manifest sits under pkg`. Its hooks half: `pkg/hooks/hooks.json` added instead. Expected FAIL `pkg/hooks/hooks.json exists at the pin`.
