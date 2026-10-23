@@ -30,12 +30,26 @@ Plan A's _What was verified_ section holds the measurements; the ones this plan 
 - **P13. The adhd bump is its own task, before the version bump.** §9 says the sha moves "re-read at the bump", so it is read then, not copied from this plan. Veto: fold into Task 2.
 - **P14. `fetch_upstream` and `upstream_sha obra/superpowers` go in Task 1,** with `tests/test-setup-upgrade.sh`, their last caller, rather than in Task 3 with the entry. Veto: Task 3.
 - **P15. The `pr` reword lands in Task 1, not Task 5,** because the sibling-name check holds from the commit the entry lands in; the fork's other port lines wait for the glossary task, where upstream's rename gives them their reason. Veto: port the whole diff in Task 1.
+- **P17. The Codex validator's cache moves under the user's cache directory.** §15.2 names `${TMPDIR:-/tmp}`, a world-writable, predictable path another local user can pre-create with a planted module beside the two hashed files (#73). Task 3 moves it to `${XDG_CACHE_HOME:-$HOME/.cache}/software-dev` and refuses a cache it does not own. Veto: keep `/tmp` with an ownership check only.
+- **P18. Plan A's audit left two plan B defects in the plan text itself**, the clone-before-commit red-firsts and the `cd` into the main checkout; both are corrected in this revision rather than carried as issues.
 - **P16. The gate's cleanup run uses this machine's CLIs,** Claude Code 2.1.273 and codex-cli 0.147.0, the releases the migration was measured on, and the install job's run on the newest stable releases stands beside it. Veto: install the newest releases locally first.
+
+## Carried forward from plan A's final review
+
+Plan A's whole-branch review (its fix wave is `bb4e5f0`) left these for plan B; each lands in the task named, so plan A's workspace closes on this plan's commit.
+
+1. The Codex manifest's `defaultPrompt` names two skills Codex hides from the model, the scaffolder and the audit: Task 2 points it at `diagnosing-bugs` and `finding-duplicate-functions`.
+2. The `allow_implicit_invocation: false` grep is copied in three tests: Task 3 moves it into `tests/lib.sh` as `user_invocable_only`.
+3. The offline watch test's pinless record carries no fork, so the path plan B's mattpocock record takes is unasserted: Task 1 gives it one and asserts both lines.
+4. `tests/test-upstream.sh` accepts a `DECLARED` row of any kind or path and an `EXCLUSIONS` key naming no entry: Task 1 guards the rows, Task 3 the keys.
+5. The `strict: false` and `version` checks have not been seen red: Task 10 mutates both.
+6. `CONTEXT.md`'s `additional context` entry is vestigial since the hook left, and Q83 freezes the file's content: a spec-owner call, filed by the planner as #71; plan B carries the file over unedited, as Q83 says, and Task 11 leaves #71 open.
 
 ## Global Constraints
 
 Plan A's Global Constraints hold, and:
 
+- **Every task runs in the worktree** `.claude/worktrees/standalone-and-references`, where the branch is checked out; the main checkout stays on `main` until Task 10's merge, which runs there.
 - **Human steps**, marked in their tasks: the maintainer enables private vulnerability reporting before `SECURITY.md` (Task 9), makes T17's observation at the gate, and approves the push (T30).
 - **Every bump re-reads its pin at the bump:** adhd's tip in Task 7, mattpocock's newest stable tag in Task 1 (expected `v1.3.1`; if a newer stable tag exists, the entry lands on it and Task 1 re-measures the exclusions).
 - **The version bump is last among shipped-file changes** (T43): `software-dev` 0.8.0 to 0.9.0, both manifests, one commit, after Task 7.
@@ -45,13 +59,13 @@ Plan A's Global Constraints hold, and:
 
 Plan A's name table holds. This plan adds:
 
-| Name                     | Where                    | Defined in | Shape                                                                                                                                                   |
-| ------------------------ | ------------------------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `EXCLUSIONS[mattpocock]` | `tests/test-upstream.sh` | Task 1     | twenty-two lines of `skill<TAB>reason`                                                                                                                  |
-| `cleanup` block          | `README.md`              | Task 1     | the fenced block `sh cleanup`; Tasks 2, 3 and 4 add lines                                                                                               |
-| `superpowers_references` | `tests/install-check.sh` | Task 3     | asserts each `superpowers:<s>` token of `shipped_texts` against the installed superpowers on both agent CLIs (T47)                                      |
-| `whole_machine`          | `tests/install-check.sh` | Task 3     | `claude plugin list` names exactly the marketplace's entries at `eranroseman` plus `superpowers@superpowers-marketplace`; no catalogue name twice (T53) |
-| `GLOSSARY.md`            | repository root          | Task 5     | `CONTEXT.md` moved by `git mv`, content unchanged                                                                                                       |
+| Name                       | Where                    | Defined in | Shape                                                                                                                                                   |
+| -------------------------- | ------------------------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `EXCLUSIONS["mattpocock"]` | `tests/test-upstream.sh` | Task 1     | twenty-two lines of `skill<TAB>reason`; keys quoted, as plan A's test has them                                                                          |
+| `cleanup` block            | `README.md`              | Task 1     | the fenced block `sh cleanup`; Tasks 2, 3 and 4 add lines                                                                                               |
+| `superpowers_references`   | `tests/install-check.sh` | Task 3     | asserts each `superpowers:<s>` token of `shipped_texts` against the installed superpowers on both agent CLIs (T47)                                      |
+| `whole_machine`            | `tests/install-check.sh` | Task 3     | `claude plugin list` names exactly the marketplace's entries at `eranroseman` plus `superpowers@superpowers-marketplace`; no catalogue name twice (T53) |
+| `GLOSSARY.md`              | repository root          | Task 5     | `CONTEXT.md` moved by `git mv`, content unchanged                                                                                                       |
 
 ---
 
@@ -72,7 +86,7 @@ Plan A's name table holds. This plan adds:
 - [ ] **Step 1: Re-read the pin**
 
 ```bash
-cd /home/eranr/agent-plugins
+cd /home/eranr/agent-plugins/.claude/worktrees/standalone-and-references
 git ls-remote --tags --refs https://github.com/mattpocock/skills.git | awk -F/ '{print $NF}' | grep -E '^v?[0-9]+(\.[0-9]+)+$' | sort -V | tail -1
 git ls-remote --tags https://github.com/mattpocock/skills.git 'refs/tags/v1.3.1^{}'
 ```
@@ -144,7 +158,7 @@ Expected: three files, each `100644`; line 2 `name: diagnosing-bugs`, line 3 our
 In `tests/test-upstream.sh`'s `EXCLUSIONS`, add:
 
 ```bash
-  [mattpocock]=$'diagnosing-bugs\tsoftware-dev ships a copy with a changed description (§11.2)
+  ["mattpocock"]=$'diagnosing-bugs\tsoftware-dev ships a copy with a changed description (§11.2)
 setup-matt-pocock-skills\tsoftware-dev ships it forked under the same name (Q81)
 to-spec\tcollides with a superpowers skill; superpowers owns that slot (ruling of 2026-09-06)
 to-tickets\tcollides with a superpowers skill; superpowers owns that slot (ruling of 2026-09-06)
@@ -170,7 +184,38 @@ retro\tnever evaluated; new at v1.3.0, surfaced by the v1.3.1 complement; a cand
 
 In the fork's `issue-tracker-gitlab.md`, the span `` `mr` in place of `pr` `` becomes `` `glab mr` in place of `gh pr` ``: `pr` is a mattpocock skill the entry excludes, and the sibling-name check reads every markdown file of the fork (plan A's P4).
 
-Red first (T44): in a scratch clone of the working tree, `git mv plugins/software-dev/skills/setup-matt-pocock-skills plugins/software-dev/skills/setup-repository` and fix `vendored.json`'s forks key to match; run `bash tests/test-upstream.sh` there. Expected FAIL naming `wayfinder/SKILL.md` or `triage/SKILL.md` and `setup-matt-pocock-skills, a mattpocock/skills skill no marketplace entry delivers`. Then, in the real tree with the gitlab span still reading `` `pr` ``: Expected FAIL naming `issue-tracker-gitlab.md` and `pr`. Reword, run again.
+Also in `tests/test-upstream.sh`, the loop `# Every declared row names a path under a copy` gains two guards, so a stale or mistyped row fails by name before any fetch:
+
+```bash
+  kind="$(cut -f2 <<<"$r")"
+  case "$kind" in
+    line | added) ;;
+    *) fail "the declared change for $p has the kind '$kind'; the kinds are line and added" ;;
+  esac
+  git -C "$REPO_ROOT" ls-files --error-unmatch -- "$p" >/dev/null 2>&1 \
+    || fail "the declared change for $p names a path that is not a tracked file"
+```
+
+Red first: a row of kind `token`, then a row naming `plugins/software-dev/skills/diagnosing-bugs/nowhere.md`; each fails as named. Revert.
+
+Two more edits to `tests/test-upstream.sh` from plan A's audit. `compare_file` reads both sides with `$(cat ...)`, which strips end-of-file newlines, so a copy that gained or lost a final newline passed; after its `diff`, add:
+
+```bash
+  [ "$(tail -c 2 "$lf" | od -An -tx1)" = "$(tail -c 2 "$uf" | od -An -tx1)" ] \
+    || fail "$key: the last bytes differ from upstream's at the pin (an end-of-file newline)"
+```
+
+Red first: a second newline appended to `plugins/software-dev/skills/adhd/SKILL.md`. Expected FAIL `the last bytes differ`. Revert. And the sibling-name check must not go vacuous once a record resolves through an entry: after the entries loop, add
+
+```bash
+if jq -e '[.records[] | has("sha") | not] | any' "$VENDORED_JSON" >/dev/null 2>&1; then
+  [ "$SIBLINGS" -gt 0 ] || fail "a record resolves through an entry, yet no sibling name was checked"
+fi
+```
+
+and the header's sentence `Before such a record exists the check is vacuous, and the summary line says so.` becomes `Before such a record exists the check does not run; once one does, it must check at least one name.`
+
+Red first (T44), in the working tree, since a clone of HEAD would not hold the pinless record: `git mv plugins/software-dev/skills/setup-matt-pocock-skills plugins/software-dev/skills/setup-repository` and change `vendored.json`'s forks key to match; run `bash tests/test-upstream.sh`. Expected FAIL naming `wayfinder/SKILL.md` or `triage/SKILL.md` and `setup-matt-pocock-skills, a mattpocock/skills skill no marketplace entry delivers`. Move the fork back and restore the key. Then, with the gitlab span still reading `` `pr` ``: Expected FAIL naming `issue-tracker-gitlab.md` and `pr`. Reword, run again.
 
 Run: `bash tests/test-upstream.sh`
 Expected: PASS: the mattpocock entry at its pin with twenty-two exclusions, the copy held, the fork's upstream path present, and sibling names resolving (the summary's last count is now above zero).
@@ -185,11 +230,11 @@ git rm -rq bin tests/test-setup-apply.sh tests/test-setup-doctor.sh tests/test-s
 
 `tests/test-ownership.sh`: delete the line `grep -qx 'bin/setup' <<<"$shell" || fail "checked_shell() does not list bin/setup, a shell file with no extension"`; the derived shebang check below it holds the property.
 
-`tests/run.sh`: the comment `# The hard prerequisites, refused as one list in the shape bin/setup uses.` becomes `# The hard prerequisites, refused as one list.`
+`tests/run.sh`: the comment `# The hard prerequisites, refused as one list in the shape bin/setup uses.` becomes `# The hard prerequisites, refused as one list.` `tests/test-runner.sh`: the comment `# from fixture 2's run, above.` becomes `# from fixture 4's run, above.`, the fixture that wrote the result file last (#68, spec §16.1).
 
 `scripts/upstream-watch`: delete `SKILLS_JSON="$REPO_ROOT/skills.json"`, the line `[ -f "$SKILLS_JSON" ] || die "missing $SKILLS_JSON"`, and section 2 whole, from `# 2. Each skills.sh source` through its `report ""`. Without this edit the watch exits 2 on `main` after the merge and #60 goes stale (§12.2).
 
-`tests/test-upstream-watch.sh`: delete the `printf '{"sources":...}' >"$W/skills.json"` line, `SKILLS_URL` and its answer line in `write_answers`. `tests/test-workflows.sh`: `cp "$REPO_ROOT/skills.json" "$REPO_ROOT/vendored.json" "$W/"` becomes `cp "$REPO_ROOT/vendored.json" "$W/"`.
+`tests/test-upstream-watch.sh`: delete the `printf '{"sources":...}' >"$W/skills.json"` line, `SKILLS_URL` and its answer line in `write_answers`. Give the fixture's pinless record a fork, `"forks": { "plugins/p/skills/seven": "skills/seven" }`, and in case 1's first run assert that the `tagged` entry's own line names `skills/seven` (anchored, since the name also appears on the record's line: `grep -F '`tagged`' <<<"$out" | grep -qF 'skills/seven'`) and that the pinless record's line carries `forks to re-read`: this is the path the mattpocock record takes from this commit on. Red first: with the fork added and the assertions in place, drop `skills/seven` from the watch's entry-line suffix in the scratch copy; the test fails. Revert. `tests/test-workflows.sh`: `cp "$REPO_ROOT/skills.json" "$REPO_ROOT/vendored.json" "$W/"` becomes `cp "$REPO_ROOT/vendored.json" "$W/"`.
 
 `.github/workflows/validate.yml`: delete the `setup-e2e` job whole, from its `setup-e2e:` key to the line before the `install:` key. No job lists it under `needs:`, and `main` has no branch protection (§13.1).
 
@@ -429,6 +474,8 @@ MIT. See `LICENSE`. Each upstream this repository copies or forks from is
 credited in the plugin's own LICENSE.
 ````
 
+Before the commit, re-read the two documentation links the README carries (spec §23): `curl -sIL -o /dev/null -w '%{http_code}\n' https://code.claude.com/docs/en/claude_code_docs_map.md` and the same for `https://developers.openai.com/plugins/build/plugins`. Expected: `200` each (both answered 200 on 2026-10-23); a redirect's final address replaces the link.
+
 Run: `bash tests/test-links-resolve.sh && bash tests/test-spelling.sh && bash tests/test-vocabulary.sh`
 Expected: PASS; `bin/setup` is declared absent; `lname` is listed.
 
@@ -463,7 +510,7 @@ Then push and watch CI as in plan A's gate: `git push && gh run watch ...`. Expe
 - [ ] **Step 1: Move the two skills and delete the plugin**
 
 ```bash
-cd /home/eranr/agent-plugins
+cd /home/eranr/agent-plugins/.claude/worktrees/standalone-and-references
 git mv plugins/sensemaking/skills/adhd plugins/software-dev/skills/adhd
 git mv plugins/sensemaking/skills/rethink-audit plugins/software-dev/skills/rethink-audit
 git rm -rq plugins/sensemaking
@@ -489,7 +536,7 @@ Copyright (c) 2026 ADHD contributors
 ```
 
 Run: `bash tests/test-upstream.sh && bash tests/test-ownership.sh`
-Expected: PASS: three records, the adhd copy under `software-dev`, four sections in one LICENSE.
+Expected: PASS: three records, the adhd copy under `software-dev`, and the summary's section count 3 (the owner's MIT block above the first dashes is no section).
 
 - [ ] **Step 3: The marketplace and the manifests**
 
@@ -497,14 +544,24 @@ Expected: PASS: three records, the adhd copy under `software-dev`, four sections
 
 `plugins/software-dev/.claude-plugin/plugin.json`: `dependencies` loses `"sensemaking"`; the description becomes `The repository scaffolder, the consistency audit and its inspector, diagnosing-bugs, finding-duplicate-functions, rethink-audit and adhd, for Claude Code and Codex.`
 
-`plugins/software-dev/.codex-plugin/plugin.json`: the description becomes `The repository scaffolder, the consistency audit, diagnosing-bugs, finding-duplicate-functions, rethink-audit and adhd, for Claude Code and Codex.`; `longDescription` becomes `The repository scaffolder for mattpocock's engineering skills, a refuted-before-reported consistency audit, a reproduction-first debugging loop, a Python duplicate-function finder, a clean-slate redesign audit, and parallel divergent ideation under five frames.`; `keywords` gains `"design-audit"`.
+`plugins/software-dev/.codex-plugin/plugin.json`: the description becomes `The repository scaffolder, the consistency audit, diagnosing-bugs, finding-duplicate-functions, rethink-audit and adhd, for Claude Code and Codex.`; `longDescription` becomes `The repository scaffolder for mattpocock's engineering skills, a refuted-before-reported consistency audit, a reproduction-first debugging loop, a Python duplicate-function finder, a clean-slate redesign audit, and parallel divergent ideation under five frames.`; `keywords` gains `"design-audit"`; `defaultPrompt` becomes `["Diagnose this bug; it does not reproduce.", "Find the duplicate functions in this Python package."]`, two skills Codex shows the model (plan A's prompts named the scaffolder and the audit, which its policy files hide).
 
 Run: `bash tests/test-references-resolve.sh && bash tests/test-plugin-skills.sh && bash tests/test-codex-validate.sh`
 Expected: PASS: the scan resolves `software-dev:consistency-audit-inspector` and finds `rethink-audit`'s `superpowers:` tokens carved out; the validator excepts `adhd`, `consistency-audit` and `setup-matt-pocock-skills`.
 
 - [ ] **Step 4: The README**
 
-`## What it ships`: delete the `sensemaking` bullet; the `software-dev` bullet's skill list gains `rethink-audit` and `adhd` (Task 1 wrote the list; add the two lines Task 1's text marks `(Task 2 adds rethink-audit and adhd)` and remove that mark).
+`## What it ships`: delete the `sensemaking` bullet, and replace the mark `(Task 2 adds rethink-audit and adhd)` in the `software-dev` bullet with these two sub-bullets:
+
+```text
+  - `rethink-audit`: a first-party clean-slate redesign audit of a module,
+    service or feature; design only, applying no changes. Held for a redesign.
+  - `adhd`: parallel divergent ideation under five isolated cognitive frames,
+    scored, clustered and deepened, about ten agent calls. A copy of
+    UditAkhourii/adhd at the pin `vendored.json` records, with two declared
+    changes, the invocation gate in its frontmatter and the Codex policy file,
+    so it is user-invocable only on both agent CLIs: `/adhd <problem>`.
+```
 
 The `install-codex` block becomes:
 
@@ -580,7 +637,15 @@ git commit -m "Retire sensemaking: adhd and rethink-audit move into software-dev
 
 - [ ] **Step 1: The entry and the dependency go**
 
-`.claude-plugin/marketplace.json`: delete the `superpowers` entry whole. `plugins/software-dev/.claude-plugin/plugin.json`: `dependencies` loses `"superpowers"`, leaving `["writing-clearly-and-concisely", "mattpocock"]`. `tests/test-upstream.sh`: delete the `[superpowers]=...` line of `EXCLUSIONS`.
+`.claude-plugin/marketplace.json`: delete the `superpowers` entry whole. `plugins/software-dev/.claude-plugin/plugin.json`: `dependencies` loses `"superpowers"`, leaving `["writing-clearly-and-concisely", "mattpocock"]`. `tests/test-upstream.sh`: delete the `["superpowers"]=...` line of `EXCLUSIONS`, and add, before the entries loop, a guard that every key names an entry:
+
+```bash
+for k in "${!EXCLUSIONS[@]}"; do
+  entry_rows | cut -f1 | grep -qxF -- "$k" || fail "EXCLUSIONS names $k, which is no subset entry of the marketplace; retire it"
+done
+```
+
+Red first: run the test with the guard in and the `["superpowers"]` line still present. Expected FAIL `EXCLUSIONS names superpowers`. Then delete the line.
 
 Run: `bash tests/test-upstream.sh && bash tests/test-plugin-skills.sh && bash tests/test-references-resolve.sh`
 Expected: PASS: two entries; the scan still carves `superpowers:` tokens out.
@@ -688,7 +753,34 @@ Prose, each in place of the sentence it names:
 
 Spelling: the blocks and prose carry no new word beyond Task 1's.
 
-- [ ] **Step 3: The install job checks the `superpowers:` references and the whole machine**
+- [ ] **Step 3: One helper for the Codex gate**
+
+Three tests grep the same policy line. Add to `tests/lib.sh`, after `skill_name_matches`:
+
+```bash
+# True when the Codex policy file $1 keeps its skill out of the model's
+# catalogue: the skill is user-invocable only on Codex.
+user_invocable_only() { [ -f "$1" ] && grep -qx '  allow_implicit_invocation: false' "$1"; }
+```
+
+In the same commit, two fixes from plan A's audit. `tests/test-codex-validate.sh`: the cache leaves `/tmp` (P17). Its `CACHE=` line becomes `CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/software-dev/codex-validator-${PIN:0:7}"`, the `mkdir -p "$CACHE"` keeps its guard, and the reuse condition `if ! pinned_copy "$VDIR"; then` becomes `if ! { [ -O "$CACHE" ] && pinned_copy "$VDIR"; }; then`, so a cache this user does not own is replaced rather than trusted; the header comment's `/tmp` sentence says `under the user's cache directory`. `tests/install-check.sh`: `details_names` captures the command and fails on a non-zero exit before filtering, so a failing `claude plugin details` cannot pass the Agents check as an empty set:
+
+```bash
+details_names() {
+  local out
+  out="$(claude plugin details "$1")" || fail "claude plugin details $1 failed"
+  sed -n "s/^  $2 ([0-9]*) *//p" <<<"$out" | tr ',' '\n' | sed 's/^ *//; s/ *$//' | grep . | sort || true
+}
+```
+
+and the entry cache lookup uses `find` rather than a glob, so zero caches fail as such: `cache="$(find "$CODEX_HOME/plugins/cache/eranroseman/$name" -mindepth 1 -maxdepth 1 -type d 2>/dev/null)"`, with the message `expected one installed cache for $name, found:` unchanged.
+
+Then `tests/install-check.sh` deletes its own definition of that function and keeps its calls; `tests/test-codex-validate.sh`'s `grep -qx '  allow_implicit_invocation: false' "$y" || continue` becomes `user_invocable_only "$y" || continue`; and `tests/test-plugin-skills.sh`'s gate pairing reads `user_invocable_only "$skill/agents/openai.yaml" && codex_gate=true`.
+
+Run: `bash tests/test-codex-validate.sh && bash tests/test-plugin-skills.sh`
+Expected: PASS, the same three skills excepted.
+
+- [ ] **Step 4: The install job checks the `superpowers:` references and the whole machine**
 
 In `tests/install-check.sh`, before the final `printf`, add:
 
@@ -730,18 +822,18 @@ whole_machine() {
 whole_machine
 ```
 
-Red first (T47): in a scratch clone of the branch, append `superpowers:no-such-skill` to `plugins/software-dev/skills/consistency-audit/SKILL.md`, then run `bash tests/install-check.sh` there. Expected FAIL `claude: superpowers:no-such-skill names a skill the installed superpowers does not list`. Red first (T53): over the scratch `HOME` a passing run printed as its first lines, `HOME=<that home> CODEX_HOME=<its .codex> claude plugin install elements-of-style@superpowers-marketplace` (obra's marketplace is already added there), then `HOME=<that home> CODEX_HOME=<its .codex> bash tests/install-check.sh --assert`. Expected FAIL `claude: the installed plugins: the sets differ`.
+Red first (T47), in the working tree, since a clone of HEAD would lack `superpowers_references`: append `superpowers:no-such-skill` to `plugins/software-dev/skills/consistency-audit/SKILL.md`, then run `bash tests/install-check.sh --assert` over the `HOME` and `CODEX_HOME` a passing run printed as its first lines. Expected FAIL `claude: superpowers:no-such-skill names a skill the installed superpowers does not list`. Red first (T53): over the scratch `HOME` a passing run printed as its first lines, `HOME=<that home> CODEX_HOME=<its .codex> claude plugin install elements-of-style@superpowers-marketplace` (obra's marketplace is already added there), then `HOME=<that home> CODEX_HOME=<its .codex> bash tests/install-check.sh --assert`. Expected FAIL `claude: the installed plugins: the sets differ`.
 
 Run: `bash tests/install-check.sh`
 Expected: PASS: obra's two lines install superpowers on both agent CLIs (7.0.0, fifteen skills on 2026-10-17), every `superpowers:` token found (`superpowers:brainstorming` and `superpowers:writing-plans` in `rethink-audit`, `superpowers:systematic-debugging` in the upstream test's reason is not a shipped text; `consistency-audit`'s `superpowers:writing-plans` arrives in Task 6), and `claude plugin list` names exactly `software-dev`, `writing-clearly-and-concisely` and `mattpocock` from `eranroseman` and `superpowers` from `superpowers-marketplace`.
 
-- [ ] **Step 4: Run the suite and commit**
+- [ ] **Step 5: Run the suite and commit**
 
 Run: `bash scripts/format && bash tests/run.sh`
 Expected: green. Cite `tests/results.tsv`.
 
 ```bash
-git add .claude-plugin/marketplace.json plugins/software-dev/.claude-plugin/plugin.json tests/test-upstream.sh tests/install-check.sh README.md
+git add .claude-plugin/marketplace.json plugins/software-dev/.claude-plugin/plugin.json tests/lib.sh tests/test-upstream.sh tests/test-codex-validate.sh tests/test-plugin-skills.sh tests/install-check.sh README.md
 git commit -m "Install obra's superpowers from obra's marketplace, and check every superpowers: reference against what it installs"
 ```
 
@@ -762,7 +854,7 @@ git commit -m "Install obra's superpowers from obra's marketplace, and check eve
 
 `plugins/software-dev/.claude-plugin/plugin.json`: `dependencies` becomes `["elements-of-style", "mattpocock"]`.
 
-`tests/test-upstream.sh`: the `[writing-clearly-and-concisely]=''` line of `EXCLUSIONS` becomes `[elements-of-style]=''`.
+`tests/test-upstream.sh`: the `["writing-clearly-and-concisely"]=''` line of `EXCLUSIONS` becomes `["elements-of-style"]=''` (the keys are quoted, since shfmt splits an unquoted hyphenated key).
 
 `plugins/software-dev/skills/consistency-audit/SKILL.md`, under `**Documentation:**`: `- Use writing-clearly-and-concisely skill if available` becomes `- Use the elements-of-style:writing-clearly-and-concisely skill`.
 
@@ -888,7 +980,7 @@ git commit -m "Name the softaworks entry elements-of-style, so upstream brainsto
 - [ ] **Step 1: The rename, and every live reference**
 
 ```bash
-cd /home/eranr/agent-plugins
+cd /home/eranr/agent-plugins/.claude/worktrees/standalone-and-references
 git mv CONTEXT.md GLOSSARY.md
 ```
 
@@ -1226,7 +1318,7 @@ git commit -m "Qualify consistency-audit's cross-plugin references and drop its 
 - [ ] **Step 1: Re-read the tip and compare the copy**
 
 ```bash
-cd /home/eranr/agent-plugins
+cd /home/eranr/agent-plugins/.claude/worktrees/standalone-and-references
 tip="$(git ls-remote https://github.com/UditAkhourii/adhd.git refs/heads/main | cut -f1)"
 D="${TMPDIR:-/tmp}/software-dev-upstream-UditAkhourii-adhd-tip"
 rm -rf "$D" && mkdir -p "$D" && git -C "$D" init -q && git -C "$D" remote add origin https://github.com/UditAkhourii/adhd.git
@@ -1312,6 +1404,12 @@ A defect in a copied skill belongs to its upstream, which the plugin's LICENSE n
 
 In `README.md`'s Layout block, after the `AGENTS.md` line, add `SECURITY.md        how to report a vulnerability privately`.
 
+```bash
+git add SECURITY.md README.md
+```
+
+Staged first, since every check reads tracked files only: an unstaged new file is not linted, spelled or reference-checked, and the run would be green for the wrong reason.
+
 Run: `bash scripts/format && bash tests/run.sh`
 Expected: green (the new file is linted, spelled and reference-checked). Cite `tests/results.tsv`.
 
@@ -1328,6 +1426,23 @@ git commit -m "Add SECURITY.md: report privately; a copied skill's defect belong
 
 - [ ] **Step 1: The suite and CI**
 
+The checks of `tests/test-upstream.sh` and `tests/lib.sh` that have never been seen red, each mutated in a scratch clone of the branch (every commit is in by now, so the clone holds the code under test), each run with `bash tests/test-upstream.sh` there, and the clone reset between them with `git checkout -- . && git clean -fdq`:
+
+1. `strict`: the `mattpocock` entry's `strict` set to `true`. Expected FAIL `strict must be false`.
+2. `version`: the entry's `version` set to `1.3.0`. Expected FAIL `version 1.3.0 is not upstream's 1.3.1`.
+3. The tag peel: the entry's `sha` set to `24fe0ef7737efae15c87225755e9f6f5965e4888` with its last character changed. Expected FAIL `the tag v1.3.1 names 24fe0ef7737efae15c87225755e9f6f5965e4888, not the pinned ...`.
+4. `fetch_pinned`'s HEAD assertion: the entry's `ref` left and its `sha` set to the tag object `0b6cee10f260a2e048279cf737bfd3e37b1fce0b` (`git ls-remote --tags https://github.com/mattpocock/skills.git refs/tags/v1.3.1` prints it). Expected FAIL from `fetch_pinned` naming the checkout's HEAD and `an annotated tag's object`, or from the peel check if the fetch itself is refused; either is red for the right reason.
+5. The `added` rule: the `disable-model-invocation: true` line removed from `plugins/software-dev/skills/adhd/SKILL.md`. Expected FAIL `the declared addition 'disable-model-invocation: true' appears 0 times locally`.
+6. The layout check's manifest half: the synthetic upstream of plan A's Task 8 Step 5 item 6, with a `pkg/.claude-plugin/plugin.json` added. Expected FAIL `a plugin manifest sits under pkg`. Its hooks half: `pkg/hooks/hooks.json` added instead. Expected FAIL `pkg/hooks/hooks.json exists at the pin`.
+7. The duplicate basename: the synthetic upstream with `pkg/a/one/SKILL.md` and `pkg/b/one/SKILL.md`, both named `one`, and the entry listing `./a/one`. Expected FAIL `a basename holds more than one SKILL.md`.
+8. The fork path: the superpowers-lab record's `forks` value set to `skills/nowhere`. Expected FAIL `began from skills/nowhere, which the pin no longer has`.
+9. An exclusion without a reason: a line `nosuch` with an empty reason field added to `EXCLUSIONS["mattpocock"]`. Expected FAIL `the exclusion nosuch carries no reason`.
+10. Listed and excluded: `grilling` added to `EXCLUSIONS["mattpocock"]` with a reason. Expected FAIL `grilling is both listed and excluded`.
+11. `record_rows`' error branches (T24): a record `{"repo": "example/none", "trees": {}, "forks": {}}` added. Expected FAIL `0 subset entries pin example/none`. Then the `elements-of-style` entry's `source.url` set to mattpocock's. Expected FAIL `2 subset entries pin mattpocock/skills`. Then the adhd record's `sha` line deleted. Expected FAIL `carries one of ref and sha without the other`.
+12. The sibling floor (added in Task 1): the mattpocock record given back a `ref` and `sha` (`v1.3.1`, `24fe0ef7737efae15c87225755e9f6f5965e4888`). Expected FAIL `no sibling name was checked`.
+
+Record each red in the gate's notes, then discard the clone.
+
 Run: `bash tests/run.sh`
 Expected: `0 failed`, `tests/test-codex-validate.sh` run rather than skipped. Cite `tests/results.tsv`.
 
@@ -1343,7 +1458,7 @@ Expected: `validate` and `install` green; record the run id.
 A scratch `HOME` converged by `eeed758`'s `bin/setup`, then moved to the branch tip with the README's `cleanup`, `update-claude` and `update-codex` blocks, as a user would, each extracted as the install job extracts its own. This is the first run of the cleanup block as written and of every removal line (§13.3).
 
 ````bash
-cd /home/eranr/agent-plugins
+cd /home/eranr/agent-plugins/.claude/worktrees/standalone-and-references
 G="$(mktemp -d)"
 export HOME="$G/home" CODEX_HOME="$G/home/.codex"
 unset CLAUDE_CONFIG_DIR
@@ -1443,7 +1558,7 @@ gh issue close 46 --comment "Resolved by naming at M (Q79). Correction to the br
 gh issue close 33 --comment "Declined at M under the suite rule: a test holds upstream drift or installability, never this repository's own wording or lengths. The 122 bound this would enforce is void: Codex's cut is a catalogue budget share, not a limit (#49)."
 gh issue close 49 --comment "Closed at M. Correction to the brief: the allocator is openai/codex:codex-rs/ext/skills/src/render.rs, and skills.max_context_tokens arrives after 0.147.0. Every 122-character assertion and every 'so Codex shows it whole' clause is gone; adhd's description is upstream's again."
 gh issue close 69 --comment "Closed at M: the watch's Codex section is deleted (Q80), and its pipe with it, unfixed. The install job holds the one thing the section held, that Codex finds the marketplace at .claude-plugin/marketplace.json; the hooks path and the manifest order are moot, since software-dev ships no hook."
-gh issue close 68 --comment "Closed at M. Taken: the glossary joins the vocabulary scan (as GLOSSARY.md, its _Avoid_ lines left out); tests/test-runner.sh asserts the result file exists before reading it and credits fixture 4; the comment fixes landed with their files' rewrites. Moot, their files deleted: the saw() here-string, the lockfile wording, the grep -c captures, the duplicate-basename message, the node PATH comment, the doctor tests' comments, every ensure_cache, ensure_watch_fresh and report_only item, the kind check, fixture 11 and the freshness fixtures. Declined (spec §21): the registry shape guard, the empty CLI-version wording, the unit-separator rows, the --workflow-pins fixture (the mode is gone), the slashed-ref slug and the =1 fixture."
+gh issue close 68 --comment "Closed at M. Taken: the glossary joins the vocabulary scan (as GLOSSARY.md, its _Avoid_ lines left out); tests/test-runner.sh asserts the result file exists before reading it and credits fixture 4; the comment fixes landed with their files' rewrites. Moot, their files deleted: the saw() here-string, the lockfile wording, the grep -c captures, the duplicate-basename message, the node PATH comment, the doctor tests' comments, every ensure_cache, ensure_watch_fresh and report_only item, the kind check, fixture 11 and the freshness fixtures. Declined (spec §21): the registry shape guard, the empty CLI-version wording, the unit-separator rows, the --workflow-pins fixture (the mode is gone), the slashed-ref slug and the =1 fixture; the quoted uses: form (not valid Actions syntax); and the suite-authoring hazard of a capture without || true that ends a test with no FAIL line, whose bin/doctor instance left with that file and whose class is the ERR-trap decline's (spec §21)."
 gh issue close 67 --comment "Moot at M: the freshness check, the token's one reader, is removed (Q3); the two steps that carried GITHUB_TOKEN left with setup-e2e; nothing reads it now, so neither option is needed."
 gh issue close 30 --comment "Closed at M on the decision: no re-vendor script. The watch reports drift and every bump is manual, by the steps the drift line names. Its table of trees has become one record per upstream repository in vendored.json, three of them, and the skills taken as-is come from subset entries."
 gh issue close 35 --comment "Closed at M: the root README has a License section. The two plugin-README items are moot, the file deleted (Q80) and its content under headings in the root README. The third item was fixed in 49fa7c7."
@@ -1451,13 +1566,14 @@ gh issue close 23 --comment "Closed at M, in the fork renamed setup-matt-pocock-
 gh issue close 36 --comment "Closed at M: SECURITY.md, three lines, after private vulnerability reporting was enabled. The issue's premise, a script run against a user's home directory, left with bin/setup; the workflows and the scripts the skills ship still justify the private channel."
 gh issue close 47 --comment "Closed at M (Q21): no eval suite and no catalogue check. Where its four debts stand: #46's pointer resolves by naming; a dead qualified reference in shipped text is caught statically by tests/test-plugin-skills.sh, or for superpowers: by the install job; the 122 limit is void; #23's omission is fixed as text; diagnosing-bugs' overlap is accepted. A question that needs a measured run is answered in scratch and cited on its issue."
 gh issue close 34 --comment "Closed at M, declined (Q22): no release tags and no version-bump detector. A bump commit's body says what changed, as 0.9.0's does."
+gh issue close 73 --comment "Closed at M: tests/test-codex-validate.sh caches the validator under the user's cache directory, \${XDG_CACHE_HOME:-\$HOME/.cache}/software-dev, and refuses a cache the running user does not own (plan B, P17). The spec's /tmp wording was a location detail of the mechanism it rules; the maintainer may still move it."
 ```
 
 - [ ] **Step 2: Issues that stay open, with a comment**
 
 ```bash
 gh issue comment 60 --body "At M the one drifted pin left, adhd's, moved to main's tip, and superpowers' drift left with its entry: nothing here pins superpowers now. The watch closes this issue on its first clean run after the merge; nobody closes it by hand."
-gh issue comment 70 --body "Pre-check run: <run id of Task 10 Step 4>, on ubuntu-26.04, <any new annotation, or none>. The install job replaced setup-e2e; the watch was not pre-checked, and this issue closes on its first scheduled runs after 2026-10-19."
+gh issue comment 70 --body "Pre-check run: <run id of Task 10 Step 4>, on ubuntu-26.04, <any new annotation, or none>. The install job replaced setup-e2e; the watch was not pre-checked. Every scheduled watch run from 2026-10-19 to 2026-10-23 ran on ubuntu-24.04 (image 20261012.334.1), so the close condition is the first scheduled runs whose log shows Image: ubuntu-26.04, not a date."
 NEW_URL="$(gh issue create --title "Working habits for the agent: record on the tracker, resolve or incorporate, grill, ADRs, codebase-design" --label needs-triage --body "The asks 2 to 6 of #21's comment of 2026-09-08, moved here at M: record on the tracker every issue met beyond the current session; resolve an issue directly or incorporate it into a spec; use grilling when the user must supply more than a question or two, especially within brainstorming and writing-plans; record big decisions as ADRs, small accepted ones in the product design, and declined ones in the out-of-scope directory; use codebase-design while brainstorming and writing specs.")"
 NEW="${NEW_URL##*/}"
 gh issue edit 21 --title "The content of the block setup-matt-pocock-skills writes"
@@ -1485,12 +1601,18 @@ gh issue comment 2 --body "At M fetch_upstream is deleted with its last caller; 
 gh issue comment 63 --body "At M the hook test's shape checks left with the hook (Q78), and the duplicate check with bin/setup; the uniqueness check in tests/test-plugin-skills.sh holds the repository's own layout instead."
 gh issue comment 6 --body "At M the hook test and its trap are gone with the hook (Q78); the permissions block, the marketplace line and the CLAUDE_PLUGIN_ROOT comment stand or went with their files."
 gh issue comment 17 --body "At M bin/setup and its nine tests are deleted (Q48); the paths this named no longer exist. Installability is held by the install job, tests/install-check.sh, on both agent CLIs."
+gh issue comment 59 --body "At M the reference check no longer scans documents under docs/superpowers (Q18): a spec or plan is a historical artifact, read as of its commit, and git history is its archive. The history tier this closed on still serves class 4, a two-segment path a move removed. Spec §4 records the supersession."
+gh issue comment 41 --body "At M bin/setup is deleted (Q48), and the reported() brackets this closed on with it; the install job, tests/install-check.sh, fails on the first assertion that does not hold, never silently."
+gh issue comment 16 --body "At M bin/setup and tests/test-setup-doctor.sh are deleted (Q48); the refusal this closed on has no script left to run."
+gh issue comment 38 --body "At M tests/test-doctor-faults.sh is deleted with bin/setup (Q48); the fixture comment this closed on is gone."
+gh issue comment 66 --body "At M bin/setup's ensure_cache is deleted with the script (Q48); the cache walk this closed on no longer exists, and Claude Code marks orphaned caches itself."
+gh issue comment 31 --body "At M tests/test-vendored-adhd.sh is folded into tests/test-upstream.sh (T45); the wrap this closed on is in a deleted file."
 gh issue comment 3 --body "At M tests/test-codex-validate.sh fetches both validator files itself from openai/codex at the pinned sha and checks their sha256 (Q69); CI's fetch step and the ~/.codex/skills/.system default are gone, so there is one source."
 ```
 
 - [ ] **Step 4: Record the run**
 
-Note on #52 the gate's T17 observation (Task 10, Step 3) and the cleanup run's summary lines (Task 10, Step 2). The branch is done when every command above has run and `gh issue list --state open` shows #70, #21, #48, #45, #11, #20, #19 and #60 (until the watch's first clean run), and the new issue.
+Note on #52 the gate's T17 observation (Task 10, Step 3) and the cleanup run's summary lines (Task 10, Step 2). The branch is done when every command above has run and `gh issue list --state open` shows #70, #21, #48, #45, #11, #20, #19, #71, #72, #74, #75 and #60 (until the watch's first clean run), and the new issue.
 
 ## Self-review
 
