@@ -48,8 +48,8 @@ dependencies; on Codex, each is installed by name.
     so it is user-invocable only on both agent CLIs: `/adhd <problem>`.
 - `elements-of-style`: softaworks/agent-toolkit's `writing-clearly-and-concisely`,
   one skill, a subset entry at a pinned commit. The entry carries obra's plugin
-  name so that upstream `brainstorming`'s line, _Use
-  elements-of-style:writing-clearly-and-concisely skill if available_, names the
+  name, so `elements-of-style:writing-clearly-and-concisely`, the name obra's
+  `brainstorming` used through 6.4 and `consistency-audit` uses, names the
   skill this marketplace delivers. Installing obra's own `elements-of-style`
   beside it would give two skills of that name; the blocks here never install
   it.
