@@ -15,7 +15,7 @@
       "ref": "main",
       "sha": "16dc239ff186b869372e75095cfa58fc0ee89927",
       "trees": {
-        "plugins/sensemaking/skills/adhd": "skills/adhd"
+        "plugins/software-dev/skills/adhd": "skills/adhd"
       },
       "forks": {}
     },

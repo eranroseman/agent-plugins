@@ -34,6 +34,12 @@ skills/finding-duplicate-functions: forked. Phase 1 is reimplemented in Python a
 Copyright (c) 2025 Jesse Vincent
 
 ----------------------------------------------------------------------
+https://github.com/UditAkhourii/adhd
+skills/adhd: copied, with two declared changes, the invocation gate in its frontmatter and the Codex policy file agents/openai.yaml
+
+Copyright (c) 2026 ADHD contributors
+
+----------------------------------------------------------------------
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights

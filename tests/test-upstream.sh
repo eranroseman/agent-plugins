@@ -47,8 +47,8 @@
 # one; the wording of our side is asserted nowhere (§11.3).
 DECLARED=(
   $'plugins/software-dev/skills/diagnosing-bugs/SKILL.md\tline\tdescription: Diagnosis loop for hard bugs and performance regressions. Use when the user says "diagnose"/"debug this", or reports something broken/throwing/failing/slow.\tupstream\'s triggers overlap superpowers:systematic-debugging\'s almost entirely; the rewrite was measured against a control (roster spec §6.1)'
-  $'plugins/sensemaking/skills/adhd/SKILL.md\tadded\tdisable-model-invocation: true\tthe invocation gate, Claude Code\'s half: about ten agent calls, a cost only the user can authorize'
-  $'plugins/sensemaking/skills/adhd/agents/openai.yaml\tadded\t<file>\tthe invocation gate, Codex\'s half'
+  $'plugins/software-dev/skills/adhd/SKILL.md\tadded\tdisable-model-invocation: true\tthe invocation gate, Claude Code\'s half: about ten agent calls, a cost only the user can authorize'
+  $'plugins/software-dev/skills/adhd/agents/openai.yaml\tadded\t<file>\tthe invocation gate, Codex\'s half'
 )
 
 # ---- Declared exclusions, per entry (§7.3, T36) -----------------------------

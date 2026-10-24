@@ -1,24 +1,30 @@
 {
   "name": "software-dev",
   "version": "0.8.0",
-  "description": "The repository scaffolder, the consistency audit, diagnosing-bugs and finding-duplicate-functions, for Claude Code and Codex.",
+  "description": "The repository scaffolder, the consistency audit, diagnosing-bugs, finding-duplicate-functions, rethink-audit and adhd, for Claude Code and Codex.",
   "author": { "name": "Eran Roseman", "url": "https://github.com/eranroseman" },
   "homepage": "https://github.com/eranroseman/agent-plugins",
   "repository": "https://github.com/eranroseman/agent-plugins",
   "license": "MIT",
-  "keywords": ["software-dev", "superpowers", "skills", "workflow"],
+  "keywords": [
+    "software-dev",
+    "superpowers",
+    "skills",
+    "workflow",
+    "design-audit"
+  ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Software Development",
     "shortDescription": "Software-development skills for Claude Code and Codex",
-    "longDescription": "The repository scaffolder for mattpocock's engineering skills, a refuted-before-reported consistency audit, a reproduction-first debugging loop, and a Python duplicate-function finder.",
+    "longDescription": "The repository scaffolder for mattpocock's engineering skills, a refuted-before-reported consistency audit, a reproduction-first debugging loop, a Python duplicate-function finder, a clean-slate redesign audit, and parallel divergent ideation under five frames.",
     "developerName": "Eran Roseman",
     "category": "Developer Tools",
     "capabilities": ["Instructions"],
     "websiteURL": "https://github.com/eranroseman/agent-plugins",
     "defaultPrompt": [
-      "Set up this repository for the engineering skills.",
-      "Audit this repository for inconsistencies."
+      "Diagnose this bug; it does not reproduce.",
+      "Find the duplicate functions in this Python package."
     ]
   }
 }

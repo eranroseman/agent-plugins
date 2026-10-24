@@ -10,7 +10,7 @@ A skill reaches an agent from an upstream that moves, through an agent CLI
 that installs plugins its own way. Done by hand that is a pin per upstream, a
 copy per change, and two install procedures to keep in step, on every machine.
 This repository states the set once: the skills it writes or changes ship in
-its own plugins, `software-dev` and `sensemaking`, the skills it takes as they are come from subset entries that pin
+one plugin, the skills it takes as they are come from subset entries that pin
 part of an upstream at one commit, and a daily watch says when an upstream has
 moved past a pin. Every pin is written once, in the marketplace manifest or in
 `vendored.json`, and a test holds every copy to its upstream.
@@ -21,7 +21,7 @@ Marketplace entries in `.claude-plugin/marketplace.json`, the one file both
 agent CLIs read. On Claude Code, installing `software-dev` brings the rest as
 dependencies; on Codex, each is installed by name.
 
-- `software-dev`: a plugin this repository writes or changes.
+- `software-dev`: the plugin this repository writes or changes.
   - `setup-matt-pocock-skills`: a fork of mattpocock/skills' repository
     scaffolder, first-party since the fork. It writes the `## Agent skills`
     block to `AGENTS.md` and leaves `CLAUDE.md` as a one-line `@AGENTS.md`
@@ -39,8 +39,13 @@ dependencies; on Codex, each is installed by name.
     `superpowers:systematic-debugging`. Model-invoked.
   - `finding-duplicate-functions`: a rewritten fork of obra/superpowers-lab's
     skill, for Python; the plugin LICENSE records what changed.
-  - (Task 2 adds rethink-audit and adhd)
-- `sensemaking`: `rethink-audit` and `adhd`.
+  - `rethink-audit`: a first-party clean-slate redesign audit of a module,
+    service or feature; design only, applying no changes. Held for a redesign.
+  - `adhd`: parallel divergent ideation under five isolated cognitive frames,
+    scored, clustered and deepened, about ten agent calls. A copy of
+    UditAkhourii/adhd at the pin `vendored.json` records, with two declared
+    changes, the invocation gate in its frontmatter and the Codex policy file,
+    so it is user-invocable only on both agent CLIs: `/adhd <problem>`.
 - `superpowers`: obra/superpowers at a pinned commit, a subset entry.
 - `writing-clearly-and-concisely`: softaworks/agent-toolkit's skill of that
   name, a subset entry at a pinned commit.
@@ -75,7 +80,7 @@ The second command brings the dependencies with it, at user scope by default.
 Codex, which has no dependency concept, so each plugin is added by name:
 
 ```sh install-codex
-codex plugin marketplace add eranroseman/agent-plugins && for p in software-dev sensemaking superpowers writing-clearly-and-concisely mattpocock; do codex plugin add "$p@eranroseman"; done
+codex plugin marketplace add eranroseman/agent-plugins && for p in software-dev superpowers writing-clearly-and-concisely mattpocock; do codex plugin add "$p@eranroseman"; done
 ```
 
 Codex takes the `owner/repo` shorthand, and neither agent CLI needs a login
@@ -90,7 +95,6 @@ dependencies at their old versions:
 claude plugin marketplace update eranroseman
 claude plugin update software-dev@eranroseman
 claude plugin install software-dev@eranroseman
-claude plugin update sensemaking@eranroseman
 claude plugin update superpowers@eranroseman
 claude plugin update writing-clearly-and-concisely@eranroseman
 claude plugin update mattpocock@eranroseman
@@ -124,16 +128,20 @@ Run it once, before the update blocks:
 claude plugin marketplace update eranroseman
 claude plugin update software-dev@eranroseman
 claude plugin install software-dev@eranroseman
+claude plugin uninstall sensemaking@eranroseman
 npx --yes skills remove codebase-design domain-modeling grill-with-docs grilling handoff improve-codebase-architecture prototype research resolving-merge-conflicts teach to-questionnaire triage wait-what wayfinder wizard working-with-claude-code writing-for-agents -g -y
 find ~/.agents/skills -maxdepth 1 -type l -lname "$HOME/.local/share/software-dev/*" -delete
 rm -rf ~/.local/share/software-dev
 ls -d ~/.agents/skills/*.aside.* 2>/dev/null || true
 codex plugin marketplace upgrade eranroseman
+codex plugin remove sensemaking@eranroseman
 codex plugin add mattpocock@eranroseman
 ```
 
 - The first three lines move `software-dev` to this release, which installs
   the dependencies it adds.
+- The uninstall removes `sensemaking` from Claude Code, whose two skills ship
+  in `software-dev` now; the Codex `remove` does the same there.
 - The skills.sh `remove` takes the seventeen skills the script installed that
   the `mattpocock` entry now brings or this release drops;
   `resolving-merge-conflicts` is named because the old install had it, though
@@ -197,7 +205,7 @@ release of each agent CLI and asserts that each loads the skills it declares.
 
 ```text
 scripts/           what CI and the maintainer run: the upstream watch and the formatter
-plugins/           the plugins, software-dev and sensemaking
+plugins/           the one plugin, software-dev
 vendored.json      one record per upstream repository copied or forked from: its pin, its copies and its forks
 .claude-plugin/    the marketplace manifest both agent CLIs read: the plugins and the subset entries, with their pins
 .github/           the CI workflows, and dependabot.yml, which moves their action pins
