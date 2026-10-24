@@ -13,7 +13,7 @@
     {
       "repo": "UditAkhourii/adhd",
       "ref": "main",
-      "sha": "16dc239ff186b869372e75095cfa58fc0ee89927",
+      "sha": "7b91ce601ed951c1a9658c63f6f9550d2486525b",
       "trees": {
         "plugins/software-dev/skills/adhd": "skills/adhd"
       },
