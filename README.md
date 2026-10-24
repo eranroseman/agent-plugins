@@ -46,7 +46,6 @@ dependencies; on Codex, each is installed by name.
     UditAkhourii/adhd at the pin `vendored.json` records, with two declared
     changes, the invocation gate in its frontmatter and the Codex policy file,
     so it is user-invocable only on both agent CLIs: `/adhd <problem>`.
-- `superpowers`: obra/superpowers at a pinned commit, a subset entry.
 - `writing-clearly-and-concisely`: softaworks/agent-toolkit's skill of that
   name, a subset entry at a pinned commit.
 - `mattpocock`: fifteen of mattpocock/skills' skills at a release tag, a
@@ -55,6 +54,13 @@ dependencies; on Codex, each is installed by name.
   `codebase-design`, `domain-modeling`, `grill-with-docs`,
   `improve-codebase-architecture`, `prototype` and `triage`. The skills read
   `mattpocock:<name>` on both agent CLIs.
+
+Superpowers is not an entry here. The blocks below install obra's own plugin
+from obra's marketplace on each agent CLI; nothing in this repository pins,
+copies or watches it, and a user's superpowers moves with obra's releases. A
+machine that already has superpowers from another marketplace,
+`superpowers@claude-plugins-official` among them, would get a second one
+beside it, every skill twice; install from one.
 
 Every skill a subset entry delivers is upstream's as written; a copy is made
 only where this repository changes something, and the change is declared in
@@ -73,15 +79,24 @@ Claude Code:
 ```sh install-claude
 claude plugin marketplace add eranroseman/agent-plugins
 claude plugin install software-dev@eranroseman
+claude plugin marketplace add obra/superpowers-marketplace
+claude plugin install superpowers@superpowers-marketplace
 ```
 
 The second command brings the dependencies with it, at user scope by default.
+The last two commands install obra's superpowers from obra's own marketplace,
+the route obra's README gives beside the official one; it brings upstream's
+own SessionStart hook.
 
 Codex, which has no dependency concept, so each plugin is added by name:
 
 ```sh install-codex
-codex plugin marketplace add eranroseman/agent-plugins && for p in software-dev superpowers writing-clearly-and-concisely mattpocock; do codex plugin add "$p@eranroseman"; done
+codex plugin marketplace add eranroseman/agent-plugins && for p in software-dev writing-clearly-and-concisely mattpocock; do codex plugin add "$p@eranroseman"; done
+codex plugin marketplace add obra/superpowers && codex plugin add superpowers@superpowers-dev
 ```
+
+The second line adds obra's repository as a marketplace, which serves one
+named `superpowers-dev`, and installs superpowers from it.
 
 Codex takes the `owner/repo` shorthand, and neither agent CLI needs a login
 for any command here.
@@ -95,9 +110,10 @@ dependencies at their old versions:
 claude plugin marketplace update eranroseman
 claude plugin update software-dev@eranroseman
 claude plugin install software-dev@eranroseman
-claude plugin update superpowers@eranroseman
 claude plugin update writing-clearly-and-concisely@eranroseman
 claude plugin update mattpocock@eranroseman
+claude plugin marketplace update superpowers-marketplace
+claude plugin update superpowers@superpowers-marketplace
 ```
 
 The `install` after `software-dev`'s update installs any dependency the new
@@ -106,13 +122,16 @@ changes nothing. `claude plugin list` names a missing dependency and the
 install command for it. Claude Code loads new versions at the next launch or
 after `/reload-plugins`.
 
+The last two lines refresh obra's marketplace and update superpowers from it.
+
 Codex:
 
 ```sh update-codex
 codex plugin marketplace upgrade eranroseman
+codex plugin marketplace upgrade superpowers-dev
 ```
 
-The line re-clones the marketplace when its source moved and reinstalls
+Each line re-clones its marketplace when its source moved and reinstalls
 every installed plugin from the new commit. Never run `codex plugin
 marketplace add` again for an update: on a marketplace already added it
 reports it as such, exits 0 and refreshes nothing. A plugin the marketplace
@@ -129,6 +148,9 @@ claude plugin marketplace update eranroseman
 claude plugin update software-dev@eranroseman
 claude plugin install software-dev@eranroseman
 claude plugin uninstall sensemaking@eranroseman
+claude plugin uninstall superpowers@eranroseman
+claude plugin marketplace add obra/superpowers-marketplace
+claude plugin install superpowers@superpowers-marketplace
 npx --yes skills remove codebase-design domain-modeling grill-with-docs grilling handoff improve-codebase-architecture prototype research resolving-merge-conflicts teach to-questionnaire triage wait-what wayfinder wizard working-with-claude-code writing-for-agents -g -y
 find ~/.agents/skills -maxdepth 1 -type l -lname "$HOME/.local/share/software-dev/*" -delete
 rm -rf ~/.local/share/software-dev
@@ -136,12 +158,18 @@ ls -d ~/.agents/skills/*.aside.* 2>/dev/null || true
 codex plugin marketplace upgrade eranroseman
 codex plugin remove sensemaking@eranroseman
 codex plugin add mattpocock@eranroseman
+codex plugin marketplace add obra/superpowers && codex plugin add superpowers@superpowers-dev
 ```
 
 - The first three lines move `software-dev` to this release, which installs
   the dependencies it adds.
-- The uninstall removes `sensemaking` from Claude Code, whose two skills ship
-  in `software-dev` now; the Codex `remove` does the same there.
+- The uninstalls remove from Claude Code the plugins whose entries left the
+  marketplace: `sensemaking`, whose two skills ship in `software-dev` now,
+  and `superpowers@eranroseman`, since superpowers now comes from obra's
+  marketplace; the next two lines install it from there, as the install
+  block does. On Codex no line removes `superpowers`: it reached a converged
+  machine through the script's links, which the `find` and `rm` remove,
+  never as a plugin.
 - The skills.sh `remove` takes the seventeen skills the script installed that
   the `mattpocock` entry now brings or this release drops;
   `resolving-merge-conflicts` is named because the old install had it, though
@@ -154,8 +182,9 @@ codex plugin add mattpocock@eranroseman
 - The `ls` lists what the script moved aside inside the skill root, where
   Codex loads each as a bare skill; review each by hand, since it may be
   yours.
-- The Codex `upgrade` is the update block's own first line, so the `add` after
-  it finds the new entry.
+- The Codex `upgrade` is the update block's own first line, so the add after
+  it finds the new entry; then `sensemaking` is removed there, `mattpocock` is
+  added, and the last line adds obra's superpowers, as the install block does.
 - Without the cleanup, both agent CLIs load each mattpocock skill twice, bare
   beside `mattpocock:<name>`, and Codex lists every superpowers skill twice.
 
@@ -199,7 +228,9 @@ the commit; a report cites that file rather than pasting output.
 script with `--no-skip`, so nothing is skipped there, uploads the result file
 as an artifact, and, in a second job that also runs daily, installs the plugin
 and its entries through the install blocks above on the newest stable
-release of each agent CLI and asserts that each loads the skills it declares.
+release of each agent CLI and asserts that each loads the skills it declares,
+and that every `superpowers:` reference in the shipped skills names a skill
+obra's installed superpowers provides on both agent CLIs.
 
 ## Layout
 

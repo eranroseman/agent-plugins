@@ -56,7 +56,6 @@ DECLARED=(
 # that the entry does not list, each with one reason. An exclusion upstream
 # no longer has fails; so does a listed skill that is also excluded.
 declare -A EXCLUSIONS=(
-  [superpowers]=$'brainstorming\tthe narrowed copy that excluded it left with Q78; the entry itself leaves with the README\'s obra lines'
   ["writing-clearly-and-concisely"]=''
   ["mattpocock"]=$'diagnosing-bugs\tsoftware-dev ships a copy with a changed description (§11.2)
 setup-matt-pocock-skills\tsoftware-dev ships it forked under the same name (Q81)
@@ -282,6 +281,11 @@ for lic in "$REPO_ROOT"/plugins/*/LICENSE; do
 done
 
 # ---- The entries -------------------------------------------------------------
+# Every EXCLUSIONS key names a subset entry, so an entry that leaves the
+# marketplace cannot leave its exclusions behind.
+for k in "${!EXCLUSIONS[@]}"; do
+  entry_rows | cut -f1 | grep -qxF -- "$k" || fail "EXCLUSIONS names $k, which is no subset entry of the marketplace; retire it"
+done
 while IFS=$'\t' read -r name url path ref sha version; do
   [ -n "$name" ] || continue
   repo="${url#https://github.com/}"

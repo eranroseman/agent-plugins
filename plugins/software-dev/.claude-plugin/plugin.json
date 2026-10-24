@@ -7,5 +7,5 @@
   "repository": "https://github.com/eranroseman/agent-plugins",
   "license": "MIT",
   "keywords": ["software-dev", "superpowers", "skills", "workflow"],
-  "dependencies": ["superpowers", "writing-clearly-and-concisely", "mattpocock"]
+  "dependencies": ["writing-clearly-and-concisely", "mattpocock"]
 }

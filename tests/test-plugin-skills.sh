@@ -131,7 +131,7 @@ for skill in "$REPO_ROOT"/plugins/*/skills/*/; do
   claude_gate=false
   codex_gate=false
   grep -qx 'disable-model-invocation: true' "$skill/SKILL.md" && claude_gate=true
-  [ -f "$skill/agents/openai.yaml" ] && grep -qx '  allow_implicit_invocation: false' "$skill/agents/openai.yaml" && codex_gate=true
+  user_invocable_only "$skill/agents/openai.yaml" && codex_gate=true
   [ "$claude_gate" = "$codex_gate" ] \
     || fail "$plugin:$name is user-invocable only on one agent CLI (Claude $claude_gate, Codex $codex_gate); each such skill carries both gates"
   # Every scripts/<file> the SKILL.md names ships under the skill.

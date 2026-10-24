@@ -38,10 +38,11 @@ if [ -n "${CODEX_PLUGIN_VALIDATOR:-}" ]; then
   VDIR="${VALIDATOR%/*}"
 else
   # A depth-1 fetch without blobs and a checkout of the two paths: 2 seconds and
-  # 464 KB (measured 2026-10-01). Reused while both files still match.
-  CACHE="${TMPDIR:-/tmp}/software-dev-codex-validator-${PIN:0:7}"
+  # 464 KB (measured 2026-10-01). Kept under the user's cache directory, and
+  # reused while this user owns it and both files still match (#73).
+  CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/software-dev/codex-validator-${PIN:0:7}"
   VDIR="$CACHE/$UPSTREAM_DIR"
-  if ! pinned_copy "$VDIR"; then
+  if ! { [ -O "$CACHE" ] && pinned_copy "$VDIR"; }; then
     rm -rf "$CACHE"
     mkdir -p "$CACHE" || fail "could not create $CACHE"
     git -C "$CACHE" init -q || fail "git init failed in $CACHE"
@@ -63,7 +64,7 @@ done
 # The exceptions, derived: one bullet per skill whose Codex policy file sets
 # allow_implicit_invocation: false.
 known="$(for y in "$REPO_ROOT"/plugins/*/skills/*/agents/openai.yaml; do
-  grep -qx '  allow_implicit_invocation: false' "$y" || continue
+  user_invocable_only "$y" || continue
   s="$(basename "$(dirname "$(dirname "$y")")")"
   printf -- '- skill `%s` frontmatter field `disable-model-invocation` must be false\n' "$s"
 done)"

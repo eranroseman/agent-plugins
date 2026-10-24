@@ -11,35 +11,6 @@
       "category": "development"
     },
     {
-      "name": "superpowers",
-      "description": "obra/superpowers, a subset entry: the process spine without brainstorming.",
-      "category": "development",
-      "source": {
-        "source": "git-subdir",
-        "url": "https://github.com/obra/superpowers.git",
-        "path": "skills",
-        "ref": "main",
-        "sha": "b36e0829c6d0140e93cfef2ca599b1b07d4a7797"
-      },
-      "version": "6.3.0",
-      "strict": false,
-      "skills": [
-        "./dispatching-parallel-agents",
-        "./executing-plans",
-        "./finishing-a-development-branch",
-        "./receiving-code-review",
-        "./requesting-code-review",
-        "./subagent-driven-development",
-        "./systematic-debugging",
-        "./test-driven-development",
-        "./using-git-worktrees",
-        "./using-superpowers",
-        "./verification-before-completion",
-        "./writing-plans",
-        "./writing-skills"
-      ]
-    },
-    {
       "name": "writing-clearly-and-concisely",
       "description": "softaworks/agent-toolkit, a subset entry: one skill, Strunk's rules for prose humans read.",
       "category": "documentation",

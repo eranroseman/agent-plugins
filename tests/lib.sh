@@ -148,6 +148,10 @@ skill_name_matches() {
     || fail "$label: frontmatter name '$name' is not the directory name '$(basename "$dir")'; both agent CLIs dispatch by name"
 }
 
+# True when the Codex policy file $1 keeps its skill out of the model's
+# catalogue: the skill is user-invocable only on Codex.
+user_invocable_only() { [ -f "$1" ] && grep -qx '  allow_implicit_invocation: false' "$1"; }
+
 # ---- Ownership (spec §7.2, Q62) ---------------------------------------------
 # Every list of "the files we own" comes from checked() below. One class of
 # tracked file is excluded: a copy, a tree in a record's `trees` map, which is

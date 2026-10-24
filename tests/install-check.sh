@@ -9,7 +9,13 @@
 # skills equal its skill directories less those whose Codex policy file sets
 # allow_implicit_invocation: false, and each entry's its list less the skills
 # whose policy file in the installed cache does; the cache is never the
-# oracle for what loads, since both agent CLIs cache the whole path.
+# oracle for what loads, since both agent CLIs cache the whole path. Every
+# superpowers:<name> token in the shipped texts names a skill obra's installed
+# superpowers lists on Claude Code and shows in Codex's catalogue (T47). Over
+# the whole machine (T53): `claude plugin list` names exactly the
+# marketplace's entries from eranroseman and superpowers from
+# superpowers-marketplace, and no skill name is listed twice in Codex's
+# catalogue, bare or under any prefix.
 #
 #   tests/install-check.sh            install into a fresh scratch HOME, then assert
 #   tests/install-check.sh --assert   assert only, over the HOME and CODEX_HOME in the environment
@@ -50,9 +56,14 @@ run_block() {
 }
 
 # The names on the $2 line (Skills or Agents) of `claude plugin details $1`,
-# one per line, sorted; nothing for `Agents (0)`.
+# one per line, sorted; nothing for `Agents (0)`. The command is captured
+# first, so a failing `claude plugin details` fails rather than passing as an
+# empty set; since a fail here ends only the caller's command substitution,
+# every call site fails on the status too.
 details_names() {
-  claude plugin details "$1" | sed -n "s/^  $2 ([0-9]*) *//p" | tr ',' '\n' | sed 's/^ *//; s/ *$//' | grep . | sort || true
+  local out
+  out="$(claude plugin details "$1")" || fail "claude plugin details $1 failed"
+  sed -n "s/^  $2 ([0-9]*) *//p" <<<"$out" | tr ',' '\n' | sed 's/^ *//; s/ *$//' | grep . | sort || true
 }
 
 # Every skill in Codex's model-visible catalogue, as the catalogue names it
@@ -68,10 +79,6 @@ expect_equal() {
   diff <(printf '%s\n' "$2" | grep . | sort) <(printf '%s\n' "$3" | grep . | sort) \
     || fail "$1: the sets differ (expected above, found below)"
 }
-
-# True when the Codex policy file $1 keeps its skill out of the model's
-# catalogue.
-user_invocable_only() { [ -f "$1" ] && grep -qx '  allow_implicit_invocation: false' "$1"; }
 
 MODE="${1:-}"
 case "$MODE" in
@@ -112,12 +119,15 @@ while IFS=$'\t' read -r name src; do
   dir="$REPO_ROOT/${src#./}"
   want_skills="$(for d in "$dir"/skills/*/; do basename "$d"; done)"
   want_agents="$(for a in "$dir"/agents/*.md; do if [ -f "$a" ]; then basename "$a" .md; fi; done)"
-  expect_equal "claude: $name's skills" "$want_skills" "$(details_names "$name@eranroseman" Skills)"
-  expect_equal "claude: $name's agents" "$want_agents" "$(details_names "$name@eranroseman" Agents)"
+  got="$(details_names "$name@eranroseman" Skills)" || fail "claude plugin details $name@eranroseman failed"
+  expect_equal "claude: $name's skills" "$want_skills" "$got"
+  got="$(details_names "$name@eranroseman" Agents)" || fail "claude plugin details $name@eranroseman failed"
+  expect_equal "claude: $name's agents" "$want_agents" "$got"
 done <<<"$local_rows"
 while IFS=$'\t' read -r name _; do
   [ -n "$name" ] || continue
-  expect_equal "claude: the entry $name's skills" "$(entry_skills "$name")" "$(details_names "$name@eranroseman" Skills)"
+  got="$(details_names "$name@eranroseman" Skills)" || fail "claude plugin details $name@eranroseman failed"
+  expect_equal "claude: the entry $name's skills" "$(entry_skills "$name")" "$got"
 done < <(entry_rows)
 
 # ---- Codex -------------------------------------------------------------------
@@ -132,11 +142,52 @@ while IFS=$'\t' read -r name src; do
 done <<<"$local_rows"
 while IFS=$'\t' read -r name _; do
   [ -n "$name" ] || continue
-  cache="$(printf '%s\n' "$CODEX_HOME"/plugins/cache/eranroseman/"$name"/*/)"
+  cache="$(find "$CODEX_HOME/plugins/cache/eranroseman/$name" -mindepth 1 -maxdepth 1 -type d 2>/dev/null || true)"
   [ "$(printf '%s\n' "$cache" | grep -c .)" -eq 1 ] || fail "codex: expected one installed cache for $name, found:"$'\n'"$cache"
   want="$(jq -r --arg n "$name" '.plugins[] | select(.name == $n) | .skills[] | sub("^\\./"; "")' "$MARKETPLACE" \
     | while IFS= read -r lp; do user_invocable_only "${cache%/}/$lp/agents/openai.yaml" || basename "$lp"; done)"
   expect_equal "codex: the entry $name's model-visible skills" "$want" "$(visible_of "$name")"
 done < <(entry_rows)
+
+# ---- superpowers: references (Q87, T47) --------------------------------------
+# Each superpowers:<name> token in the shipped texts names a skill the
+# installed superpowers lists on Claude Code and shows in Codex's catalogue.
+# No fixed superpowers set is asserted: obra's install is unpinned.
+superpowers_references() {
+  local tokens claude_sp t s
+  tokens="$(while IFS= read -r f; do
+    { grep -ohE '(^|[^A-Za-z0-9_/-])superpowers:[a-z][a-z0-9-]*' "$REPO_ROOT/$f" || true; } | sed -E 's/^.*superpowers:/superpowers:/'
+  done < <(shipped_texts) | sort -u)"
+  [ -n "$tokens" ] || fail "no superpowers: token in the shipped texts; the check went vacuous"
+  claude_sp="$(details_names superpowers@superpowers-marketplace Skills)" || fail "claude plugin details superpowers@superpowers-marketplace failed"
+  [ -n "$claude_sp" ] || fail "claude plugin details superpowers@superpowers-marketplace lists no skill"
+  while IFS= read -r t; do
+    s="${t#superpowers:}"
+    grep -qxF -- "$s" <<<"$claude_sp" || fail "claude: $t names a skill the installed superpowers does not list"
+    grep -qxF -- "$t" <<<"$catalogue" || fail "codex: $t is not in the installed superpowers' model-visible catalogue"
+  done <<<"$tokens"
+  printf 'superpowers: %s reference(s) resolve on both agent CLIs\n' "$(grep -c . <<<"$tokens")"
+}
+superpowers_references
+
+# ---- The whole machine (T53) -------------------------------------------------
+# Exactly the marketplace's entries from eranroseman and superpowers from
+# superpowers-marketplace are installed on Claude Code, and no skill name is
+# listed twice in Codex's catalogue, bare or under any prefix. A fresh install
+# meets both; they are here for the gate's run over a machine the old script
+# converged.
+whole_machine() {
+  local want list installed dup
+  want="$({
+    jq -r '.plugins[].name' "$MARKETPLACE" | sed 's/$/@eranroseman/'
+    printf 'superpowers@superpowers-marketplace\n'
+  } | sort)"
+  list="$(claude plugin list)" || fail "claude plugin list failed"
+  installed="$(sed -n 's/^  ❯ //p' <<<"$list" | sort)"
+  expect_equal "claude: the installed plugins" "$want" "$installed"
+  dup="$(printf '%s\n' "$catalogue" | sed 's/^[^:]*://' | sort | uniq -d)"
+  [ -z "$dup" ] || fail "codex: a skill name is listed twice in the catalogue; the cleanup block removes the old installs:"$'\n'"$(while IFS= read -r n; do grep -E "^([^:]*:)?$n\$" <<<"$catalogue"; done <<<"$dup")"
+}
+whole_machine
 
 printf 'install-check: every local plugin and subset entry loads the skills it declares on Claude Code and Codex\n'
