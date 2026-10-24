@@ -198,6 +198,11 @@ codex plugin marketplace add obra/superpowers && codex plugin add superpowers@su
 - Without the cleanup, both agent CLIs load each mattpocock skill twice, bare
   beside `mattpocock:<name>`, and Codex lists every superpowers skill twice.
 
+A repository scaffolded before this release keeps its glossary as
+`CONTEXT.md`, which upstream's `domain-modeling` no longer reads: it writes
+`GLOSSARY.md` and would start a second glossary beside the old file. In each
+such repository, run `git mv CONTEXT.md GLOSSARY.md`.
+
 ## Notes
 
 - `archify` is not shipped. [tt-a1i/archify](https://github.com/tt-a1i/archify)
@@ -254,7 +259,7 @@ tests/             every check; tests/run.sh runs them, tests/install-check.sh i
 docs/agents/       the conventions the agents read: issue tracker, triage labels, domain docs
 docs/Professional-Editorial-Standards-2024.md   the editorial reference
 docs/superpowers/  historical artifacts: specs and plans, each read as of its commit
-CONTEXT.md         the vocabulary: contested terms with their retired forms, and the leading words
+GLOSSARY.md        the vocabulary: contested terms with their retired forms, and the leading words
 AGENTS.md          the agents' instruction file; CLAUDE.md imports it
 ```
 
