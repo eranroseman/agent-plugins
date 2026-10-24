@@ -35,7 +35,7 @@ W="$(mktemp -d)" || fail "mktemp failed"
 trap 'rm -rf "$W"' EXIT
 mkdir -p "$W/scripts" "$W/.claude-plugin" "$W/bin" || fail "could not seed $W"
 cp "$REPO_ROOT/scripts/upstream-watch" "$W/scripts/" || fail "could not copy the watch"
-cp "$REPO_ROOT/skills.json" "$REPO_ROOT/vendored.json" "$W/" \
+cp "$REPO_ROOT/vendored.json" "$W/" \
   || fail "could not copy the watch's desired state"
 printf '#!/usr/bin/env bash\nprintf "%%s\\n" "$*" >>"%s"\nexit 99\n' "$W/git.log" >"$W/bin/git" \
   || fail "could not write the git stub"

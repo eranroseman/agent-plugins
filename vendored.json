@@ -3,8 +3,6 @@
   "records": [
     {
       "repo": "mattpocock/skills",
-      "ref": "v1.2.3",
-      "sha": "6acc160e4e0cd062dbbbd7a1b26ae92855edf07e",
       "trees": {
         "plugins/software-dev/skills/diagnosing-bugs": "skills/engineering/diagnosing-bugs"
       },

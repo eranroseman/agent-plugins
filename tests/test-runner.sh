@@ -102,7 +102,7 @@ sed -n 1p "$RES" | grep -qE "^# $sha dirty [0-9]{4}-" \
 rm -f "$R/untracked"
 
 # A rejected flag leaves no stale result file (M12): the file already exists
-# from fixture 2's run, above.
+# from fixture 4's run, above.
 env PATH="$BIN" /bin/bash "$R/tests/run.sh" --no-skipp >/dev/null 2>&1 || true
 [ ! -e "$RES" ] || fail "a rejected flag left a stale result file"
 

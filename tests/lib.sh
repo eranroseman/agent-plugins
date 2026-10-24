@@ -87,14 +87,6 @@ fetch_pinned() {
   printf '%s\n' "$dir"
 }
 
-# obra/superpowers at the pinned sha. Override the location with UPSTREAM_DIR.
-fetch_upstream() {
-  local sha
-  sha="$(upstream_sha obra/superpowers)"
-  fetch_pinned https://github.com/obra/superpowers.git "$sha" \
-    "${UPSTREAM_DIR:-${TMPDIR:-/tmp}/software-dev-upstream-superpowers}"
-}
-
 # The commit the tag $2 names at $1, a URL: the peeled object of an annotated
 # tag, the tag itself for a lightweight one; empty when there is no such tag.
 peel_tag() {
@@ -107,7 +99,8 @@ peel_tag() {
 # A fixture PATH: $1 is the directory, created if absent, and every later
 # argument a tool linked into it from wherever this shell resolves it, so the
 # script under test sees those names and nothing else. Callers write their
-# stubs -- a claude that exits 1, an npx that records -- beside the links.
+# stubs -- a shfmt that reports a version the registry does not declare --
+# beside the links.
 link_tools() {
   local dir="$1" t p
   shift
@@ -116,45 +109,6 @@ link_tools() {
     p="$(command -v "$t" 2>/dev/null)" || fail "the fixture needs $t on PATH"
     ln -sf "$p" "$dir/$t" || fail "could not link $t into $dir"
   done
-}
-
-# True iff $1 appears, as fixed text, in OUT, where a test leaves the
-# engine's output.
-saw() { printf '%s\n' "$OUT" | grep -qF -- "$1"; }
-
-# A skill directory $1 whose SKILL.md is named after it and carries $2.
-skill() { mkdir -p "$1" && printf -- '---\nname: %s\n---\n%s\n' "$(basename "$1")" "$2" >"$1/SKILL.md"; }
-
-# Every subset entry's pinned clone under the HOME $1, with every skill
-# directory its entry lists, so the links have targets. Each is a bare
-# `git init` and an empty commit: its HEAD cannot be the declared sha, and it
-# has no origin, so the fetch ensure_clones falls back to fails locally
-# rather than reaching the network (#25). A clone already there is kept.
-seed_clones() {
-  local h="$1" name path skill dir
-  while IFS="$(printf '\t')" read -r name path skill; do
-    [ -n "$name" ] || continue
-    dir="$h/.local/share/software-dev/upstream/$name"
-    if [ ! -d "$dir/.git" ]; then
-      mkdir -p "$dir" || fail "could not seed $dir"
-      git -C "$dir" init -q || fail "git init failed in $dir"
-      git -C "$dir" -c user.email=t@example.com -c user.name=t commit -q --allow-empty -m seed \
-        || fail "could not seed a commit in $dir"
-    fi
-    mkdir -p "$dir/$path/$skill" || fail "could not seed $dir/$path/$skill"
-  done < <(jq -r '.plugins[] | select(.source.source? == "git-subdir") as $p
-                  | $p.skills[] | [$p.name, $p.source.path, (. | sub("^\\./"; ""))] | @tsv' "$MARKETPLACE")
-}
-
-# A skills.sh lockfile under the HOME $1 pinning every declared skill at its
-# declared ref, so ensure_skills_sh finds each converged and runs no npx.
-seed_lockfile() {
-  mkdir -p "$1/.agents" || fail "could not create $1/.agents"
-  jq '{version: 3,
-       skills: (reduce (.sources[] as $s | $s.skills[] |
-         {key: ., value: {source: $s.repo, ref: $s.ref}}) as $e ({}; . + {($e.key): $e.value})),
-       dismissed: {}}' "$REPO_ROOT/skills.json" >"$1/.agents/.skill-lock.json" \
-    || fail "could not synthesize a pinned lockfile"
 }
 
 # ---- The marketplace's subset entries (spec §6) -----------------------------
@@ -223,10 +177,10 @@ checked() {
 }
 
 # The shell files: every checked file whose first line is the bash shebang.
-# By shebang, not extension: the two commands under bin/ and the two scripts
-# have none. Arguments narrow the list the same way checked's
-# do. A tracked file absent from the working tree is a FAIL by name, not a
-# silently shorter list: head's failure is not swallowed (#61 M4).
+# By shebang, not extension: the two scripts have none. Arguments narrow the
+# list the same way checked's do. A tracked file absent from the working tree
+# is a FAIL by name, not a silently shorter list: head's failure is not
+# swallowed (#61 M4).
 checked_shell() {
   local f line
   while IFS= read -r f; do

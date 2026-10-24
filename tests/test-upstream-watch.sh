@@ -5,7 +5,7 @@
 # The watch is copied into a scratch root beside a fixture marketplace with
 # two git-subdir entries, one on a tag and one on a branch, a fixture
 # vendored.json with one branch record and one record without a pin, matching
-# the tag entry, and a fixture skills.json. The cases:
+# the tag entry and carrying a fork. The cases:
 #   1. the stable-tag filter: a tag entry pinned at the newest stable tag is
 #      current, and prereleases, -dev builds and a parallel tag series never
 #      count (Q66);
@@ -24,7 +24,6 @@ cp "$REPO_ROOT/scripts/upstream-watch" "$W/scripts/" || fail "could not copy the
 TAG_URL="https://github.com/example/tag-upstream.git"
 BRANCH_URL="https://example.invalid/branch-upstream.git"
 TREE_URL="https://github.com/example/tree-upstream.git"
-SKILLS_URL="https://github.com/example/skills-upstream.git"
 TAG_SHA="1111111111111111111111111111111111111111"
 BRANCH_SHA="2222222222222222222222222222222222222222"
 TREE_SHA="3333333333333333333333333333333333333333"
@@ -71,15 +70,12 @@ write_vendored() { # $1 the branch record's sha
     {
       "repo": "example/tag-upstream",
       "trees": { "plugins/p/skills/six": "skills/six" },
-      "forks": {}
+      "forks": { "plugins/p/skills/seven": "skills/seven" }
     }
   ]
 }
 JSON
 }
-printf '{"sources":[{"repo":"example/skills-upstream","ref":"v1.0.0","skills":["four"],"not_adopted":[],"via_subset_entry":[]}]}\n' >"$W/skills.json" \
-  || fail "could not write the fixture skills.json"
-
 # The git stub: `ls-remote` answered from answers.tsv (url, refname, sha);
 # with no ref argument it lists the tags of the url, as `--tags --refs` does. Any
 # other verb is exit 99, so the watch cannot reach a real remote from here.
@@ -118,7 +114,6 @@ write_answers() { # $1 newest stable tag name, $2 its sha, $3 branch tip, $4 tre
     [ "$1" = v2.16.0 ] || printf '%s\trefs/tags/%s\t%s\n' "$TAG_URL" "$1" "$2"
     printf '%s\trefs/heads/main\t%s\n' "$BRANCH_URL" "$3"
     printf '%s\trefs/heads/main\t%s\n' "$TREE_URL" "$4"
-    printf '%s\trefs/tags/v1.0.0\t%s\n' "$SKILLS_URL" "$TREE_SHA"
   } | sort -u >"$ANSWERS"
 }
 
@@ -138,6 +133,8 @@ grep -qF -- '`v2.16.0`' <<<"$out" || fail "the current tag entry's line does not
 grep -qF 'Everything matches' <<<"$out" || fail "a clean run must say so:"$'\n'"$out"
 grep -qF -- 'skills/five' <<<"$out" || fail "the record's fork path is not named on its line:"$'\n'"$out"
 grep -qF -- 'pinned through its subset entry' <<<"$out" || fail "the record without a pin is not reported through its entry:"$'\n'"$out"
+grep -F -- '`tagged`' <<<"$out" | grep -qF -- 'skills/seven' || fail "the tag entry's line does not name the fork its pinless record carries:"$'\n'"$out"
+grep -F -- '`example/tag-upstream`' <<<"$out" | grep -qF -- 'forks to re-read' || fail "the pinless record's line does not name its forks to re-read:"$'\n'"$out"
 # Pinned one stable release back: exit 1, and the line names v2.16.0, never a
 # prerelease or the parallel series.
 write_marketplace v2.15.0 "$TAG_SHA" "$BRANCH_SHA"

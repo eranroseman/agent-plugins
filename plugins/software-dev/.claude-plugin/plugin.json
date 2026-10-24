@@ -10,6 +10,7 @@
   "dependencies": [
     "sensemaking",
     "superpowers",
-    "writing-clearly-and-concisely"
+    "writing-clearly-and-concisely",
+    "mattpocock"
   ]
 }

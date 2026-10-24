@@ -1,6 +1,0 @@
-#!/usr/bin/env bash
-# The check mode of bin/setup: report this machine and change nothing. Builtins
-# only, and the shell by its own path, so an empty PATH cannot stop it (#16).
-dir="${0%/*}"
-[ "$dir" != "$0" ] || dir=.
-exec "$BASH" "$dir/setup" --check "$@"

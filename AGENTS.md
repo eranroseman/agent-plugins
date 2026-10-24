@@ -41,5 +41,5 @@ a recorded decline.
 Nothing scans passively on Codex: `codex-security`'s scan family
 (`security-scan`, `security-diff-scan`, `deep-security-scan`,
 `finding-discovery`) is explicit-invocation only. This repository ships
-`bin/setup`, its workflows and the scripts they run, so run a scan yourself on
-a diff that touches `bin/`, `scripts/`, or a workflow.
+its workflows and the scripts they run, so run a scan yourself on a diff that
+touches `scripts/` or a workflow.

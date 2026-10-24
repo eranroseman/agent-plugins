@@ -37,7 +37,7 @@ esac
 
 REGISTRY=tests/tools.txt
 
-# The hard prerequisites, refused as one list in the shape bin/setup uses.
+# The hard prerequisites, refused as one list.
 missing=""
 if [ "${BASH_VERSINFO[0]}" -lt 4 ] || { [ "${BASH_VERSINFO[0]}" -eq 4 ] && [ "${BASH_VERSINFO[1]}" -lt 4 ]; }; then
   missing="$missing, bash 4.4 or later (found ${BASH_VERSINFO[0]}.${BASH_VERSINFO[1]})"

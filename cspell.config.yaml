@@ -23,6 +23,7 @@ words:
   - frontmatter
   - glab
   - HITL
+  - lname
   - mattpocock
   - nosuch
   - obra
@@ -54,7 +55,6 @@ patterns:
     pattern: "/(?<=^|\\s)#.*$/gm"
 overrides:
   - filename:
-      - "bin/*"
       - "scripts/*"
       - "tests/*.sh"
       - "**/*.yml"

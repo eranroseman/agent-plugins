@@ -29,8 +29,9 @@
 #
 # Bare sibling names (T44): for a record whose pin is its entry's, every
 # upstream skill name that a listed skill at the pin, a copy or a fork names
-# as /name or in backticks must be one a marketplace entry delivers. Before
-# such a record exists the check is vacuous, and the summary line says so.
+# as /name or in backticks must be one a marketplace entry delivers. The
+# mattpocock record resolves through its entry, so the check runs on every
+# suite run and must check at least one name.
 # Needs network.
 . "$(dirname "$0")/lib.sh"
 
@@ -57,6 +58,28 @@ DECLARED=(
 declare -A EXCLUSIONS=(
   [superpowers]=$'brainstorming\tthe narrowed copy that excluded it left with Q78; the entry itself leaves with the README\'s obra lines'
   ["writing-clearly-and-concisely"]=''
+  ["mattpocock"]=$'diagnosing-bugs\tsoftware-dev ships a copy with a changed description (§11.2)
+setup-matt-pocock-skills\tsoftware-dev ships it forked under the same name (Q81)
+to-spec\tcollides with a superpowers skill; superpowers owns that slot (ruling of 2026-09-06)
+to-tickets\tcollides with a superpowers skill; superpowers owns that slot (ruling of 2026-09-06)
+implement\tcollides with a superpowers skill; superpowers owns that slot (ruling of 2026-09-06)
+tdd\tcollides with a superpowers skill; superpowers owns that slot (ruling of 2026-09-06)
+code-review\tcollides with a superpowers skill; superpowers owns that slot (ruling of 2026-09-06)
+grill-me\ta four-line alias whose whole body calls grilling, which the entry lists (ruling of 2026-09-16)
+ask-matt\tnever evaluated; surfaced by the complement check on 2026-09-16
+claude-handoff\tnever evaluated; surfaced by the complement check on 2026-09-16
+git-guardrails-claude-code\tnever evaluated; surfaced by the complement check on 2026-09-16
+loop-me\tnever evaluated; surfaced by the complement check on 2026-09-16
+migrate-to-shoehorn\tnever evaluated; surfaced by the complement check on 2026-09-16
+scaffold-exercises\tnever evaluated; surfaced by the complement check on 2026-09-16
+setup-pre-commit\tnever evaluated; surfaced by the complement check on 2026-09-16
+setup-ts-deep-modules\tnever evaluated; surfaced by the complement check on 2026-09-16
+writing-beats\tnever evaluated; surfaced by the complement check on 2026-09-16
+writing-fragments\tnever evaluated; surfaced by the complement check on 2026-09-16
+writing-shape\tnever evaluated; surfaced by the complement check on 2026-09-16
+implement-spec\timplements the output of /to-spec and /to-tickets, which superpowers\' slot excludes (Q85)
+pr\tnever evaluated; new at v1.3.0, surfaced by the v1.3.1 complement; a candidate on #48 (Q85)
+retro\tnever evaluated; new at v1.3.0, surfaced by the v1.3.1 complement; a candidate on #48 (Q85)'
 )
 
 cache_for() { printf '%s/software-dev-upstream-%s\n' "${TMPDIR:-/tmp}" "$(tr / - <<<"$1")"; }
@@ -99,6 +122,8 @@ compare_file() {
   done <<<"$rows"
   diff <(printf '%s\n' "$up") <(printf '%s\n' "$loc") \
     || fail "$key differs from upstream at the pin beyond its declared changes"
+  [ "$(tail -c 2 "$lf" | od -An -tx1)" = "$(tail -c 2 "$uf" | od -An -tx1)" ] \
+    || fail "$key: the last bytes differ from upstream's at the pin (an end-of-file newline)"
 }
 
 # The copy $2 (a REPO_ROOT-relative path) against $3 (a path under the
@@ -203,7 +228,8 @@ sibling_names() {
 
 RECORDS=0 FILES=0 SECTIONS=0 ENTRIES=0 EXCLUDED_N=0 SIBLINGS=0
 
-# Every declared row names a path under a copy, so a stale row fails.
+# Every declared row names a tracked file under a copy and one of the two
+# kinds, so a stale or mistyped row fails by name before any fetch.
 for r in "${DECLARED[@]}"; do
   p="${r%%$'\t'*}"
   under=0
@@ -211,6 +237,13 @@ for r in "${DECLARED[@]}"; do
     case "$p" in "$key"/*) under=1 ;; esac
   done < <(tree_keys)
   [ "$under" -eq 1 ] || fail "the declared change for $p names a path under no copy in vendored.json"
+  kind="$(cut -f2 <<<"$r")"
+  case "$kind" in
+    line | added) ;;
+    *) fail "the declared change for $p has the kind '$kind'; the kinds are line and added" ;;
+  esac
+  git -C "$REPO_ROOT" ls-files --error-unmatch -- "$p" >/dev/null 2>&1 \
+    || fail "the declared change for $p names a path that is not a tracked file"
 done
 
 # ---- The records -------------------------------------------------------------
@@ -306,6 +339,7 @@ while IFS=$'\t' read -r name url path ref sha version; do
   ENTRIES=$((ENTRIES + 1))
 done < <(entry_rows)
 [ "$ENTRIES" -gt 0 ] || fail "the marketplace holds no subset entry"
+[ "$SIBLINGS" -gt 0 ] || fail "no sibling name was checked; the mattpocock record resolves through its entry, so the check must run"
 
 printf 'upstream: %s record(s) at their pins, %s copied file(s) held with %s declared change(s), %s LICENSE section(s) carry upstream'"'"'s copyright; %s entr(y|ies) at their pins with %s exclusion(s); %s sibling name(s) resolve\n' \
   "$RECORDS" "$FILES" "${#DECLARED[@]}" "$SECTIONS" "$ENTRIES" "$EXCLUDED_N" "$SIBLINGS"

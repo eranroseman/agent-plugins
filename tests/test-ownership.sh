@@ -38,8 +38,7 @@ odd="$(grep '[[:space:]*?[\\"]' <<<"$list" || true)"
   || fail "a tracked path carries whitespace, a glob character, or a quoted path; the tool tests expand the list unquoted:"$'\n'"$odd"
 shell="$(checked_shell)"
 [ -n "$shell" ] || fail "checked_shell() listed nothing"
-grep -qx 'bin/setup' <<<"$shell" || fail "checked_shell() does not list bin/setup, a shell file with no extension"
-# The floor under that pin, derived rather than enumerated: every checked file
+# Derived rather than enumerated: every checked file
 # whose first line names bash must be in checked_shell, so a shell file cannot
 # leave the shell checkers' scope on one character. checked_shell's
 # exact-shebang rule stands: this says what joining it costs, it does not

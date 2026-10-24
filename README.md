@@ -1,78 +1,90 @@
 # agent-plugins
 
-One command puts the same agent skills on Claude Code and Codex, and one script
-tells you when a machine has drifted from them.
+One repository states the skills a machine should have on Claude Code and
+Codex, delivers them as plugins each agent CLI installs with its own commands,
+and watches the upstreams it takes skills from.
 
 ## Why
 
-Skills reach an agent by three different routes: a subset entry taken from an
-upstream at a pinned commit, `skills.sh` with its own lockfile, and skills
-written here. The two agent CLIs consume them differently — Codex has no
-dependency concept and no update verb, so anything Claude resolves
-automatically has to be done explicitly there. And upstreams move underneath
-all of it.
-
-Done by hand that is a dozen decisions repeated on every machine, with no way
-to answer "is this machine still what I think it is". The alternative is not a
-better memory: it is a repository that states the intended machine state, a
-script that converges a machine to it, and the same script in check mode to
-report what does not match. A daily watch says when an upstream has moved past
-a pin, and never moves one itself.
+A skill reaches an agent from an upstream that moves, through an agent CLI
+that installs plugins its own way. Done by hand that is a pin per upstream, a
+copy per change, and two install procedures to keep in step, on every machine.
+This repository states the set once: the skills it writes or changes ship in
+its own plugins, `software-dev` and `sensemaking`, the skills it takes as they are come from subset entries that pin
+part of an upstream at one commit, and a daily watch says when an upstream has
+moved past a pin. Every pin is written once, in the marketplace manifest or in
+`vendored.json`, and a test holds every copy to its upstream.
 
 ## What it ships
 
-Four marketplace entries:
+Marketplace entries in `.claude-plugin/marketplace.json`, the one file both
+agent CLIs read. On Claude Code, installing `software-dev` brings the rest as
+dependencies; on Codex, each is installed by name.
 
-- `software-dev`: the glue plugin, for anyone building software with an agent; its README names every skill and agent it ships and where each came from. Depends on the three entries below.
-- `sensemaking`: skills for thinking work that is not code, shared with `research-vault`; its README says which plugin holds a skill, and why.
-- `superpowers`: obra/superpowers at a pinned commit, a subset entry, Claude Code only; Codex reaches the same skills by symlink, created by `bin/setup` as described in Install below.
-- `writing-clearly-and-concisely`: softaworks/agent-toolkit's one skill of that name, a subset entry at a pinned commit, Claude Code only, with the same Codex symlink.
+- `software-dev`: a plugin this repository writes or changes.
+  - `setup-matt-pocock-skills`: a fork of mattpocock/skills' repository
+    scaffolder, first-party since the fork. It writes the `## Agent skills`
+    block to `AGENTS.md` and leaves `CLAUDE.md` as a one-line `@AGENTS.md`
+    import, asks which git convention the repo uses, and carries that
+    convention, the design ladder and the task-reports rule. User-invocable
+    only.
+  - `consistency-audit` and its agent `consistency-audit-inspector`: a
+    first-party audit, user-invocable only, that reads a repository whole for
+    contradictions, duplication, drifted terms and stale claims, and refutes
+    every candidate before reporting it. On Codex, where a plugin cannot ship
+    a subagent, it runs as one reader and says so.
+  - `diagnosing-bugs`: a copy of mattpocock/skills' reproduction-first
+    debugging loop at the `mattpocock` entry's pin, with one declared change,
+    a description that shares no trigger word with
+    `superpowers:systematic-debugging`. Model-invoked.
+  - `finding-duplicate-functions`: a rewritten fork of obra/superpowers-lab's
+    skill, for Python; the plugin LICENSE records what changed.
+  - (Task 2 adds rethink-audit and adhd)
+- `sensemaking`: `rethink-audit` and `adhd`.
+- `superpowers`: obra/superpowers at a pinned commit, a subset entry.
+- `writing-clearly-and-concisely`: softaworks/agent-toolkit's skill of that
+  name, a subset entry at a pinned commit.
+- `mattpocock`: fifteen of mattpocock/skills' skills at a release tag, a
+  subset entry: `grilling`, `handoff`, `teach`, `to-questionnaire`,
+  `wait-what`, `writing-for-agents`, `research`, `wayfinder`, `wizard`,
+  `codebase-design`, `domain-modeling`, `grill-with-docs`,
+  `improve-codebase-architecture`, `prototype` and `triage`. The skills read
+  `mattpocock:<name>` on both agent CLIs.
+
+Every skill a subset entry delivers is upstream's as written; a copy is made
+only where this repository changes something, and the change is declared in
+the upstream test. A fork is first-party and held to nothing.
+
+## What it depends on
+
+`software-dev` depends on the entries beside it, so one install on Claude
+Code brings them all. Each subset entry is pinned at one upstream commit, and the
+watch reports when the upstream moves.
 
 ## Install
 
-The marketplace installs with each agent CLI's own commands, and the script it delivers does the rest. It
-is safely re-runnable, and `bin/doctor` is the same engine in check mode.
+Claude Code:
 
 ```sh install-claude
 claude plugin marketplace add eranroseman/agent-plugins
 claude plugin install software-dev@eranroseman
 ```
 
+The second command brings the dependencies with it, at user scope by default.
+
+Codex, which has no dependency concept, so each plugin is added by name:
+
 ```sh install-codex
-codex plugin marketplace add eranroseman/agent-plugins && for p in software-dev sensemaking superpowers writing-clearly-and-concisely; do codex plugin add "$p@eranroseman"; done
+codex plugin marketplace add eranroseman/agent-plugins && for p in software-dev sensemaking superpowers writing-clearly-and-concisely mattpocock; do codex plugin add "$p@eranroseman"; done
 ```
 
-Then the script converges the rest, the pinned clones and the skills.sh set:
-
-```sh
-bash ~/.claude/plugins/marketplaces/eranroseman/bin/setup
-```
-
-`bin/setup` requires the Claude Code CLI, plus `git`, `jq`, `node` and `npx`.
-That is structural rather than a preference: the script lives in the clone
-`claude plugin marketplace add` creates, and reads the desired state from it. A
-Claude-only machine is fully supported.
-
-Codex is optional. When `codex` is on `PATH` the same run adds the Codex
-marketplace and installs both local plugins there. When it is not, that half
-is reported as skipped and nothing else changes.
-
-What the run leaves behind: both plugins installed on each agent CLI present, a
-pinned clone per subset entry — obra/superpowers and softaworks/agent-toolkit
-— fourteen symlinks into them under `~/.agents/skills` (Codex's documented
-user skill root, created whether or not Codex is present), and the declared
-skills.sh set installed at its declared refs.
-
-Three things it deliberately does not do. It never enables plugin auto-update
-— that is a consent decision you make once in `/plugin` under Marketplaces.
-And it never sets the telemetry-disabling variables, or the update-check
-variable documented in the plugin README, for the same reason. `bin/doctor`
-reports the operator decisions it never makes for you.
+Codex takes the `owner/repo` shorthand, and neither agent CLI needs a login
+for any command here.
 
 ## Update
 
-The marketplace clone carries both the new desired state and the new copy of the
-script, so it is refreshed first and the script re-run from it:
+Claude Code, one update per plugin, since a parent's update leaves its
+dependencies at their old versions:
 
 ```sh update-claude
 claude plugin marketplace update eranroseman
@@ -81,23 +93,85 @@ claude plugin install software-dev@eranroseman
 claude plugin update sensemaking@eranroseman
 claude plugin update superpowers@eranroseman
 claude plugin update writing-clearly-and-concisely@eranroseman
+claude plugin update mattpocock@eranroseman
 ```
+
+The `install` after `software-dev`'s update installs any dependency the new
+release adds; on an installed plugin whose dependencies are present it
+changes nothing. `claude plugin list` names a missing dependency and the
+install command for it. Claude Code loads new versions at the next launch or
+after `/reload-plugins`.
+
+Codex:
 
 ```sh update-codex
 codex plugin marketplace upgrade eranroseman
 ```
 
-```sh
-bash ~/.claude/plugins/marketplaces/eranroseman/bin/setup
+The line re-clones the marketplace when its source moved and reinstalls
+every installed plugin from the new commit. Never run `codex plugin
+marketplace add` again for an update: on a marketplace already added it
+reports it as such, exits 0 and refreshes nothing. A plugin the marketplace
+gains later needs its own `codex plugin add`, as `mattpocock` does on this
+release; the cleanup below covers it.
+
+## One-time cleanup
+
+For a machine the retired script `bin/setup` converged before this release.
+Run it once, before the update blocks:
+
+```sh cleanup
+claude plugin marketplace update eranroseman
+claude plugin update software-dev@eranroseman
+claude plugin install software-dev@eranroseman
+npx --yes skills remove codebase-design domain-modeling grill-with-docs grilling handoff improve-codebase-architecture prototype research resolving-merge-conflicts teach to-questionnaire triage wait-what wayfinder wizard working-with-claude-code writing-for-agents -g -y
+find ~/.agents/skills -maxdepth 1 -type l -lname "$HOME/.local/share/software-dev/*" -delete
+rm -rf ~/.local/share/software-dev
+ls -d ~/.agents/skills/*.aside.* 2>/dev/null || true
+codex plugin marketplace upgrade eranroseman
+codex plugin add mattpocock@eranroseman
 ```
 
-Everything after that is the script's own work: re-adding the Codex plugins,
-since Codex has no update verb; re-fetching the pinned clones; re-verifying
-the symlinks; and re-running `skills add` per declared skill. With auto-update
-enabled, Claude Code refreshes itself and the first command is unnecessary.
+- The first three lines move `software-dev` to this release, which installs
+  the dependencies it adds.
+- The skills.sh `remove` takes the seventeen skills the script installed that
+  the `mattpocock` entry now brings or this release drops;
+  `resolving-merge-conflicts` is named because the old install had it, though
+  upstream has since removed it. `archify` and `developing-claude-code-plugins`
+  stay installed and become your own, as does any other skills.sh install
+  (`npx skills list -g` shows them; the same `remove` takes any you no longer
+  want). The line needs `npx`, as the install it undoes did.
+- The `find` removes the script's symlinks into its clones, and the `rm` the
+  clones.
+- The `ls` lists what the script moved aside inside the skill root, where
+  Codex loads each as a bare skill; review each by hand, since it may be
+  yours.
+- The Codex `upgrade` is the update block's own first line, so the `add` after
+  it finds the new entry.
+- Without the cleanup, both agent CLIs load each mattpocock skill twice, bare
+  beside `mattpocock:<name>`, and Codex lists every superpowers skill twice.
 
-Claude Code loads the new versions at the next launch or after
-`/reload-plugins`: the CLI running the script is the one that has to restart.
+## Notes
+
+- `archify` is not shipped. [tt-a1i/archify](https://github.com/tt-a1i/archify)
+  gives its own install instructions; this repository neither pins nor
+  watches it.
+- `developing-claude-code-plugins` is not shipped either. Each agent CLI's own
+  documentation is current: [Claude Code's documentation map](https://code.claude.com/docs/en/claude_code_docs_map.md)
+  and [Codex's plugin build page](https://developers.openai.com/plugins/build/plugins).
+  Anyone who wants the skill can install obra's own,
+  `superpowers-developing-for-claude-code@superpowers-marketplace` from
+  `obra/superpowers-marketplace`, on either agent CLI, which brings
+  `working-with-claude-code` with it; this repository neither pins nor
+  watches it.
+- Claude Code's auto-update is off by default for a third-party marketplace.
+  Turning it on is your choice, made once in `/plugin` under Marketplaces:
+  select `eranroseman` and turn auto-update on. With it on, Claude Code
+  refreshes the marketplace and updates installed plugins after a session
+  starts, then prompts for `/reload-plugins` or loads the new version at the
+  next launch. The marketplace pins its subset entries at a fixed commit, so
+  auto-update delivers this repository's releases and never an upstream's
+  HEAD.
 
 ## Checks
 
@@ -108,29 +182,34 @@ tool, and the run ends by summing what it did not verify. The versions those
 checks are held to are declared in `tests/tools.txt`; the three npm tools
 install with `npm install -g <tool>@<version>`, the three binaries from their
 release pages. The Codex manifest check needs `python3` with `pyyaml` and
-fetches Codex's validator from GitHub at a pinned commit, as the pin and drift
-checks fetch their upstreams; offline, they fail rather than skip.
+fetches Codex's validator from GitHub at a pinned commit, as the upstream
+test fetches each pin; offline, they fail rather than skip.
 
 Every run writes `tests/results.tsv`, one row per check under a header naming
 the commit; a report cites that file rather than pasting output.
 `scripts/format` rewrites what the format checks check. CI runs the same
 script with `--no-skip`, so nothing is skipped there, uploads the result file
-as an artifact, and runs `bin/setup` end to end against a scratch `HOME`.
+as an artifact, and, in a second job that also runs daily, installs the plugin
+and its entries through the install blocks above on the newest stable
+release of each agent CLI and asserts that each loads the skills it declares.
 
 ## Layout
 
 ```text
-bin/               the two commands a user runs: setup, and doctor, its check mode
 scripts/           what CI and the maintainer run: the upstream watch and the formatter
-plugins/           the two plugins, software-dev and sensemaking, each with its own README
-skills.json        the desired state for skills.sh: sources, refs, skill names
+plugins/           the plugins, software-dev and sensemaking
 vendored.json      one record per upstream repository copied or forked from: its pin, its copies and its forks
-.claude-plugin/    the Claude marketplace manifest: the two plugins and the two subset entries, with their pins
-.github/           the CI workflows, whose action pins Dependabot moves (dependabot.yml)
-tests/             every check; tests/run.sh runs them and tests/tools.txt pins the tools
+.claude-plugin/    the marketplace manifest both agent CLIs read: the plugins and the subset entries, with their pins
+.github/           the CI workflows, and dependabot.yml, which moves their action pins
+tests/             every check; tests/run.sh runs them, tests/install-check.sh is the install job's, and tests/tools.txt pins the tools
 docs/agents/       the conventions the agents read: issue tracker, triage labels, domain docs
 docs/Professional-Editorial-Standards-2024.md   the editorial reference
 docs/superpowers/  historical artifacts: specs and plans, each read as of its commit
 CONTEXT.md         the vocabulary: contested terms with their retired forms, and the leading words
 AGENTS.md          the agents' instruction file; CLAUDE.md imports it
 ```
+
+## License
+
+MIT. See `LICENSE`. Each upstream this repository copies or forks from is
+credited in the plugin's own LICENSE.

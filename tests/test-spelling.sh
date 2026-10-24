@@ -2,10 +2,10 @@
 # The owned prose is spelled in US English (spec §8.1): the markdown outside
 # docs/superpowers, the record directory whose vocabulary is each author's and
 # would triple the dictionary, plus the `#` comments of the shell and YAML
-# files through cspell.config.yaml's override, and every JSON file whole
-# (thirteen user-facing strings). A typo is fixed; a term is added to the
-# config's word list. A spelling inside a first-party SKILL.md is an edit to
-# the skill and goes through superpowers:writing-skills.
+# files through cspell.config.yaml's override, and every JSON file whole. A
+# typo is fixed; a term is added to the config's word list. A spelling inside
+# a first-party SKILL.md is an edit to the skill and goes through
+# superpowers:writing-skills.
 # needs: cspell
 . "$(dirname "$0")/lib.sh"
 

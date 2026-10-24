@@ -50,6 +50,7 @@ cd "$REPO_ROOT" || fail "could not cd to the repository root"
 # and goes (T18).
 DECLARED_ABSENT=(
   'docs/adr/' # docs/agents/domain.md names it; this repository keeps no ADRs (#26, #37)
+  'bin/setup' # retired by the standalone spec (§13); the README's cleanup names the script it undoes
 )
 
 docs="$(checked_markdown ':(exclude)docs/superpowers')"
