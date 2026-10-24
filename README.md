@@ -78,8 +78,8 @@ softaworks' marketplace, and `mattpocock:grilling` and
 `mattpocock:domain-modeling`. `consistency-audit` and `rethink-audit` hand
 off to `superpowers:writing-plans`, and `rethink-audit` sends requirements
 still open to `superpowers:brainstorming`; the install blocks bring
-superpowers from obra's marketplace. The one entry is pinned at one upstream
-commit, and the watch reports when the upstream moves.
+superpowers from obra's marketplace. The `mattpocock` entry is pinned at one
+upstream commit, and the watch reports when the upstream moves.
 
 ## Install
 
