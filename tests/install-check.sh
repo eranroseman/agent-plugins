@@ -10,12 +10,13 @@
 # allow_implicit_invocation: false, and each entry's its list less the skills
 # whose policy file in the installed cache does; the cache is never the
 # oracle for what loads, since both agent CLIs cache the whole path. Every
-# superpowers:<name> token in the shipped texts names a skill obra's installed
-# superpowers lists on Claude Code and shows in Codex's catalogue (T47). Over
-# the whole machine (T53): `claude plugin list` names exactly the
-# marketplace's entries from eranroseman and superpowers from
-# superpowers-marketplace, and no skill name is listed twice in Codex's
-# catalogue, bare or under any prefix.
+# token under an UNPINNED prefix (tests/lib.sh), superpowers:<name> and
+# writing-clearly-and-concisely:<name>, in the shipped texts names a skill the
+# plugin installed under that prefix lists on Claude Code and shows in Codex's
+# catalogue (T47). Over the whole machine (T53): `claude plugin list` names
+# exactly the marketplace's entries from eranroseman and every UNPINNED
+# install id, and no skill name is listed twice in Codex's catalogue, bare or
+# under any prefix.
 #
 #   tests/install-check.sh            install into a fresh scratch HOME, then assert
 #   tests/install-check.sh --assert   assert only, over the HOME and CODEX_HOME in the environment
@@ -149,38 +150,43 @@ while IFS=$'\t' read -r name _; do
   expect_equal "codex: the entry $name's model-visible skills" "$want" "$(visible_of "$name")"
 done < <(entry_rows)
 
-# ---- superpowers: references (Q87, T47) --------------------------------------
-# Each superpowers:<name> token in the shipped texts names a skill the
-# installed superpowers lists on Claude Code and shows in Codex's catalogue.
-# No fixed superpowers set is asserted: obra's install is unpinned.
-superpowers_references() {
-  local tokens claude_sp t s
-  tokens="$(while IFS= read -r f; do
-    { grep -ohE '(^|[^A-Za-z0-9_/-])superpowers:[a-z][a-z0-9-]*' "$REPO_ROOT/$f" || true; } | sed -E 's/^.*superpowers:/superpowers:/'
-  done < <(shipped_texts) | sort -u)"
-  [ -n "$tokens" ] || fail "no superpowers: token in the shipped texts; the check went vacuous"
-  claude_sp="$(details_names superpowers@superpowers-marketplace Skills)" || fail "claude plugin details superpowers@superpowers-marketplace failed"
-  [ -n "$claude_sp" ] || fail "claude plugin details superpowers@superpowers-marketplace lists no skill"
-  while IFS= read -r t; do
-    s="${t#superpowers:}"
-    grep -qxF -- "$s" <<<"$claude_sp" || fail "claude: $t names a skill the installed superpowers does not list"
-    grep -qxF -- "$t" <<<"$catalogue" || fail "codex: $t is not in the installed superpowers' model-visible catalogue"
-  done <<<"$tokens"
-  printf 'superpowers: %s reference(s) resolve on both agent CLIs\n' "$(grep -c . <<<"$tokens")"
+# ---- Unpinned references (Q87, Q88, T47) -------------------------------------
+# For each UNPINNED plugin, each <prefix>:<name> token in the shipped texts
+# names a skill the installed plugin lists on Claude Code and shows in Codex's
+# catalogue. No fixed set is asserted for either: both installs are unpinned.
+unpinned_references() {
+  local u prefix id tokens installed t s n=0
+  for u in "${UNPINNED[@]}"; do
+    prefix="${u%%$'\t'*}"
+    id="${u#*$'\t'}"
+    tokens="$(while IFS= read -r f; do
+      grep -ohE "(^|[^A-Za-z0-9_/-])$prefix:[a-z][a-z0-9-]*" "$REPO_ROOT/$f" | sed -E "s/^.*$prefix:/$prefix:/" || true
+    done < <(shipped_texts) | sort -u)"
+    [ -n "$tokens" ] || fail "no $prefix: token in the shipped texts; the check went vacuous"
+    installed="$(details_names "$id" Skills)" || fail "claude plugin details $id failed"
+    [ -n "$installed" ] || fail "claude plugin details $id lists no skill"
+    while IFS= read -r t; do
+      s="${t#"$prefix":}"
+      grep -qxF -- "$s" <<<"$installed" || fail "claude: $t names a skill the installed $id does not list"
+      grep -qxF -- "$t" <<<"$catalogue" || fail "codex: $t is not in the installed $id's model-visible catalogue"
+      n=$((n + 1))
+    done <<<"$tokens"
+  done
+  printf 'unpinned: %s reference(s) resolve on both agent CLIs\n' "$n"
 }
-superpowers_references
+unpinned_references
 
 # ---- The whole machine (T53) -------------------------------------------------
-# Exactly the marketplace's entries from eranroseman and superpowers from
-# superpowers-marketplace are installed on Claude Code, and no skill name is
-# listed twice in Codex's catalogue, bare or under any prefix. A fresh install
-# meets both; they are here for the gate's run over a machine the old script
-# converged.
+# Exactly the marketplace's entries from eranroseman and the UNPINNED plugins
+# from their own marketplaces are installed on Claude Code, and no skill name
+# is listed twice in Codex's catalogue, bare or under any prefix. A fresh
+# install meets both; they are here for the gate's run over a machine the old
+# script converged.
 whole_machine() {
   local want list installed dup
   want="$({
     jq -r '.plugins[].name' "$MARKETPLACE" | sed 's/$/@eranroseman/'
-    printf 'superpowers@superpowers-marketplace\n'
+    printf '%s\n' "${UNPINNED[@]#*$'\t'}"
   } | sort)"
   list="$(claude plugin list)" || fail "claude plugin list failed"
   installed="$(sed -n 's/^  ❯ //p' <<<"$list" | sort)"

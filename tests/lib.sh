@@ -133,9 +133,25 @@ entry_skills() {
 # skill, every plugin agent, and every skill's Codex policy file, copies and
 # forks included; not READMEs, which name retired skills on purpose. Read by
 # tests/test-plugin-skills.sh's scan and by tests/install-check.sh's check of
-# superpowers: references (T47). Tracked, not present, like checked().
+# the UNPINNED plugins' references (T47). Tracked, not present, like checked().
 shipped_texts() {
   git -C "$REPO_ROOT" ls-files 'plugins/*/skills/**/*.md' 'plugins/*/agents/*.md' 'plugins/*/skills/*/agents/openai.yaml'
+}
+
+# The plugins the README's blocks install from their upstreams' own
+# marketplaces, unpinned (Q78, Q88): the prefix their skills carry on both
+# agent CLIs, then the Claude Code install id. No entry here lists their
+# skills, so tests/test-plugin-skills.sh carves their references out and
+# tests/install-check.sh asserts each against what installed.
+UNPINNED=(
+  $'superpowers\tsuperpowers@superpowers-marketplace'
+  $'writing-clearly-and-concisely\twriting-clearly-and-concisely@agent-toolkit'
+)
+# True when $1 is an UNPINNED prefix.
+unpinned_prefix() {
+  local u
+  for u in "${UNPINNED[@]}"; do [ "${u%%$'\t'*}" = "$1" ] && return 0; done
+  return 1
 }
 
 # The frontmatter `name` of the SKILL.md in the directory $1 equals the

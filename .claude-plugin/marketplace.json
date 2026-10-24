@@ -11,21 +11,6 @@
       "category": "development"
     },
     {
-      "name": "elements-of-style",
-      "description": "softaworks/agent-toolkit's writing-clearly-and-concisely, one skill, under obra's plugin name, elements-of-style: Strunk's rules for prose humans read.",
-      "category": "documentation",
-      "source": {
-        "source": "git-subdir",
-        "url": "https://github.com/softaworks/agent-toolkit.git",
-        "path": "dist/plugins/writing-clearly-and-concisely",
-        "ref": "main",
-        "sha": "3027f20f3181758385a1bb8c022d4041dfb4de84"
-      },
-      "version": "0.1.0",
-      "strict": false,
-      "skills": ["./skills/writing-clearly-and-concisely"]
-    },
-    {
       "name": "mattpocock",
       "description": "mattpocock/skills, a subset entry: fifteen of Matt Pocock's skills, grilling, research, wayfinder and their siblings, at a release tag.",
       "category": "productivity",

@@ -4,13 +4,14 @@
 #     or agent a marketplace entry delivers: the local plugin's skills/<s> or
 #     agents/<s>.md, or a subset entry's listed skill; any other prefix fails.
 #     A token after / is the tail of the house owner/repo:path form and one
-#     after // a URL authority; both are skipped by shape. superpowers: tokens
-#     are carved out: no entry here lists obra's skills, and
-#     tests/install-check.sh asserts each against the superpowers the README's
-#     blocks install (Q87, T47). The idioms left are in EXCEPTIONS below, one
-#     comment each; an exception whose prefix is a marketplace entry fails, so
-#     a dead reference with a known prefix can never be exempted, and one that
-#     matches no token fails, so the list cannot rot;
+#     after // a URL authority; both are skipped by shape. superpowers: and
+#     writing-clearly-and-concisely: tokens, the UNPINNED prefixes in
+#     tests/lib.sh, are carved out: no entry here lists those plugins' skills,
+#     and tests/install-check.sh asserts each against the plugin the README's
+#     blocks install (Q87, Q88, T47). The idioms left are in EXCEPTIONS below,
+#     one comment each; an exception whose prefix is a marketplace entry
+#     fails, so a dead reference with a known prefix can never be exempted,
+#     and one that matches no token fails, so the list cannot rot;
 #   - a permanent negative fixture: the same scan over a scratch copy carrying
 #     nosuch:thing and software-dev:no-such-skill fails on both, by file, line
 #     and token;
@@ -50,8 +51,8 @@ delivers() {
 }
 
 # The scan over the shipped texts under the root $1. Sets SCANNED, RESOLVED,
-# SKIPPED (superpowers: tokens), EXCEPTED, USED (the exceptions matched) and
-# FAILURES, one line each.
+# SKIPPED (tokens under an UNPINNED prefix), EXCEPTED, USED (the exceptions
+# matched) and FAILURES, one line each.
 scan() {
   local root="$1" f n raw tok p s
   SCANNED=0 RESOLVED=0 SKIPPED=0 EXCEPTED=0 USED="" FAILURES=""
@@ -65,8 +66,8 @@ scan() {
       case "$tok" in /*) continue ;; esac # owner/repo:path or a URL authority
       p="${tok%%:*}"
       s="${tok#*:}"
-      if [ "$p" = superpowers ]; then
-        SKIPPED=$((SKIPPED + 1)) # held by tests/install-check.sh (T47)
+      if unpinned_prefix "$p"; then
+        SKIPPED=$((SKIPPED + 1)) # an UNPINNED prefix, held by tests/install-check.sh (T47)
         continue
       fi
       if printf '%s\n' "${EXCEPTIONS[@]}" | grep -qxF -- "$tok"; then
@@ -163,5 +164,5 @@ while IFS= read -r stem; do
   [ -z "$bare" ] || fail "a shipped text names the agent $stem bare; the Agent tool accepts only <plugin>:$stem:"$'\n'"$bare"
 done <<<"$agents"
 
-printf 'plugin-skills: %s file(s) scanned, %s reference(s) resolve, %s superpowers: token(s) left to the install job, %s exception(s) used; %s skill(s) named, with paired gates and shipped scripts\n' \
+printf 'plugin-skills: %s file(s) scanned, %s reference(s) resolve, %s unpinned reference(s) left to the install job, %s exception(s) used; %s skill(s) named, with paired gates and shipped scripts\n' \
   "$scanned" "$resolved" "$skipped" "$excepted" "$checked"
