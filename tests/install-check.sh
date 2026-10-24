@@ -10,13 +10,12 @@
 # allow_implicit_invocation: false, and each entry's its list less the skills
 # whose policy file in the installed cache does; the cache is never the
 # oracle for what loads, since both agent CLIs cache the whole path. Every
-# token under an UNPINNED prefix (tests/lib.sh), superpowers:<name> and
-# writing-clearly-and-concisely:<name>, in the shipped texts names a skill the
-# plugin installed under that prefix lists on Claude Code and shows in Codex's
-# catalogue (T47). Over the whole machine (T53): `claude plugin list` names
-# exactly the marketplace's entries from eranroseman and every UNPINNED
-# install id, and no skill name is listed twice in Codex's catalogue, bare or
-# under any prefix.
+# token under an UNPINNED prefix (tests/lib.sh) in the shipped texts names a
+# skill the plugin installed under that prefix lists on Claude Code and shows
+# in Codex's catalogue (T47). Over the whole machine (T53): `claude plugin
+# list` names exactly the marketplace's entries from eranroseman and every
+# UNPINNED install id, and no skill name is listed twice in Codex's
+# catalogue, bare or under any prefix.
 #
 #   tests/install-check.sh            install into a fresh scratch HOME, then assert
 #   tests/install-check.sh --assert   assert only, over the HOME and CODEX_HOME in the environment
@@ -44,8 +43,8 @@ readme_block() {
 }
 
 # Run the block $1 under bash -euo pipefail, with the marketplace source
-# replaced by this checkout's path and nothing else (Q64). Obra's lines run as
-# written.
+# replaced by this checkout's path and nothing else (Q64). Every other line,
+# obra's and softaworks' included, runs as written.
 run_block() {
   local body
   body="$(readme_block "$1")"
@@ -68,10 +67,14 @@ details_names() {
 }
 
 # Every skill in Codex's model-visible catalogue, as the catalogue names it
-# (plugin:skill for a plugin's, bare for a skill root's), one per line.
+# (plugin:skill for a plugin's, bare for a skill root's), one per line. The
+# prompt is captured first, so a failing `codex debug prompt-input` fails here
+# even when it printed a prompt; as with details_names, the call site fails on
+# the status too.
 codex_catalogue() {
-  (cd "$HOME" && codex debug prompt-input) \
-    | jq -r '.. | objects | select(has("text")) | .text' \
+  local out
+  out="$(cd "$HOME" && codex debug prompt-input)" || fail "codex debug prompt-input failed"
+  jq -r '.. | objects | select(has("text")) | .text' <<<"$out" \
     | grep -oE '^- [a-z][a-z0-9-]*(:[a-z][a-z0-9-]*)?: ' | sed 's/^- //; s/: $//' | sort || true
 }
 
@@ -132,7 +135,7 @@ while IFS=$'\t' read -r name _; do
 done < <(entry_rows)
 
 # ---- Codex -------------------------------------------------------------------
-catalogue="$(codex_catalogue)"
+catalogue="$(codex_catalogue)" || fail "codex debug prompt-input failed"
 [ -n "$catalogue" ] || fail "codex debug prompt-input listed no skill"
 visible_of() { grep "^$1:" <<<"$catalogue" | sed "s/^$1://" || true; }
 while IFS=$'\t' read -r name src; do
@@ -153,13 +156,14 @@ done < <(entry_rows)
 # ---- Unpinned references (Q87, Q88, T47) -------------------------------------
 # For each UNPINNED plugin, each <prefix>:<name> token in the shipped texts
 # names a skill the installed plugin lists on Claude Code and shows in Codex's
-# catalogue. No fixed set is asserted for either: both installs are unpinned.
+# catalogue. No fixed set is asserted: every UNPINNED install is unpinned.
 unpinned_references() {
   local u prefix id tokens installed t s n=0
   for u in "${UNPINNED[@]}"; do
     prefix="${u%%$'\t'*}"
     id="${u#*$'\t'}"
     tokens="$(while IFS= read -r f; do
+      [ -f "$REPO_ROOT/$f" ] || fail "$f is tracked but absent from the working tree"
       grep -ohE "(^|[^A-Za-z0-9_/-])$prefix:[a-z][a-z0-9-]*" "$REPO_ROOT/$f" | sed -E "s/^.*$prefix:/$prefix:/" || true
     done < <(shipped_texts) | sort -u)"
     [ -n "$tokens" ] || fail "no $prefix: token in the shipped texts; the check went vacuous"
@@ -168,7 +172,7 @@ unpinned_references() {
     while IFS= read -r t; do
       s="${t#"$prefix":}"
       grep -qxF -- "$s" <<<"$installed" || fail "claude: $t names a skill the installed $id does not list"
-      grep -qxF -- "$t" <<<"$catalogue" || fail "codex: $t is not in the installed $id's model-visible catalogue"
+      grep -qxF -- "$t" <<<"$catalogue" || fail "codex: $t is not in Codex's model-visible catalogue under $prefix:"
       n=$((n + 1))
     done <<<"$tokens"
   done

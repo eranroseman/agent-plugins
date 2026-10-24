@@ -23,9 +23,9 @@
 # skill directories under `path`, a duplicate itself a failure, equal the
 # listed skills plus the declared exclusions in EXCLUSIONS, disjoint, so a new
 # upstream skill is a decision at the next bump rather than a silent omission.
-# No complement is kept beyond `path`: softaworks ships each of its skills
-# twice, under skills/ and under dist/plugins/, and a complement over the
-# repository would fail on every name.
+# No complement is kept beyond `path`: an upstream may ship a skill twice, at
+# different paths, and a complement over the repository would fail on every
+# name.
 #
 # Bare sibling names (T44): for a record whose pin is its entry's, every
 # upstream skill name that a listed skill at the pin, a copy or a fork names
@@ -90,10 +90,20 @@ declared_for() {
   done
 }
 
+# The length of the run of newlines that ends the file $1, 0 when its last
+# byte is not a newline: what $(cat) strips, which the diff in compare_file
+# therefore never sees.
+eol_run() {
+  local all body
+  all="$(wc -c <"$1")" || fail "could not read $1"
+  body="$(cat "$1")" || fail "could not read $1"
+  printf '%s\n' "$((all - $(printf '%s' "$body" | wc -c)))"
+}
+
 # Upstream's file $3 against the local file $2, both named $1 in messages,
 # under the declared rows for $1 (§7.1's two rules).
 compare_file() {
-  local key="$1" lf="$2" uf="$3" rows kind anchor reason loc up n pos
+  local key="$1" lf="$2" uf="$3" rows kind anchor reason loc up n pos lrun urun
   rows="$(declared_for "$key")"
   if [ -z "$rows" ]; then
     cmp -s "$uf" "$lf" || fail "$key differs from upstream at the pin, with no declared change"
@@ -120,7 +130,9 @@ compare_file() {
   done <<<"$rows"
   diff <(printf '%s\n' "$up") <(printf '%s\n' "$loc") \
     || fail "$key differs from upstream at the pin beyond its declared changes"
-  [ "$(tail -c 2 "$lf" | od -An -tx1)" = "$(tail -c 2 "$uf" | od -An -tx1)" ] \
+  lrun="$(eol_run "$lf")" || fail "could not read $lf"
+  urun="$(eol_run "$uf")" || fail "could not read $uf"
+  [ "$lrun" = "$urun" ] \
     || fail "$key: the last bytes differ from upstream's at the pin (an end-of-file newline)"
 }
 
@@ -207,7 +219,7 @@ sibling_names() {
       record_map trees "$repo"
       record_map forks "$repo"
     } | cut -f1 | while IFS= read -r k; do
-      git -C "$REPO_ROOT" ls-files -- "$k" | grep '\.md$' | sed "s#^#$REPO_ROOT/#"
+      git -C "$REPO_ROOT" ls-files -- "$k" | grep '\.md$' | sed "s#^#$REPO_ROOT/#" || true
     done
   })"
   while IFS= read -r f; do
@@ -240,7 +252,7 @@ for r in "${DECLARED[@]}"; do
     line | added) ;;
     *) fail "the declared change for $p has the kind '$kind'; the kinds are line and added" ;;
   esac
-  git -C "$REPO_ROOT" ls-files --error-unmatch -- "$p" >/dev/null 2>&1 \
+  [ "$(git -C "$REPO_ROOT" ls-files -- ":(literal)$p")" = "$p" ] \
     || fail "the declared change for $p names a path that is not a tracked file"
 done
 

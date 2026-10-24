@@ -6,10 +6,10 @@
 # than a rule. `_` is not a word character to the pattern, so an identifier
 # carrying a retired form is a hit; `-` is, so a repository name joined by a
 # hyphen is not, and there is no exception list. The glossary itself is scanned
-# with its _Avoid_: lines left out, since their subject is the retired forms;
-# outside the scan is docs/superpowers/, where a spec's substitution table and
-# an older plan's quoted output keep them (spec §5.4 says which higher rungs
-# were tried there).
+# with its _Avoid_: lines, at column 0, left out, since their subject is the
+# retired forms; outside the scan is docs/superpowers/, where a spec's
+# substitution table and an older plan's quoted output keep them (spec §5.4
+# says which higher rungs were tried there).
 . "$(dirname "$0")/lib.sh"
 
 GLOSSARY="$REPO_ROOT/GLOSSARY.md"
@@ -30,7 +30,7 @@ while IFS= read -r form; do
   n=$((n + 1))
   # shellcheck disable=SC2086  # one path per word -- no whitespace, a glob character, or a quoted path, asserted by tests/test-ownership.sh
   found="$(grep -n -i -H -E "(^|[^[:alnum:]-])$form([^[:alnum:]-]|$)" -- $files || true)"
-  glossary_hits="$(grep -n -i -E "(^|[^[:alnum:]-])$form([^[:alnum:]-]|$)" "$GLOSSARY" | grep -v ':_Avoid_:' | sed 's#^#GLOSSARY.md:#' || true)"
+  glossary_hits="$(grep -n -i -E "(^|[^[:alnum:]-])$form([^[:alnum:]-]|$)" "$GLOSSARY" | grep -v -E '^[0-9]+:_Avoid_:' | sed 's#^#GLOSSARY.md:#' || true)"
   [ -z "$glossary_hits" ] || hits="$hits"$'\n'"$(printf '%s\n' "$glossary_hits" | sed "s/\$/  [$form]/")"
   [ -z "$found" ] || hits="$hits"$'\n'"$(printf '%s\n' "$found" | sed "s/\$/  [$form]/")"
 done <<<"$forms"

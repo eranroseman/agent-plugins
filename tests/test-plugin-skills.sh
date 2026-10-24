@@ -4,14 +4,14 @@
 #     or agent a marketplace entry delivers: the local plugin's skills/<s> or
 #     agents/<s>.md, or a subset entry's listed skill; any other prefix fails.
 #     A token after / is the tail of the house owner/repo:path form and one
-#     after // a URL authority; both are skipped by shape. superpowers: and
-#     writing-clearly-and-concisely: tokens, the UNPINNED prefixes in
-#     tests/lib.sh, are carved out: no entry here lists those plugins' skills,
-#     and tests/install-check.sh asserts each against the plugin the README's
-#     blocks install (Q87, Q88, T47). The idioms left are in EXCEPTIONS below,
-#     one comment each; an exception whose prefix is a marketplace entry
-#     fails, so a dead reference with a known prefix can never be exempted,
-#     and one that matches no token fails, so the list cannot rot;
+#     after // a URL authority; both are skipped by shape. Tokens under an
+#     UNPINNED prefix (tests/lib.sh) are carved out: no entry here lists
+#     those plugins' skills, and tests/install-check.sh asserts each against
+#     the plugin the README's blocks install (Q87, Q88, T47). The idioms left
+#     are in EXCEPTIONS below, one comment each; an exception whose prefix is
+#     a marketplace entry fails, so a dead reference with a known prefix can
+#     never be exempted, and one that matches no token fails, so the list
+#     cannot rot;
 #   - a permanent negative fixture: the same scan over a scratch copy carrying
 #     nosuch:thing and software-dev:no-such-skill fails on both, by file, line
 #     and token;

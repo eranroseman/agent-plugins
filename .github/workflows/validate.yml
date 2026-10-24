@@ -123,7 +123,8 @@ jobs:
       - name: Install the newest stable agent CLIs
         run: npm install -g @anthropic-ai/claude-code@stable @openai/codex@latest
 
-      # The README's install blocks, run as written against this checkout
-      # into a scratch HOME under RUNNER_TEMP, then the assertions (spec §14).
+      # The README's install blocks, run with this checkout as the eranroseman
+      # marketplace and obra's and softaworks' lines against GitHub, into a
+      # scratch HOME under RUNNER_TEMP, then the assertions (spec §14).
       - name: Install through the README's blocks and assert what loaded
         run: tests/install-check.sh

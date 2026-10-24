@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared helpers for tests/test-*.sh and scripts/format. Source this file; do not execute it.
+# Shared helpers for tests/*.sh and scripts/format. Source this file; do not execute it.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
