@@ -32,6 +32,7 @@ Plan A's _What was verified_ section holds the measurements; the ones this plan 
 - **P15. The `pr` reword lands in Task 1, not Task 5,** because the sibling-name check holds from the commit the entry lands in; the fork's other port lines wait for the glossary task, where upstream's rename gives them their reason. Veto: port the whole diff in Task 1.
 - **P17. The Codex validator's cache moves under the user's cache directory.** §15.2 names `${TMPDIR:-/tmp}`, a world-writable, predictable path another local user can pre-create with a planted module beside the two hashed files (#73). Task 3 moves it to `${XDG_CACHE_HOME:-$HOME/.cache}/software-dev` and refuses a cache it does not own. Veto: keep `/tmp` with an ownership check only.
 - **P18. Plan A's audit left two plan B defects in the plan text itself**, the clone-before-commit red-firsts and the `cd` into the main checkout; both are corrected in this revision rather than carried as issues.
+- **P19. Q88 lands as Task 7b, between Tasks 7 and 8.** Task 4's rename is already committed; Task 7b removes the entry it renamed, since a shipped file (consistency-audit) changes and must precede Task 8's bump. Veto: none; this is the maintainer's ruling of 2026-10-24.
 - **P16. The gate's cleanup run uses this machine's CLIs,** Claude Code 2.1.273 and codex-cli 0.147.0, the releases the migration was measured on, and the install job's run on the newest stable releases stands beside it. Veto: install the newest releases locally first.
 
 ## Carried forward from plan A's final review
@@ -63,7 +64,8 @@ Plan A's name table holds. This plan adds:
 | -------------------------- | ------------------------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `EXCLUSIONS["mattpocock"]` | `tests/test-upstream.sh` | Task 1     | twenty-two lines of `skill<TAB>reason`; keys quoted, as plan A's test has them                                                                          |
 | `cleanup` block            | `README.md`              | Task 1     | the fenced block `sh cleanup`; Tasks 2, 3 and 4 add lines                                                                                               |
-| `superpowers_references`   | `tests/install-check.sh` | Task 3     | asserts each `superpowers:<s>` token of `shipped_texts` against the installed superpowers on both agent CLIs (T47)                                      |
+| `unpinned_references`      | `tests/install-check.sh` | Task 7b    | asserts each `<p>:<s>` token of `shipped_texts` whose prefix is in `UNPINNED` against the installed plugin on both agent CLIs                           |
+| `UNPINNED`                 | `tests/lib.sh`           | Task 7b    | an array of `prefix<TAB>Claude install id`, today `superpowers` and `writing-clearly-and-concisely`                                                     |
 | `whole_machine`            | `tests/install-check.sh` | Task 3     | `claude plugin list` names exactly the marketplace's entries at `eranroseman` plus `superpowers@superpowers-marketplace`; no catalogue name twice (T53) |
 | `GLOSSARY.md`              | repository root          | Task 5     | `CONTEXT.md` moved by `git mv`, content unchanged                                                                                                       |
 
@@ -1341,6 +1343,196 @@ git add vendored.json
 git commit -m "Move the adhd pin to main's tip; the copy is unchanged"
 ```
 
+### Task 7b: `writing-clearly-and-concisely` comes from softaworks' own marketplace (Q88; supersedes Task 4's rename)
+
+**Files:**
+
+- Modify: `.claude-plugin/marketplace.json` (the `elements-of-style` entry goes), `plugins/software-dev/.claude-plugin/plugin.json` (dependencies), `plugins/software-dev/skills/consistency-audit/SKILL.md` (one line), `tests/lib.sh` (`UNPINNED`), `tests/test-upstream.sh` (the `["elements-of-style"]` key), `tests/test-plugin-skills.sh` (the carve-out), `tests/install-check.sh` (`unpinned_references`, `whole_machine`), `README.md` (What it ships, What it depends on, every block, the cleanup bullets, Checks)
+
+**Interfaces:**
+
+- Produces: `UNPINNED` in `tests/lib.sh`; `unpinned_references` in `tests/install-check.sh` (replaces `superpowers_references`); the README's final blocks.
+- Consumes: Task 3's `whole_machine`, `details_names`, `codex_catalogue`; Task 6's qualified names.
+
+- [ ] **Step 1: The entry and the dependency go**
+
+`.claude-plugin/marketplace.json`: delete the `elements-of-style` entry whole; the marketplace holds `software-dev` and `mattpocock`. `plugins/software-dev/.claude-plugin/plugin.json`: `dependencies` becomes `["mattpocock"]`. `tests/test-upstream.sh`: delete the `["elements-of-style"]=''` line of `EXCLUSIONS` (the key guard fails otherwise). `plugins/software-dev/skills/consistency-audit/SKILL.md`: `- Use the elements-of-style:writing-clearly-and-concisely skill` becomes `- Use the writing-clearly-and-concisely:writing-clearly-and-concisely skill`.
+
+Run: `claude plugin validate --strict .claude-plugin/marketplace.json && bash tests/test-upstream.sh && bash tests/test-references-resolve.sh`
+Expected: PASS: one entry; `tests/test-plugin-skills.sh` is red until Step 2 (the new prefix resolves through no entry).
+
+- [ ] **Step 2: The unpinned plugins, named once**
+
+In `tests/lib.sh`, after `shipped_texts`:
+
+```bash
+# The plugins the README's blocks install from their upstreams' own
+# marketplaces, unpinned (Q78, Q88): the prefix their skills carry on both
+# agent CLIs, then the Claude Code install id. No entry here lists their
+# skills, so tests/test-plugin-skills.sh carves their references out and
+# tests/install-check.sh asserts each against what installed.
+UNPINNED=(
+  $'superpowers\tsuperpowers@superpowers-marketplace'
+  $'writing-clearly-and-concisely\twriting-clearly-and-concisely@agent-toolkit'
+)
+# True when $1 is an UNPINNED prefix.
+unpinned_prefix() {
+  local u
+  for u in "${UNPINNED[@]}"; do [ "${u%%$'\t'*}" = "$1" ] && return 0; done
+  return 1
+}
+```
+
+`tests/test-plugin-skills.sh`: the `if [ "$p" = superpowers ]; then` carve-out becomes `if unpinned_prefix "$p"; then`, its comment names `UNPINNED`, and the summary's `superpowers: token(s) left to the install job` becomes `unpinned reference(s) left to the install job`; the header's bullet says `superpowers:` and `writing-clearly-and-concisely:` tokens are carved out. The exceptions' own guard also refuses an `UNPINNED` prefix.
+
+`tests/install-check.sh`: `superpowers_references` becomes `unpinned_references`, looping over `UNPINNED`:
+
+```bash
+unpinned_references() {
+  local u prefix id tokens installed t s n=0
+  for u in "${UNPINNED[@]}"; do
+    prefix="${u%%$'\t'*}"
+    id="${u#*$'\t'}"
+    tokens="$(while IFS= read -r f; do
+      grep -ohE "(^|[^A-Za-z0-9_/-])$prefix:[a-z][a-z0-9-]*" "$REPO_ROOT/$f" | sed -E "s/^.*$prefix:/$prefix:/" || true
+    done < <(shipped_texts) | sort -u)"
+    [ -n "$tokens" ] || fail "no $prefix: token in the shipped texts; the check went vacuous"
+    installed="$(details_names "$id" Skills)" || fail "claude plugin details $id failed"
+    [ -n "$installed" ] || fail "claude plugin details $id lists no skill"
+    while IFS= read -r t; do
+      s="${t#"$prefix":}"
+      grep -qxF -- "$s" <<<"$installed" || fail "claude: $t names a skill the installed $id does not list"
+      grep -qxF -- "$t" <<<"$catalogue" || fail "codex: $t is not in the installed $id's model-visible catalogue"
+      n=$((n + 1))
+    done <<<"$tokens"
+  done
+  printf 'unpinned: %s reference(s) resolve on both agent CLIs\n' "$n"
+}
+unpinned_references
+```
+
+and `whole_machine`'s `want` becomes the marketplace's entries at `eranroseman` plus every `UNPINNED` install id:
+
+```bash
+  want="$({ jq -r '.plugins[].name' "$MARKETPLACE" | sed 's/$/@eranroseman/'; printf '%s\n' "${UNPINNED[@]#*$'\t'}"; } | sort)"
+```
+
+Red first: `writing-clearly-and-concisely:no-such-skill` appended to `consistency-audit`'s `SKILL.md` in the working tree, `bash tests/install-check.sh --assert` over the last passing run's `HOME`. Expected FAIL `claude: writing-clearly-and-concisely:no-such-skill names a skill the installed writing-clearly-and-concisely@agent-toolkit does not list`. Revert.
+
+Run: `bash tests/test-plugin-skills.sh`
+Expected: PASS: the `writing-clearly-and-concisely:` token is carved out.
+
+- [ ] **Step 3: The README's blocks, final**
+
+````markdown
+```sh install-claude
+claude plugin marketplace add eranroseman/agent-plugins
+claude plugin install software-dev@eranroseman
+claude plugin marketplace add obra/superpowers-marketplace
+claude plugin install superpowers@superpowers-marketplace
+claude plugin marketplace add softaworks/agent-toolkit
+claude plugin install writing-clearly-and-concisely@agent-toolkit
+```
+````
+
+````markdown
+```sh install-codex
+codex plugin marketplace add eranroseman/agent-plugins && for p in software-dev mattpocock; do codex plugin add "$p@eranroseman"; done
+codex plugin marketplace add obra/superpowers && codex plugin add superpowers@superpowers-dev
+codex plugin marketplace add softaworks/agent-toolkit && codex plugin add writing-clearly-and-concisely@agent-toolkit
+```
+````
+
+````markdown
+```sh update-claude
+claude plugin marketplace update eranroseman
+claude plugin update software-dev@eranroseman
+claude plugin install software-dev@eranroseman
+claude plugin update mattpocock@eranroseman
+claude plugin marketplace update superpowers-marketplace
+claude plugin update superpowers@superpowers-marketplace
+claude plugin marketplace update agent-toolkit
+claude plugin update writing-clearly-and-concisely@agent-toolkit
+```
+````
+
+````markdown
+```sh update-codex
+codex plugin marketplace upgrade eranroseman
+codex plugin marketplace upgrade superpowers-dev
+codex plugin marketplace upgrade agent-toolkit
+```
+````
+
+````markdown
+```sh cleanup
+claude plugin marketplace update eranroseman
+claude plugin update software-dev@eranroseman
+claude plugin install software-dev@eranroseman
+claude plugin uninstall sensemaking@eranroseman
+claude plugin uninstall superpowers@eranroseman
+claude plugin uninstall writing-clearly-and-concisely@eranroseman
+claude plugin marketplace add obra/superpowers-marketplace
+claude plugin install superpowers@superpowers-marketplace
+claude plugin marketplace add softaworks/agent-toolkit
+claude plugin install writing-clearly-and-concisely@agent-toolkit
+npx --yes skills remove codebase-design domain-modeling grill-with-docs grilling handoff improve-codebase-architecture prototype research resolving-merge-conflicts teach to-questionnaire triage wait-what wayfinder wizard working-with-claude-code writing-for-agents -g -y
+find ~/.agents/skills -maxdepth 1 -type l -lname "$HOME/.local/share/software-dev/*" -delete
+rm -rf ~/.local/share/software-dev
+ls -d ~/.agents/skills/*.aside.* 2>/dev/null || true
+codex plugin marketplace upgrade eranroseman
+codex plugin remove sensemaking@eranroseman
+codex plugin add mattpocock@eranroseman
+codex plugin marketplace add obra/superpowers && codex plugin add superpowers@superpowers-dev
+codex plugin marketplace add softaworks/agent-toolkit && codex plugin add writing-clearly-and-concisely@agent-toolkit
+```
+````
+
+Prose, each in place of the sentence it names:
+
+- `## What it ships`: the `elements-of-style` bullet goes; the entries are `software-dev` and `mattpocock`. The paragraph on superpowers becomes:
+
+  ```text
+  Two plugins come from their upstreams' own marketplaces, not from this one:
+  obra's superpowers and softaworks' `writing-clearly-and-concisely`. The
+  blocks below install each on both agent CLIs; nothing in this repository
+  pins, copies or watches either, and each moves with its upstream (superpowers
+  with obra's releases, `writing-clearly-and-concisely` with softaworks' main).
+  A machine that already has either from another marketplace would get a
+  second copy beside it, every skill twice; install from one.
+  ```
+
+- `## What it depends on` becomes:
+
+  ```text
+  `software-dev` depends on `mattpocock`, so one install on Claude Code brings
+  both. It uses `writing-clearly-and-concisely:writing-clearly-and-concisely`
+  for `consistency-audit`'s report, which the install blocks bring from
+  softaworks' marketplace, and `mattpocock:grilling` and
+  `mattpocock:domain-modeling`. The one entry is pinned at one upstream
+  commit, and the watch reports when the upstream moves.
+  ```
+
+- After the `install-claude` block, the obra sentence gains: `The last two install softaworks' writing-clearly-and-concisely from softaworks' own marketplace, agent-toolkit, which has no version of its own: Claude Code shows the marketplace commit as the plugin's version.`
+- After the `install-codex` block: `The third line does the same on Codex, which reads softaworks' Claude marketplace file.`
+- After the `update-claude` block: `The last four lines refresh obra's and softaworks' marketplaces and update their plugins.`
+- The cleanup's uninstall bullet: `writing-clearly-and-concisely@eranroseman`'s clause becomes `, whose skill now comes from softaworks' own marketplace, which the two lines after obra's install it from`. The Codex bullet: `then sensemaking is removed there, mattpocock is added, and the last two lines add obra's superpowers and softaworks' writing-clearly-and-concisely, as the install block does`.
+- `## Checks`: the install job sentence ends `and checks every superpowers: and writing-clearly-and-concisely: reference in the shipped skills against the plugins it installed`.
+- In the Update prose, the sentence on a plugin the marketplace gains later names `mattpocock` alone as the one this release adds.
+
+Run: `bash tests/install-check.sh`
+Expected: PASS: `claude plugin list` names exactly `software-dev` and `mattpocock` from `eranroseman`, `superpowers` from `superpowers-marketplace` and `writing-clearly-and-concisely` from `agent-toolkit`; Codex shows `writing-clearly-and-concisely:writing-clearly-and-concisely`; every `superpowers:` and `writing-clearly-and-concisely:` reference resolves.
+
+- [ ] **Step 4: Run the suite and commit**
+
+Run: `bash scripts/format && bash tests/run.sh`
+Expected: green. Cite `tests/results.tsv`.
+
+```bash
+git add .claude-plugin/marketplace.json plugins/software-dev/.claude-plugin/plugin.json plugins/software-dev/skills/consistency-audit/SKILL.md tests/lib.sh tests/test-upstream.sh tests/test-plugin-skills.sh tests/install-check.sh README.md
+git commit -m "Install writing-clearly-and-concisely from softaworks' own marketplace, and drop the subset entry (Q88)"
+```
+
 ### Task 8: The version bump (§18 constraint 17; T43)
 
 **Files:**
@@ -1366,7 +1558,9 @@ sensemaking; renames the scaffolder to setup-matt-pocock-skills and fixes
 its three recorded defects; fixes finding-duplicate-functions' run line;
 re-copies diagnosing-bugs at mattpocock v1.3.1; qualifies
 consistency-audit's cross-plugin references and repoints rethink-audit's
-one dead pointer. Depends on mattpocock and elements-of-style."
+one dead pointer. Depends on mattpocock; superpowers and
+writing-clearly-and-concisely install from their upstreams' own
+marketplaces."
 ```
 
 A gate-time fix under `plugins/` moves this commit after it (§19).
@@ -1436,7 +1630,7 @@ The checks of `tests/test-upstream.sh` and `tests/lib.sh` that have never been s
 8. The fork path: the superpowers-lab record's `forks` value set to `skills/nowhere`. Expected FAIL `began from skills/nowhere, which the pin no longer has`.
 9. An exclusion without a reason: a line `nosuch` with an empty reason field added to `EXCLUSIONS["mattpocock"]`. Expected FAIL `the exclusion nosuch carries no reason`.
 10. Listed and excluded: `grilling` added to `EXCLUSIONS["mattpocock"]` with a reason. Expected FAIL `grilling is both listed and excluded`.
-11. `record_rows`' error branches (T24): a record `{"repo": "example/none", "trees": {}, "forks": {}}` added. Expected FAIL `0 subset entries pin example/none`. Then the `elements-of-style` entry's `source.url` set to mattpocock's. Expected FAIL `2 subset entries pin mattpocock/skills`. Then the adhd record's `sha` line deleted. Expected FAIL `carries one of ref and sha without the other`.
+11. `record_rows`' error branches (T24): a record `{"repo": "example/none", "trees": {}, "forks": {}}` added. Expected FAIL `0 subset entries pin example/none`. Then a second `git-subdir` entry named `twin`, with mattpocock's `source.url`, added to the scratch marketplace. Expected FAIL `2 subset entries pin mattpocock/skills`. Then the adhd record's `sha` line deleted. Expected FAIL `carries one of ref and sha without the other`.
 12. The sibling floor (added in Task 1): the mattpocock record given back a `ref` and `sha` (`v1.3.1`, `24fe0ef7737efae15c87225755e9f6f5965e4888`). Expected FAIL `no sibling name was checked`.
 
 Record each red in the gate's notes, then discard the clone.
@@ -1508,7 +1702,7 @@ done
 bash tests/install-check.sh --assert
 ````
 
-Expected: every block exits 0; `install-check.sh --assert` passes: the full skill sets of §14 on both agent CLIs, the two entries and obra's superpowers present on Codex, every `superpowers:` reference found, no catalogue name twice, and `claude plugin list` naming exactly `software-dev`, `mattpocock`, `elements-of-style` from `eranroseman` and `superpowers` from `superpowers-marketplace`. Record the output's summary lines. Then `kill %1` or the `http.server` process, `git worktree remove "$G/old"`, and `rm -rf "$G"`.
+Expected: every block exits 0; `install-check.sh --assert` passes: the full skill sets of §14 on both agent CLIs, the two entries and obra's superpowers present on Codex, every `superpowers:` reference found, no catalogue name twice, and `claude plugin list` naming exactly `software-dev` and `mattpocock` from `eranroseman`, `superpowers` from `superpowers-marketplace` and `writing-clearly-and-concisely` from `agent-toolkit`. Record the output's summary lines. Then `kill %1` or the `http.server` process, `git worktree remove "$G/old"`, and `rm -rf "$G"`.
 
 If a block's line fails, the failure is new information about a removal line no measurement has run (§13.3): fix the README's block on the branch, re-run from step 1, and move the version bump after the fix if a file under `plugins/` changed.
 
@@ -1550,9 +1744,9 @@ Expected: a fast-forward (`main` has not moved; if it has, rebase the branch ont
 - [ ] **Step 1: Issues that close**
 
 ```bash
-gh issue close 52 --comment "Closed by M: sensemaking retires into software-dev, the one plugin. What it was to share arrives through subset entries: the mattpocock skills through one entry, mattpocock, at TAG, named mattpocock:<skill> on both agent CLIs; writing-clearly-and-concisely through the entry it already had, renamed elements-of-style; adhd and rethink-audit move into software-dev. Overrides of this brief: no sensemaking to install on its own and no mp-* entry; superpowers no longer from this marketplace but from obra's own, which the README's blocks install; the bare-name criterion overridden (Q42), with the gate's observation recorded below; the update-path criterion met by the update block's install line, which installs the dependencies a release adds; wayfinder's and triage's /setup-matt-pocock-skills resolve, since the fork carries that name again; rethink-audit's bare research and codebase-design stay with its hold; the one-time cleanup for a machine converged before this release is the README's cleanup block, run at the gate; a repository scaffolded before this release runs git mv CONTEXT.md GLOSSARY.md, as the README says."
+gh issue close 52 --comment "Closed by M: sensemaking retires into software-dev, the one plugin. What it was to share arrives through subset entries: the mattpocock skills through one entry, mattpocock, at TAG, named mattpocock:<skill> on both agent CLIs; writing-clearly-and-concisely from softaworks' own marketplace, which the README's blocks install (Q88); adhd and rethink-audit move into software-dev. Overrides of this brief: no sensemaking to install on its own and no mp-* entry; superpowers no longer from this marketplace but from obra's own, which the README's blocks install; the bare-name criterion overridden (Q42), with the gate's observation recorded below; the update-path criterion met by the update block's install line, which installs the dependencies a release adds; wayfinder's and triage's /setup-matt-pocock-skills resolve, since the fork carries that name again; rethink-audit's bare research and codebase-design stay with its hold; the one-time cleanup for a machine converged before this release is the README's cleanup block, run at the gate; a repository scaffolded before this release runs git mv CONTEXT.md GLOSSARY.md, as the README says."
 gh issue close 55 --comment "Moot at M: the placement table is deleted (Q44), a test for it is declined under the suite rule, archify is gone, and sensemaking and its placement rule retire (Q70)."
-gh issue close 46 --comment "Resolved by naming at M (Q79). Correction to the brief: elements-of-style is obra's plugin, built from obra/the-elements-of-style. The entry that delivers softaworks' writing-clearly-and-concisely is now named elements-of-style, so upstream's line, in obra's own brainstorming, names a skill this marketplace delivers, with no copy and no declared change. Installing obra's own elements-of-style beside it is an accepted collision; the README's blocks never install it. The committed failure capture is declined: tests/results.tsv, gitignored and cited, is the proof, and the scan's permanent negative fixture is the durable one."
+gh issue close 46 --comment "Moot at M (Q88): obra removed the pointer from brainstorming in v7.0.0 (present through v6.4.2, absent at v7.0.0 and main), so the rename Q79 ordered had no reason left; the skill now comes from softaworks' own marketplace under softaworks' own name, writing-clearly-and-concisely:writing-clearly-and-concisely, and consistency-audit names it so. The committed failure capture is declined: tests/results.tsv, gitignored and cited, is the proof."
 gh issue close 33 --comment "Declined at M under the suite rule: a test holds upstream drift or installability, never this repository's own wording or lengths. The 122 bound this would enforce is void: Codex's cut is a catalogue budget share, not a limit (#49)."
 gh issue close 49 --comment "Closed at M. Correction to the brief: the allocator is openai/codex:codex-rs/ext/skills/src/render.rs, and skills.max_context_tokens arrives after 0.147.0. Every 122-character assertion and every 'so Codex shows it whole' clause is gone; adhd's description is upstream's again."
 gh issue close 69 --comment "Closed at M: the watch's Codex section is deleted (Q80), and its pipe with it, unfixed. The install job holds the one thing the section held, that Codex finds the marketplace at .claude-plugin/marketplace.json; the hooks path and the manifest order are moot, since software-dev ships no hook."
@@ -1576,9 +1770,9 @@ NEW_URL="$(gh issue create --title "Working habits for the agent: record on the 
 NEW="${NEW_URL##*/}"
 gh issue edit 21 --title "The content of the block setup-matt-pocock-skills writes"
 gh issue comment 21 --body "Retitled at M to Q38's follow-up. The surface table is stale: working-rules.md and using-superpowers.md left with the hook (Q78), and the 122 method note is void. The block and AGENTS.md are now kept in step by hand. The first of the asks of 2026-09-08 is answered by the glossary's 'historical artifact'; asks 2 to 6 move to #$NEW. Whether the rewrite keeps a test-first method is not ruled and stays here."
-gh issue comment 48 --body "At M: route 1, skills.sh, is gone (Q58); a pick taken as-is comes from a subset entry, a route on both agent CLIs now, and a pick this repository changes is copied flat into software-dev under a record and test-upstream.sh (Q71); the recurring reason for changing a pick, 122 characters, is void; writing-clearly-and-concisely stays the subset entry it is, as elements-of-style (Q79); superpowers is no longer in this marketplace (Q78); mattpocock's pr and retro, new at v1.3.0 and never evaluated, join the candidates (Q85)."
-gh issue comment 45 --body "Redirected to software-dev at M: its skill lands there, since sensemaking retires. Criteria 3 (a length-bound test), 6 (a test for the Codex-split sentence) and the last (committed transcripts) are dropped; the halt rule is decided here. Both target skills arrive through software-dev's dependencies, as elements-of-style:writing-clearly-and-concisely and mattpocock:writing-for-agents, named alike on both agent CLIs, so the brief's dependency is software-dev's already; the Codex naming split and its sentence go, as do the bin/setup prerequisite, the 122-character bound and the dated amendment to the layout spec. sensemaking 0.3.0 never ships; this targets the software-dev minor after 0.9.0."
-gh issue comment 11 --body "Re-scoped at M (Q25, Q72): research-vault depends on software-dev, not sensemaking, and software-dev brings neither the SessionStart hook nor the superpowers process skills; research-vault's users install obra's superpowers themselves if they want it. What this repository owes is nothing beyond a README line there, 'install software-dev@eranroseman first'. The choice between a plugin listed in this marketplace and research-vault's own marketplace with a cross-marketplace dependency stays here. The question of 2026-09-06, which shared skills research-vault needs, is moot: software-dev's dependencies bring all eight the amendment named, beside wizard and writing-clearly-and-concisely; Codex still needs one codex plugin add per plugin."
+gh issue comment 48 --body "At M: route 1, skills.sh, is gone (Q58); a pick taken as-is comes from a subset entry, a route on both agent CLIs now, and a pick this repository changes is copied flat into software-dev under a record and test-upstream.sh (Q71); the recurring reason for changing a pick, 122 characters, is void; writing-clearly-and-concisely comes from softaworks' own marketplace, unpinned (Q88); superpowers is no longer in this marketplace (Q78); mattpocock's pr and retro, new at v1.3.0 and never evaluated, join the candidates (Q85)."
+gh issue comment 45 --body "Redirected to software-dev at M: its skill lands there, since sensemaking retires. Criteria 3 (a length-bound test), 6 (a test for the Codex-split sentence) and the last (committed transcripts) are dropped; the halt rule is decided here. Both target skills are named alike on both agent CLIs: writing-clearly-and-concisely:writing-clearly-and-concisely arrives through the README's blocks rather than software-dev's dependencies, and mattpocock:writing-for-agents through the dependency, so the brief's dependency is software-dev's already; the Codex naming split and its sentence go, as do the bin/setup prerequisite, the 122-character bound and the dated amendment to the layout spec. sensemaking 0.3.0 never ships; this targets the software-dev minor after 0.9.0."
+gh issue comment 11 --body "Re-scoped at M (Q25, Q72): research-vault depends on software-dev, not sensemaking, and software-dev brings neither the SessionStart hook nor the superpowers process skills; research-vault's users install obra's superpowers themselves if they want it. What this repository owes is nothing beyond a README line there, 'install software-dev@eranroseman first'. The choice between a plugin listed in this marketplace and research-vault's own marketplace with a cross-marketplace dependency stays here. The question of 2026-09-06, which shared skills research-vault needs, is moot: software-dev's one dependency brings the mattpocock skills, and superpowers and writing-clearly-and-concisely install from their own marketplaces; Codex still needs one codex plugin add per plugin."
 ```
 
 - [ ] **Step 3: Closed issues whose record the branch reverses**
@@ -1615,6 +1809,7 @@ Note on #52 the gate's T17 observation (Task 10, Step 3) and the cleanup run's s
 ## Self-review
 
 - **Spec coverage, constraints 10 to 20 of §18:** 10 (Task 1), 11 (Task 2), 12 (Task 3), 13 (Task 4), 14 (Task 5), 15 (Tasks 4, 5 and 6; the carve-out was plan A's), 16 (the sibling-name check reads the entry from Task 1; uniqueness, named scripts and the name helper were plan A's), 17 (Task 8), 18 (Task 9), 19 (Task 10), 20 (Task 11). §9's adhd bump is Task 7. §16.2's License section and §16.3's file are Tasks 1 and 9. §17's documentation edits land in Tasks 1 to 6 and 9. §20's dispositions, open and closed, are Task 11, with the closed issues the search found.
+- **Q88** (2026-10-24): Task 7b.
 - **Red-first list of §15.3, this plan's share:** the sibling-name check (Task 1), the vocabulary scan over the glossary (Task 5), the install job's superpowers check and whole-machine assertions (Task 3).
 - **The README's blocks**, each version written in full: Task 1 (five entries, no obra lines), Task 2 (`sensemaking` gone, its two removal lines), Task 3 (superpowers gone, obra's lines in every block, the `superpowers@eranroseman` uninstall), Task 4 (`elements-of-style`, the `writing-clearly-and-concisely@eranroseman` uninstall), Task 5 (the glossary note). The final blocks equal §13.2's.
 - **Names:** `EXCLUSIONS[mattpocock]` (Task 1), `superpowers_references` and `whole_machine` (Task 3), the `cleanup` block (Task 1, extended by 2, 3, 4), `GLOSSARY.md` (Task 5): each used under its defining task's name.
