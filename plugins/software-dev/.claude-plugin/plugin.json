@@ -1,6 +1,6 @@
 {
   "name": "software-dev",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "The repository scaffolder, the consistency audit and its inspector, diagnosing-bugs, finding-duplicate-functions, rethink-audit and adhd, for Claude Code and Codex.",
   "author": { "name": "Eran Roseman", "url": "https://github.com/eranroseman" },
   "homepage": "https://github.com/eranroseman/agent-plugins",
