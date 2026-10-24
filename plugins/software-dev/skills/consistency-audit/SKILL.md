@@ -44,7 +44,7 @@ You MUST create a task for each of these items and complete them in order:
 6. **Documentation** — save the report to `docs/superpowers/specs/` and commit
 7. **Put the open questions to the user** — which findings to act on, and what only they can settle
 8. **User reviews the updated report** — when the report changed, ask before writing the plan
-9. **Transition to implementation** — invoke writing-plans
+9. **Transition to implementation** — invoke superpowers:writing-plans
 
 ## The Process
 
@@ -183,17 +183,17 @@ digraph after_the_audit {
     "Report changed?" [shape=diamond];
     "User reviews updated report?" [shape=diamond];
     "Amend the report" [shape=box];
-    "Invoke writing-plans skill" [shape=doublecircle];
+    "Invoke superpowers:writing-plans skill" [shape=doublecircle];
 
     "Report and commit" -> "Put the open questions to the user";
     "Put the open questions to the user" -> "Answers open questions that waited?";
     "Answers open questions that waited?" -> "Put the open questions to the user" [label="yes, next round"];
     "Answers open questions that waited?" -> "Report changed?" [label="no"];
-    "Report changed?" -> "Invoke writing-plans skill" [label="no"];
+    "Report changed?" -> "Invoke superpowers:writing-plans skill" [label="no"];
     "Report changed?" -> "User reviews updated report?" [label="yes"];
     "User reviews updated report?" -> "Amend the report" [label="changes requested"];
     "Amend the report" -> "User reviews updated report?";
-    "User reviews updated report?" -> "Invoke writing-plans skill" [label="approved"];
+    "User reviews updated report?" -> "Invoke superpowers:writing-plans skill" [label="approved"];
 }
 ```
 
@@ -209,14 +209,14 @@ After the report is committed, put the open questions to the user in one message
 
 > "Audit report written and committed to `<path>`: <N> findings. Which do you want acted on? The questions below are the ones only you can settle — your answer to each is both the yes and the choice."
 
-- Run the `grilling` skill, if available — it owns the rounds method. Its question glyphs are optional; some agent CLIs reject them
+- Run the `mattpocock:grilling` skill; it owns the rounds method. Its question glyphs are optional; some agent CLIs reject them
 - List the `ready-for-agent` findings as a pick-list — each needs only a yes or no
 - Put each `ready-for-human` finding as a numbered question: the finding, its options with their trade-offs, and your recommended answer. "Leave it as it is" is always one of the options
 - A question whose answer depends on another still open waits for the next round; say how many are waiting
 
 Then wait. Their answers are the work order; nothing outside it is in scope.
 
-Side effects happen inline as each answer lands — run the domain-modeling skill, if available, to keep the domain model current as you go:
+Side effects happen inline as each answer lands — run the `mattpocock:domain-modeling` skill to keep the domain model current as you go:
 
 - **The answer settles what a term means?** Land the ruling in the glossary, with its machine form in the same change.
 - **The answer is hard to reverse, and a future reader would ask why?** Offer an ADR, framed as: _"Want me to record this so the next audit doesn't re-raise it?"_
@@ -240,8 +240,8 @@ Wait for the user's response. If they request changes, make them and re-run this
 - Work only the work order — the findings the user selected, all of them now `ready-for-agent`
 - The plan touches only the files those findings name: one change at a time, no "while I'm here" improvements
 - Findings spanning more than one concern, or more than a handful of files, are batched: one concern per branch and pull request, each passing the repository's gate on its own — split where a reviewer could reject one batch while approving its neighbor
-- Invoke the writing-plans skill to create a detailed implementation plan
-- Do NOT invoke any other skill. writing-plans is the next step — the execution skill it hands off to owns the worktree, the reviews, the gate, and finishing the branch
+- Invoke the superpowers:writing-plans skill to create a detailed implementation plan
+- Do NOT invoke any other skill. superpowers:writing-plans is the next step — the execution skill it hands off to owns the worktree, the reviews, the gate, and finishing the branch
 
 ## Red Flags - STOP
 

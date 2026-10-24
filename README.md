@@ -77,6 +77,10 @@ the upstream test. A fork is first-party and held to nothing.
 on Claude Code brings all three. Each entry is pinned at one upstream commit,
 and the watch reports when the upstream moves.
 
+`consistency-audit` uses `elements-of-style:writing-clearly-and-concisely` for
+its report, `mattpocock:grilling` for its question round and
+`mattpocock:domain-modeling` for the rulings that land in the glossary.
+
 ## Install
 
 Claude Code:
