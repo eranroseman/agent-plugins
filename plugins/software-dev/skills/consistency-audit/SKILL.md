@@ -200,7 +200,7 @@ digraph after_the_audit {
 **Documentation:**
 
 - Write the report to `docs/superpowers/specs/YYYY-MM-DD-<scope>-audit.md`
-- Use writing-clearly-and-concisely skill if available
+- Use the elements-of-style:writing-clearly-and-concisely skill
 - Commit the report to git — on a branch, since a worktree is often handed over on a detached HEAD and a commit there is unreachable once you leave
 - **Done when:** the report is committed and the working tree shows no other change
 

@@ -56,7 +56,7 @@ DECLARED=(
 # that the entry does not list, each with one reason. An exclusion upstream
 # no longer has fails; so does a listed skill that is also excluded.
 declare -A EXCLUSIONS=(
-  ["writing-clearly-and-concisely"]=''
+  ["elements-of-style"]=''
   ["mattpocock"]=$'diagnosing-bugs\tsoftware-dev ships a copy with a changed description (§11.2)
 setup-matt-pocock-skills\tsoftware-dev ships it forked under the same name (Q81)
 to-spec\tcollides with a superpowers skill; superpowers owns that slot (ruling of 2026-09-06)

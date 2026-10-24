@@ -11,8 +11,8 @@
       "category": "development"
     },
     {
-      "name": "writing-clearly-and-concisely",
-      "description": "softaworks/agent-toolkit, a subset entry: one skill, Strunk's rules for prose humans read.",
+      "name": "elements-of-style",
+      "description": "softaworks/agent-toolkit's writing-clearly-and-concisely, one skill, under obra's plugin name so that upstream brainstorming's pointer resolves: Strunk's rules for prose humans read.",
       "category": "documentation",
       "source": {
         "source": "git-subdir",
