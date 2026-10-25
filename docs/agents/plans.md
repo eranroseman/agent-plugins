@@ -1,6 +1,6 @@
 # Plans
 
-How a plan in `docs/superpowers/plans/` marks the text each edit replaces, and how those anchors are checked before the edit runs.
+How a plan in `docs/superpowers/plans/` marks the text each edit replaces, how those anchors are checked before the edit runs, and how a plan's workspace closes.
 
 ## Anchors
 
@@ -26,6 +26,12 @@ Run it at Task 1's hand-off and again at the start of each later task. A later t
 
 TASK matches exactly: `7` does not select `### Task 7b:`. Superpowers' `task-brief` does, since it accepts any non-digit after the number. Until that is fixed upstream, a plan avoids letter-suffixed task numbers, or gives every task in the series its full suffix (7a and 7b, never 7 beside 7b).
 
-## Why a script
+## Closing the workspace
+
+Before deleting a plan's SDD workspace, run `scripts/sdd-close <workspace>`. It reads `<workspace>/progress.md` and fails on each line that mentions `minor (deferred)`, `parked` or `Ruling` without a home, a completion line's count of parked findings aside: `#<issue>` for one filed, `declined: <reason>` for a recorded decline, or `landed: <sha>` for a ruling or a spec entry that became a commit. Write the home with the line, while the decision is in front of you. The script deletes nothing; once it passes, delete the workspace by hand.
+
+## Why scripts
 
 Plan B's pre-flight found most of its defects in anchors the tree did not hold. Eliminating anchors is not available: a plan describes edits to text that exists. The mechanism is `scripts/plan-anchors`. The only rule left is the block form, which is what the script needs to find an anchor at all, and it refuses to parse around a departure from it: a fence that never closes, an anchor fence that is indented, an `old` block without a path, or a section that says "becomes" and carries no anchor fails rather than passes.
+
+The same holds for the workspace. `AGENTS.md`'s rule that it closes only once every concern has a home broke twice in two executions as prose, and the second time an issue had to be rebuilt from a transcript. `scripts/sdd-close` is its mechanism; the rule left is the three home forms, which are what it reads.

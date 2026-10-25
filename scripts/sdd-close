@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# The gate before a plan's SDD workspace is deleted (docs/agents/plans.md):
+# every ledger line that defers or decides something carries its home, since
+# the workspace and its ledger go when the plan finishes.
+#
+#   scripts/sdd-close WORKSPACE_DIR
+#
+# Reads WORKSPACE_DIR/progress.md. A line containing `minor (deferred)`,
+# `parked` or `Ruling` must carry one of three homes:
+#   #<digits>             the issue it was filed as
+#   declined: <reason>    a recorded decline
+#   landed: <sha>         the commit, 7 or more hex digits, that carries it;
+#                         a ruling whose outcome is a commit takes this one,
+#                         so the controller writes the sha with the ruling
+# A completion line's count, `Task <N>: complete (commits ..., <K> parked)`,
+# is not read as a deferral: each parked finding has a line of its own.
+#
+#   exit 0   every such line is homed; the workspace may close
+#   exit 1   each line without a home, by number and its first 100 characters
+#   exit 2   usage, or no progress.md
+#
+# It deletes nothing: the controller runs it, then deletes the workspace.
+set -euo pipefail
+
+die() {
+  printf 'sdd-close: %s\n' "$*" >&2
+  exit 2
+}
+[ "$#" -eq 1 ] || die "usage: scripts/sdd-close WORKSPACE_DIR"
+ledger="$1/progress.md"
+[ -f "$ledger" ] || die "no ledger at $ledger"
+
+DEFERS='minor \(deferred\)|parked|Ruling'
+COUNT='Task [^ ]+: complete \(commits [^)]*[0-9]+ parked\)'
+HOMED='#[0-9]+|declined:[[:space:]]*[^[:space:]]|landed:[[:space:]]*[0-9a-f]{7,}([^0-9A-Za-z]|$)'
+n=0 lines=0 unhomed=0
+while IFS= read -r line || [ -n "$line" ]; do
+  n=$((n + 1))
+  probe="$line"
+  [[ ! $probe =~ $COUNT ]] || probe="${probe/"${BASH_REMATCH[0]}"/}"
+  [[ $probe =~ $DEFERS ]] || continue
+  lines=$((lines + 1))
+  [[ ! $line =~ $HOMED ]] || continue
+  unhomed=$((unhomed + 1))
+  printf 'FAIL: %s:%s: no home: %s\n' "$ledger" "$n" "${line:0:100}" >&2
+done <"$ledger"
+if [ "$unhomed" -gt 0 ]; then
+  printf 'sdd-close: %s of %s line(s) without a home; file each as an issue, decline it, or name the commit that landed it\n' "$unhomed" "$lines" >&2
+  exit 1
+fi
+printf 'sdd-close: %s line(s), every one homed; the workspace may close\n' "$lines"

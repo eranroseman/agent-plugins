@@ -36,7 +36,7 @@ The SDD skill never commits its `.superpowers/sdd/` reports, and its Finish step
 deletes the workspace — a report is not a durable home. Reports name a
 destination per Concern at write time; a plan's workspace closes only after
 every Concern's disposition has landed in that home — an issue, a spec entry, or
-a recorded decline.
+a recorded decline. `scripts/sdd-close` checks the ledger before it closes.
 
 ## Codex only
 
