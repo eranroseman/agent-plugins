@@ -287,6 +287,7 @@ docs/Professional-Editorial-Standards-2024.md   the editorial reference
 docs/superpowers/  historical artifacts: specs and plans, each read as of its commit
 GLOSSARY.md        the vocabulary: contested terms with their retired forms, and the leading words
 AGENTS.md          the agents' instruction file; CLAUDE.md imports it
+SECURITY.md        how to report a vulnerability privately
 ```
 
 ## License
