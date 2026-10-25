@@ -1,0 +1,162 @@
+#!/usr/bin/env bash
+# Check one task's anchors in an implementation plan against the tree the
+# plan edits (docs/agents/plans.md). An anchor is a fenced block whose info
+# string is `old <path>`, the path relative to the repository root, holding
+# the exact text an edit replaces; a `new` block beside it is not read.
+#
+#   scripts/plan-anchors PLAN TASK
+#
+# Only the section headed `Task TASK` is checked, since a later task's anchor
+# may exist only once the earlier tasks have run: the controller runs this at
+# Task 1's hand-off and at each later task's start. TASK matches exactly, so
+# 7 does not select `### Task 7b:` and 7b does. The tree is the git working
+# tree that holds PLAN.
+#
+#   exit 0   every anchor in the section names a tracked file that holds its
+#            text exactly once; or the section has no anchor and describes
+#            no edit without one
+#   exit 1   each failure on its own line, with its plan line where it has
+#            one: a fence that never closes, a missing or repeated section,
+#            an anchor fence not at column 0, an anchor with no path, an
+#            untracked path, an empty anchor, text not found or found more
+#            than once, or no anchor in a section whose prose says "becomes"
+#            or "as it stands"
+#   exit 2   usage, or the check could not run
+#
+# A fence closes on a bare fence of its own character at least as long as it
+# opened. Content is literal inside a three-character fence and inside an
+# `old` or `new` block; a longer fence quotes markdown, so a fence inside it
+# that is shorter or of the other character nests, and an anchor there is
+# still an anchor. Matching is exact bytes, which is why python3 does it
+# rather than awk (tests/run.sh already probes python3 as a need).
+set -euo pipefail
+
+die() {
+  printf 'plan-anchors: %s\n' "$*" >&2
+  exit 2
+}
+if [ "$#" -ne 2 ] || [ -z "$2" ]; then die "usage: scripts/plan-anchors PLAN TASK"; fi
+plan="$1"
+task="$2"
+if [ ! -f "$plan" ] || [ ! -r "$plan" ]; then die "no readable plan at $plan"; fi
+command -v python3 >/dev/null 2>&1 || die "needs python3 on PATH"
+root="$(git -C "$(dirname -- "$plan")" rev-parse --show-toplevel 2>/dev/null)" \
+  || die "$plan is not inside a git working tree"
+
+python3 -I - "$root" "$plan" "$task" <<'PY'
+import re
+import subprocess
+import sys
+
+root, plan, task = sys.argv[1:4]
+FENCE = re.compile(rb"^(`{3,}|~{3,})(.*)$")
+INDENTED_OLD = re.compile(rb"^[ \t]+(`{3,}|~{3,})[ \t]*old([ \t]|$)")
+HEADING = re.compile(rb"^(#{1,6})[ \t]")
+TASK = re.compile(rb"^#{1,6}[ \t]+Task[ \t]+" + re.escape(task.encode()) + rb"([^0-9A-Za-z]|$)")
+EDIT = re.compile(rb"\b(becomes|as it stands)\b", re.IGNORECASE)
+
+
+def text(b):
+    return b.decode("utf-8", "replace")
+
+
+def main():
+    fails = []
+    anchors = []  # (plan line, path, text) for each anchor inside the section
+    edit_word = None  # (plan line, word) of the section's first edit word
+    heads = []
+    level = 0  # the open section's heading level; 0 when none is open
+    stack = []  # open fences: [char, length, plan line, kind, path, body]
+    lines = open(plan, "rb").read().split(b"\n")
+    for n, line in enumerate(lines, 1):
+        m = FENCE.match(line)
+        # CommonMark: a backtick fence's info string holds no backtick.
+        if m and line[:1] == b"`" and b"`" in m.group(2):
+            m = None
+        if m:
+            run, info = m.group(1), m.group(2).strip()
+            ch, ln = run[:1], len(run)
+            if not info:
+                outer = [i for i, f in enumerate(stack) if f[0] == ch and f[1] <= ln]
+                if outer:
+                    i = outer[0]
+                    for f in stack[i + 1:]:
+                        fails.append(f"{plan}:{f[2]}: the fence opened here is still open at line {n}, which closes the fence opened at line {stack[i][2]}")
+                    f = stack[i]
+                    del stack[i:]
+                    if f[3] == "old" and level:
+                        anchors.append((f[2], f[4], b"\n".join(f[5])))
+                    continue
+            top = stack[-1] if stack else None
+            if top is None or (top[3] == "quote" and (ch != top[0] or ln < top[1])):
+                word, path = (info.split(None, 1) + [b"", b""])[:2]
+                kind = text(word) if word in (b"old", b"new") else ("quote" if ln > 3 else "code")
+                stack.append([ch, ln, n, kind, path, []])
+                continue
+        if stack and stack[-1][3] != "quote":
+            stack[-1][5].append(line)
+            continue
+        if level and INDENTED_OLD.match(line):
+            fails.append(f"{plan}:{n}: an old block's fence must start at column 0, or it is not read as an anchor")
+        if stack:
+            continue
+        h = HEADING.match(line)
+        if h and TASK.match(line):
+            heads.append(n)
+            level = len(h.group(1))
+        elif h and level and len(h.group(1)) <= level:
+            level = 0
+        e = EDIT.search(line) if level and edit_word is None else None
+        if e:
+            edit_word = (n, text(e.group(1)))
+    for f in stack:
+        fails.append(f"{plan}:{f[2]}: the fence opened here never closes")
+    if not heads:
+        fails.append(f"{plan}: no heading names Task {task}")
+    for n in heads[1:]:
+        fails.append(f"{plan}:{n}: a second heading names Task {task} (the first is line {heads[0]})")
+
+    tracked = subprocess.run(["git", "-C", root, "ls-files", "-z"], capture_output=True)
+    if tracked.returncode != 0:
+        sys.stderr.write(f"plan-anchors: git ls-files failed in {root}\n")
+        sys.exit(2)
+    tracked = set(tracked.stdout.split(b"\0")) - {b""}
+    for n, path, body in anchors:
+        where = f"{plan}:{n}: old {text(path)}"
+        if not path:
+            fails.append(f"{plan}:{n}: the old block names no path; write old <path>")
+        elif path not in tracked:
+            fails.append(f"{where}: the path is not tracked")
+        elif not body:
+            fails.append(f"{where}: the block is empty")
+        else:
+            try:
+                data = open(root.encode() + b"/" + path, "rb").read()
+            except OSError as e:
+                fails.append(f"{where}: tracked, but the working tree's copy cannot be read: {e.strerror}")
+                continue
+            i = data.find(body)
+            j = data.find(body, i + 1) if i >= 0 else -1
+            if i < 0:
+                fails.append(f"{where}: not found")
+            elif j >= 0:
+                first, second = (data.count(b"\n", 0, k) + 1 for k in (i, j))
+                fails.append(f"{where}: ambiguous, at lines {first} and {second} at least")
+    if heads and not anchors and edit_word:
+        fails.append(f"{plan}:{edit_word[0]}: no anchors in Task {task}, yet this line describes an edit (\"{edit_word[1]}\"); mark its anchor with an old block")
+    if fails:
+        sys.stderr.write("".join(f"FAIL: {f}\n" for f in fails))
+        sys.stderr.write(f"plan-anchors: {len(fails)} failure(s) in Task {task}\n")
+        sys.exit(1)
+    if anchors:
+        print(f"plan-anchors: {len(anchors)} anchor(s) in Task {task} found once each")
+    else:
+        print(f"plan-anchors: no anchors in Task {task}")
+
+
+try:
+    main()
+except OSError as e:
+    sys.stderr.write(f"plan-anchors: the check could not run: {e}\n")
+    sys.exit(2)
+PY

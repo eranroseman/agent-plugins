@@ -279,13 +279,13 @@ plugins it installed.
 ## Layout
 
 ```text
-scripts/           what CI and the maintainer run: the upstream watch and the formatter
+scripts/           what CI, the maintainer and a plan's controller run: the upstream watch, the formatter, and the checks docs/agents/plans.md names
 plugins/           the one plugin, software-dev
 vendored.json      one record per upstream repository copied or forked from, with its copies and forks
 .claude-plugin/    the marketplace manifest both agent CLIs read: the plugins and the subset entries, with their pins
 .github/           the CI workflows, and dependabot.yml, which moves their action pins
 tests/             every check; tests/run.sh runs them, tests/install-check.sh is the install job's, and tests/tools.txt pins the tools
-docs/agents/       the conventions the agents read: issue tracker, triage labels, domain docs
+docs/agents/       the conventions the agents read: issue tracker, triage labels, domain docs, plans
 docs/Professional-Editorial-Standards-2024.md   the editorial reference
 docs/superpowers/  historical artifacts: specs and plans, each read as of its commit
 GLOSSARY.md        the vocabulary: contested terms with their retired forms, and the leading words
