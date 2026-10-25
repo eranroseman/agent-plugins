@@ -74,9 +74,10 @@ fork_keys() { jq -r '.records[].forks | keys[]' "$VENDORED_JSON"; }
 # its validator: not under ${TMPDIR:-/tmp}, a predictable path another local
 # user can pre-create (#73, #81). Each caller still refuses a cache this user
 # does not own. XDG_CACHE_HOME counts only when absolute, as the XDG spec
-# says: a relative one would put the caches inside the checkout, where
-# tests/run.sh refuses the next run. A fail here ends only the caller's
-# command substitution, so each capture exits on the status.
+# says: a relative one would put the caches inside the working directory,
+# the checkout under tests/run.sh, which then refuses the next run. A fail
+# here ends only the caller's command substitution, so each capture exits on
+# the status.
 cache_dir() {
   local base
   case "${XDG_CACHE_HOME:-}" in
@@ -84,7 +85,7 @@ cache_dir() {
     *)
       case "${HOME:-}" in
         /*) base="$HOME/.cache" ;;
-        *) fail "no HOME and no absolute XDG_CACHE_HOME; nowhere to keep the cache" ;;
+        *) fail "no absolute HOME and no absolute XDG_CACHE_HOME; nowhere to keep the cache" ;;
       esac
       ;;
   esac

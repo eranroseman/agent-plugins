@@ -17,7 +17,7 @@
 # list` names exactly the marketplace's entries from eranroseman and every
 # UNPINNED install id, and no skill name is listed twice in Codex's
 # catalogue, bare or under any prefix. In a scratch run, every clone under
-# HOME has an HTTPS or local origin, as on CI (#82).
+# HOME whose origin git can read has an HTTPS or local origin, as on CI (#82).
 #
 #   tests/install-check.sh            install into a fresh scratch HOME, then assert
 #   tests/install-check.sh --assert   assert only, over the HOME and CODEX_HOME in the environment
@@ -86,19 +86,22 @@ expect_equal() {
     || fail "$1: the sets differ (expected above, found below)"
 }
 
-# Every git clone under the scratch HOME has an HTTPS or local origin, as on
-# CI (#82); an SSH origin means a clone reached this machine's SSH keys. The
-# clones that keep a .git are the agent CLIs' marketplaces and Codex's plugin
-# cache, whose origin is a local path. Not seen here: a plugin cloned on its
-# own, which keeps no .git, and a clone with no origin; a clone whose origin
-# git cannot read fails. Scratch runs only: a real HOME may clone over SSH.
+# Every git clone under the scratch HOME whose origin git can read has an
+# HTTPS or local origin, as on CI (#82); an SSH origin means a clone reached
+# this machine's SSH keys. The clones that keep a .git are the agent CLIs'
+# marketplaces and Codex's plugin cache, whose origin is a local path. Not
+# seen here: a plugin cloned on its own, which keeps no .git; a clone with no
+# origin; and a .git git does not recognize as a repository (empty, or with
+# no HEAD), where git config finds no repository and so no key. A config git
+# cannot parse fails. Scratch runs only: a real HOME may clone over SSH.
 https_clones() {
   local gits g d url n=0
   gits="$(find "$HOME" -name .git -prune -print | sort)" || fail "could not list the clones under $HOME"
   while IFS= read -r g; do
     [ -n "$g" ] || continue
     d="${g%/.git}"
-    # Exit 1 is no origin key; any other status is a config git cannot read.
+    # Exit 1: no origin key, or no repository git recognizes at $d. Any other
+    # status (a config git cannot parse, say) fails.
     url="$(git -C "$d" config --get remote.origin.url)" || {
       [ "$?" -ne 1 ] || continue
       fail "could not read the origin of ${d#"$HOME"/}"
