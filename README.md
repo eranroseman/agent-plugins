@@ -50,12 +50,12 @@ dependencies; on Codex, each is installed by name.
     changes, the invocation gate in its frontmatter and the Codex policy file,
     so it is user-invocable only on both agent CLIs: `/adhd <problem>` on
     Claude Code, `$software-dev:adhd <problem>` on Codex.
-- `mattpocock`: fifteen of mattpocock/skills' skills at a release tag, a
-  subset entry: `grilling`, `handoff`, `teach`, `to-questionnaire`,
-  `wait-what`, `writing-for-agents`, `research`, `wayfinder`, `wizard`,
-  `codebase-design`, `domain-modeling`, `grill-with-docs`,
-  `improve-codebase-architecture`, `prototype` and `triage`. The skills read
-  `mattpocock:<name>` on both agent CLIs.
+- `mattpocock`: mattpocock/skills' grilling, research, wayfinder and their
+  siblings at a release tag, a subset entry: `grilling`, `handoff`, `teach`,
+  `to-questionnaire`, `wait-what`, `writing-for-agents`, `research`,
+  `wayfinder`, `wizard`, `codebase-design`, `domain-modeling`,
+  `grill-with-docs`, `improve-codebase-architecture`, `prototype` and
+  `triage`. The skills read `mattpocock:<name>` on both agent CLIs.
 
 Two plugins come from their upstreams' own marketplaces, not from this one:
 obra's superpowers and softaworks' `writing-clearly-and-concisely`. The
