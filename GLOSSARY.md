@@ -4,10 +4,6 @@ One repository states the skills a machine should have on Claude Code and Codex,
 
 ## Language
 
-**additional context**:
-What a SessionStart hook adds to a session; Claude Code's own name for the mechanism.
-_Avoid_: payload, payloads
-
 **user**:
 Whoever installs the plugins, or no noun at all; a program is called by its name.
 _Avoid_: installer, installers
