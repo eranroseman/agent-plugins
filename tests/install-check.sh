@@ -59,7 +59,7 @@ run_block() {
 # one per line, sorted; nothing for `Agents (0)`. The command is captured
 # first, so a failing `claude plugin details` fails rather than passing as an
 # empty set; since a fail here ends only the caller's command substitution,
-# every call site fails on the status too.
+# every call site exits on the status, the FAIL already printed.
 details_names() {
   local out
   out="$(claude plugin details "$1")" || fail "claude plugin details $1 failed"
@@ -69,8 +69,8 @@ details_names() {
 # Every skill in Codex's model-visible catalogue, as the catalogue names it
 # (plugin:skill for a plugin's, bare for a skill root's), one per line. The
 # prompt is captured first, so a failing `codex debug prompt-input` fails here
-# even when it printed a prompt; as with details_names, the call site fails on
-# the status too.
+# even when it printed a prompt; as with details_names, the call site exits on
+# the status.
 codex_catalogue() {
   local out
   out="$(cd "$HOME" && codex debug prompt-input)" || fail "codex debug prompt-input failed"
@@ -123,19 +123,19 @@ while IFS=$'\t' read -r name src; do
   dir="$REPO_ROOT/${src#./}"
   want_skills="$(for d in "$dir"/skills/*/; do basename "$d"; done)"
   want_agents="$(for a in "$dir"/agents/*.md; do if [ -f "$a" ]; then basename "$a" .md; fi; done)"
-  got="$(details_names "$name@eranroseman" Skills)" || fail "claude plugin details $name@eranroseman failed"
+  got="$(details_names "$name@eranroseman" Skills)" || exit 1
   expect_equal "claude: $name's skills" "$want_skills" "$got"
-  got="$(details_names "$name@eranroseman" Agents)" || fail "claude plugin details $name@eranroseman failed"
+  got="$(details_names "$name@eranroseman" Agents)" || exit 1
   expect_equal "claude: $name's agents" "$want_agents" "$got"
 done <<<"$local_rows"
 while IFS=$'\t' read -r name _; do
   [ -n "$name" ] || continue
-  got="$(details_names "$name@eranroseman" Skills)" || fail "claude plugin details $name@eranroseman failed"
+  got="$(details_names "$name@eranroseman" Skills)" || exit 1
   expect_equal "claude: the entry $name's skills" "$(entry_skills "$name")" "$got"
 done < <(entry_rows)
 
 # ---- Codex -------------------------------------------------------------------
-catalogue="$(codex_catalogue)" || fail "codex debug prompt-input failed"
+catalogue="$(codex_catalogue)" || exit 1
 [ -n "$catalogue" ] || fail "codex debug prompt-input listed no skill"
 visible_of() { grep "^$1:" <<<"$catalogue" | sed "s/^$1://" || true; }
 while IFS=$'\t' read -r name src; do
@@ -167,7 +167,7 @@ unpinned_references() {
       grep -ohE "(^|[^A-Za-z0-9_/-])$prefix:[a-z][a-z0-9-]*" "$REPO_ROOT/$f" | sed -E "s/^.*$prefix:/$prefix:/" || true
     done < <(shipped_texts) | sort -u)"
     [ -n "$tokens" ] || fail "no $prefix: token in the shipped texts; the check went vacuous"
-    installed="$(details_names "$id" Skills)" || fail "claude plugin details $id failed"
+    installed="$(details_names "$id" Skills)" || exit 1
     [ -n "$installed" ] || fail "claude plugin details $id lists no skill"
     while IFS= read -r t; do
       s="${t#"$prefix":}"

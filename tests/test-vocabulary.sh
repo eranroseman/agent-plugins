@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # Every retired form is gone from the files this repository owns (spec §5.4).
-# GLOSSARY.md lists, on each `_Avoid_:` line, the bare surface forms a winning
-# term retired; this test reads those lists and greps every checked file for
-# each form, whole word, case-insensitive, so the list is a mechanism rather
-# than a rule. `_` is not a word character to the pattern, so an identifier
-# carrying a retired form is a hit; `-` is, so a repository name joined by a
-# hyphen is not, and there is no exception list. The glossary itself is scanned
+# GLOSSARY.md lists, on each line that opens with `_Avoid_:`, the bare surface
+# forms a winning term retired; an `_Avoid_:` later in a line fails, since the
+# lists and the glossary scan below both read column 0 alone. This test reads
+# those lists and greps every checked file for each form, whole word,
+# case-insensitive, so the list is a mechanism rather than a rule. `_` is not
+# a word character to the pattern, so an identifier carrying a retired form is
+# a hit; `-` is, so a repository name joined by a hyphen is not, and there is
+# no exception list. The glossary itself is scanned
 # with its _Avoid_: lines, at column 0, left out, since their subject is the
 # retired forms; outside the scan is docs/superpowers/, where a spec's
 # substitution table and an older plan's quoted output keep them (spec §5.4
@@ -15,7 +17,9 @@
 GLOSSARY="$REPO_ROOT/GLOSSARY.md"
 [ -f "$GLOSSARY" ] || fail "missing $GLOSSARY"
 
-forms="$(sed -n 's/.*_Avoid_: *//p' "$GLOSSARY" | tr ',' '\n' | sed 's/^ *//; s/ *$//' | grep . || true)"
+stray="$(grep -n '._Avoid_:' "$GLOSSARY" || true)"
+[ -z "$stray" ] || fail "GLOSSARY.md carries _Avoid_: after the start of a line, where it is no list; open the line with it:"$'\n'"$stray"
+forms="$(sed -n 's/^_Avoid_: *//p' "$GLOSSARY" | tr ',' '\n' | sed 's/^ *//; s/ *$//' | grep . || true)"
 [ -n "$forms" ] || fail "GLOSSARY.md carries no _Avoid_ line; nothing to enforce"
 odd="$(printf '%s\n' "$forms" | grep -vE '^[a-z]+( [a-z]+)*$' || true)"
 [ -z "$odd" ] || fail "an _Avoid_ list in GLOSSARY.md carries something other than a bare lower-case form:"$'\n'"$odd"

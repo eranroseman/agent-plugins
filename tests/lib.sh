@@ -34,7 +34,9 @@ upstream_ref() { entry_field_for_repo ref "$1"; }
 # mistake is never skipped. Every record carries a repo, and trees and forks,
 # {} when empty; one without fails, so no record is skipped. jq hands the
 # fields over joined by the unit separator, which is not IFS whitespace, so a
-# record's empty ref and sha survive the read.
+# record's empty ref and sha survive the read. A fail inside upstream_ref or
+# upstream_sha ends only its command substitution, having printed its FAIL,
+# so each capture exits on the status rather than failing a second time.
 record_rows() {
   local repo ref sha
   jq -e '.records | type == "array" and length > 0' "$VENDORED_JSON" >/dev/null 2>&1 \
@@ -43,8 +45,8 @@ record_rows() {
     || fail "a record in $VENDORED_JSON lacks a repo, a trees object or a forks object"
   while IFS=$'\x1f' read -r repo ref sha; do
     if [ -z "$ref" ] && [ -z "$sha" ]; then
-      ref="$(upstream_ref "$repo")"
-      sha="$(upstream_sha "$repo")"
+      ref="$(upstream_ref "$repo")" || exit 1
+      sha="$(upstream_sha "$repo")" || exit 1
     elif [ -z "$ref" ] || [ -z "$sha" ]; then
       fail "the $repo record carries one of ref and sha without the other"
     fi
@@ -62,20 +64,35 @@ record_map() {
 tree_keys() { jq -r '.records[].trees | keys[]' "$VENDORED_JSON"; }
 fork_keys() { jq -r '.records[].forks | keys[]' "$VENDORED_JSON"; }
 
+# The path of the cache $1 under this user's cache directory, where
+# tests/test-upstream.sh keeps its checkouts and tests/test-codex-validate.sh
+# its validator: not under ${TMPDIR:-/tmp}, a predictable path another local
+# user can pre-create (#73, #81). Each caller still refuses a cache this user
+# does not own.
+cache_dir() { printf '%s/software-dev/%s\n' "${XDG_CACHE_HOME:-$HOME/.cache}" "$1"; }
+
 # Shallow-fetch $1 (a git URL) at commit $2 into $3 and print the path.
-# Reuses an existing checkout whose HEAD already matches. Every git command is
-# guarded here rather than at the call sites. A caller writing
-# `UP="$(fetch_pinned ...)" || fail ...` suspends set -e inside this function,
-# so an unguarded mid-function failure would fall through to the closing
-# printf and return 0, making that `|| fail` dead code.
+# Reuses an existing checkout only when this user owns it, its HEAD is the pin
+# and its working tree is clean, untracked and ignored files included whatever
+# status.showUntrackedFiles says: callers compare the tree's bytes, and `find`
+# lists what git ignores. Ownership is tested before any git command runs
+# there: git runs the core.fsmonitor of a repository another user planted
+# wherever safe.directory, the only other guard, lets it, and
+# `safe.directory = *` or a git without the April 2022 ownership check
+# (CVE-2022-24765) lets it everywhere. Anything else is removed and fetched
+# again. Every command is guarded here rather than at the call sites. A caller
+# writing `UP="$(fetch_pinned ...)" || fail ...` suspends set -e inside this
+# function, so an unguarded mid-function failure would fall through to the
+# closing printf and return 0, making that `|| fail` dead code.
 fetch_pinned() {
-  local url="$1" sha="$2" dir="$3"
+  local url="$1" sha="$2" dir="$3" dirt
   [ "${#sha}" -eq 40 ] || fail "fetch_pinned needs a 40-char sha (got '$sha')"
-  if [ -d "$dir/.git" ] && [ "$(git -C "$dir" rev-parse HEAD)" = "$sha" ]; then
+  if [ -O "$dir" ] && [ -d "$dir/.git" ] && [ "$(git -C "$dir" rev-parse HEAD)" = "$sha" ] \
+    && dirt="$(git -C "$dir" status --porcelain --ignored --untracked-files=normal)" && [ -z "$dirt" ]; then
     printf '%s\n' "$dir"
     return
   fi
-  rm -rf "$dir"
+  rm -rf "$dir" || fail "could not remove $dir to fetch it again; a cache this user cannot clear, or does not own, is never reused"
   mkdir -p "$dir" || fail "could not create $dir"
   git -C "$dir" init -q || fail "git init failed in $dir"
   git -C "$dir" remote add origin "$url" || fail "git remote add failed in $dir"
@@ -135,7 +152,7 @@ entry_skills() {
 # tests/test-plugin-skills.sh's scan and by tests/install-check.sh's check of
 # the UNPINNED plugins' references (T47). Tracked, not present, like checked().
 shipped_texts() {
-  git -C "$REPO_ROOT" ls-files 'plugins/*/skills/**/*.md' 'plugins/*/agents/*.md' 'plugins/*/skills/*/agents/openai.yaml'
+  git -C "$REPO_ROOT" -c core.quotePath=false ls-files 'plugins/*/skills/**/*.md' 'plugins/*/agents/*.md' 'plugins/*/skills/*/agents/openai.yaml'
 }
 
 # The plugins the README's blocks install from their upstreams' own

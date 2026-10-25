@@ -80,7 +80,7 @@ pr\tnever evaluated; new at v1.3.0, surfaced by the v1.3.1 complement; a candida
 retro\tnever evaluated; new at v1.3.0, surfaced by the v1.3.1 complement; a candidate on #48 (Q85)'
 )
 
-cache_for() { printf '%s/software-dev-upstream-%s\n' "${TMPDIR:-/tmp}" "$(tr / - <<<"$1")"; }
+cache_for() { cache_dir "upstream-$(tr / - <<<"$1")"; }
 
 # The declared rows for the local path $1: kind, anchor, reason, tab-separated.
 declared_for() {
@@ -130,8 +130,8 @@ compare_file() {
   done <<<"$rows"
   diff <(printf '%s\n' "$up") <(printf '%s\n' "$loc") \
     || fail "$key differs from upstream at the pin beyond its declared changes"
-  lrun="$(eol_run "$lf")" || fail "could not read $lf"
-  urun="$(eol_run "$uf")" || fail "could not read $uf"
+  lrun="$(eol_run "$lf")" || exit 1
+  urun="$(eol_run "$uf")" || exit 1
   [ "$lrun" = "$urun" ] \
     || fail "$key: the last bytes differ from upstream's at the pin (an end-of-file newline)"
 }
@@ -142,7 +142,7 @@ compare_tree() {
   local repo="$1" local_path="$2" up_path="$3" U="$4" f up_files loc_files added lmode umode
   [ -d "$U/$up_path" ] || fail "$repo has no $up_path at its pin"
   up_files="$(cd "$U/$up_path" && find . -type f | sed 's#^\./##' | sort)"
-  loc_files="$(git -C "$REPO_ROOT" ls-files -- "$local_path" | sed "s#^$local_path/##" | sort)"
+  loc_files="$(git -C "$REPO_ROOT" -c core.quotePath=false ls-files -- "$local_path" | sed "s#^$local_path/##" | sort)"
   added="$(for r in "${DECLARED[@]}"; do
     if [ "$(cut -f2 <<<"$r")" = added ] && [ "$(cut -f3 <<<"$r")" = '<file>' ]; then
       case "${r%%$'\t'*}" in "$local_path"/*) printf '%s\n' "${r%%$'\t'*}" | sed "s#^$local_path/##" ;; esac
@@ -219,7 +219,8 @@ sibling_names() {
       record_map trees "$repo"
       record_map forks "$repo"
     } | cut -f1 | while IFS= read -r k; do
-      git -C "$REPO_ROOT" ls-files -- "$k" | grep '\.md$' | sed "s#^#$REPO_ROOT/#" || true
+      tracked="$(git -C "$REPO_ROOT" -c core.quotePath=false ls-files -- "$k")" || fail "git ls-files failed for $k"
+      printf '%s\n' "$tracked" | { grep '\.md$' || true; } | sed "s#^#$REPO_ROOT/#"
     done
   })"
   while IFS= read -r f; do
@@ -252,7 +253,7 @@ for r in "${DECLARED[@]}"; do
     line | added) ;;
     *) fail "the declared change for $p has the kind '$kind'; the kinds are line and added" ;;
   esac
-  [ "$(git -C "$REPO_ROOT" ls-files -- ":(literal)$p")" = "$p" ] \
+  [ "$(git -C "$REPO_ROOT" -c core.quotePath=false ls-files -- ":(literal)$p")" = "$p" ] \
     || fail "the declared change for $p names a path that is not a tracked file"
 done
 
