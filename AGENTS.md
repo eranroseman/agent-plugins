@@ -41,5 +41,8 @@ a recorded decline.
 Nothing scans passively on Codex: `codex-security`'s scan family
 (`security-scan`, `security-diff-scan`, `deep-security-scan`,
 `finding-discovery`) is explicit-invocation only. This repository ships
-its workflows and the scripts they run, so run a scan yourself on a diff that
-touches `scripts/` or a workflow.
+its workflows and the code they run, so run a scan yourself on a diff that
+changes what CI or a README block runs: a workflow, `scripts/`, `tests/`, a
+README block that `tests/install-check.sh` runs, or a linter config that
+loads local code. This stays prose: CI holds no Codex login, the plugin
+cannot ship a hook, and no check can show that a scan ran.
