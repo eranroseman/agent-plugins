@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # The plugin and its entries install (spec §14). On a fresh scratch HOME the
 # README's install blocks run as a user runs them, with the marketplace source
-# replaced by this checkout and nothing else, and what loaded is asserted on
-# both agent CLIs. Claude Code, from `claude plugin details`: each local
-# plugin's skills equal its skill directories and its agents the stems under
-# agents/, and each subset entry's skills equal the last segments of its list.
+# replaced by this checkout and nothing else, Claude Code cloning GitHub over
+# HTTPS as on CI (#82), and what loaded is asserted on both agent CLIs. Claude
+# Code, from `claude plugin details`: each local plugin's skills equal its
+# skill directories and its agents the stems under agents/, and each subset
+# entry's skills equal the last segments of its list.
 # Codex, from `codex debug prompt-input`: each local plugin's model-visible
 # skills equal its skill directories less those whose Codex policy file sets
 # allow_implicit_invocation: false, and each entry's its list less the skills
@@ -15,7 +16,8 @@
 # in Codex's catalogue (T47). Over the whole machine (T53): `claude plugin
 # list` names exactly the marketplace's entries from eranroseman and every
 # UNPINNED install id, and no skill name is listed twice in Codex's
-# catalogue, bare or under any prefix.
+# catalogue, bare or under any prefix. In a scratch run, every clone under
+# HOME has an HTTPS or local origin, as on CI (#82).
 #
 #   tests/install-check.sh            install into a fresh scratch HOME, then assert
 #   tests/install-check.sh --assert   assert only, over the HOME and CODEX_HOME in the environment
@@ -84,6 +86,27 @@ expect_equal() {
     || fail "$1: the sets differ (expected above, found below)"
 }
 
+# Every git clone under the scratch HOME has an HTTPS or local origin, as on
+# CI (#82); an SSH origin means a clone reached this machine's SSH keys. The
+# clones that keep a .git are the agent CLIs' marketplaces and Codex's plugin
+# cache, whose origin is a local path; a plugin cloned on its own keeps no
+# .git, so its transport is not seen here. Scratch runs only: a real HOME may
+# clone over SSH.
+https_clones() {
+  local gits g d url n=0
+  gits="$(find "$HOME" -name .git -prune -print | sort)" || fail "could not list the clones under $HOME"
+  while IFS= read -r g; do
+    [ -n "$g" ] || continue
+    d="${g%/.git}"
+    url="$(git -C "$d" config --get remote.origin.url)" || continue
+    case "$url" in
+      https://* | /*) n=$((n + 1)) ;;
+      *) fail "the scratch run cloned ${d#"$HOME"/} from $url; CI clones over HTTPS" ;;
+    esac
+  done <<<"$gits"
+  [ "$n" -gt 0 ] || fail "no clone under $HOME; the HTTPS check went vacuous"
+}
+
 MODE="${1:-}"
 case "$MODE" in
   '')
@@ -93,6 +116,19 @@ case "$MODE" in
     unset CLAUDE_CONFIG_DIR
     # Codex refuses a CODEX_HOME that does not exist (measured).
     mkdir -p "$CODEX_HOME" || fail "could not create $CODEX_HOME"
+    # Claude Code clones a GitHub owner/repo marketplace over SSH once a plain
+    # `ssh -T git@github.com` from PATH authenticates, and OpenSSH finds ~/.ssh
+    # through the passwd entry, not HOME: on a machine with a GitHub key a
+    # scratch run used that key, where CI's keyless runner clones over HTTPS
+    # (#82). This switch, read beside CLAUDE_CODE_REMOTE (2.1.310), skips the
+    # probe and clones over HTTPS. Measured not to help: unsetting
+    # SSH_AUTH_SOCK (the key needs no agent), GIT_SSH_COMMAND and a
+    # url.insteadOf rewrite (the probe is not git's). The README's owner/repo
+    # lines are what runs, so a URL source is not ours to choose, and an ssh
+    # stub first on PATH would have to answer as a keyless ssh does. The cost:
+    # CI skips the probe a keyless user goes through. A gate recipe that runs
+    # README blocks by hand in a scratch HOME needs the same export.
+    export CLAUDE_CODE_PLUGIN_PREFER_HTTPS=1
     # Named so a later --assert run, or a mutation, can find this machine.
     printf 'HOME=%s\nCODEX_HOME=%s\n' "$HOME" "$CODEX_HOME"
     ;;
@@ -112,6 +148,7 @@ printf 'claude: %s\ncodex: %s\n' "$(claude --version)" "$(codex --version)"
 if [ -z "$MODE" ]; then
   run_block install-claude
   run_block install-codex
+  https_clones
 fi
 
 local_rows="$(jq -r '.plugins[] | select(.source | type == "string") | [.name, .source] | @tsv' "$MARKETPLACE")"
