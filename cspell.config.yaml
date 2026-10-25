@@ -29,6 +29,7 @@ words:
   - obra
   - pathspec
   - pathspecs
+  - pipefail
   - Pocock
   - pycache
   - pyyaml
@@ -38,6 +39,7 @@ words:
   - Roseman
   - scaffolder
   - sensemaking
+  - shellcheck
   - SIGPIPE
   - softaworks
   - subshell

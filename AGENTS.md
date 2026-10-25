@@ -26,6 +26,10 @@ prose really is the last resort, **say which higher rungs you tried and why
 they were unavailable** — an unexplained rule is indistinguishable from a lazy
 one, and the next reader cannot tell whether to re-attempt the climb.
 
+### Coding standards
+
+Reviews apply `CODING_STANDARDS.md`, the rules no check holds.
+
 ### Plans
 
 A plan marks each edit's anchor as an `old <path>` block; `scripts/plan-anchors` checks them (`docs/agents/plans.md`).
