@@ -6,18 +6,21 @@
 #   scripts/sdd-close WORKSPACE_DIR
 #
 # Reads WORKSPACE_DIR/progress.md. A line containing `minor (deferred)`,
-# `parked` or `Ruling` must carry one of three homes:
-#   #<digits>             the issue it was filed as
-#   declined: <reason>    a recorded decline
-#   landed: <sha>         the commit, 7 or more hex digits, that carries it;
-#                         a ruling whose outcome is a commit takes this one,
-#                         so the controller writes the sha with the ruling
-# A completion line's count, `Task <N>: complete (commits ..., <K> parked)`,
-# is not read as a deferral: each parked finding has a line of its own.
+# `parked` or `Ruling` must carry its home behind the keyword `home:`, so an
+# issue number the line cites in passing is not mistaken for one:
+#   home: #<digits>             the issue it was filed as
+#   home: declined: <reason>    a recorded decline
+#   home: landed: <sha>         the commit, 7 or more hex digits, that carries
+#                               it; a ruling whose outcome is a commit takes
+#                               this one, so the controller writes the sha
+#                               with the ruling
+# Two kinds of line are not read as deferrals: a markdown heading, such as
+# `## Rulings`, and a completion line's count, `Task <N>: complete (commits
+# ..., <K> parked)`, since each parked finding has a line of its own.
 #
 #   exit 0   every such line is homed; the workspace may close
 #   exit 1   each line without a home, by number and its first 100 characters
-#   exit 2   usage, or no progress.md
+#   exit 2   usage, or no readable progress.md
 #
 # It deletes nothing: the controller runs it, then deletes the workspace.
 set -euo pipefail
@@ -29,23 +32,26 @@ die() {
 [ "$#" -eq 1 ] || die "usage: scripts/sdd-close WORKSPACE_DIR"
 ledger="$1/progress.md"
 [ -f "$ledger" ] || die "no ledger at $ledger"
+[ -r "$ledger" ] || die "cannot read $ledger"
 
 DEFERS='minor \(deferred\)|parked|Ruling'
 COUNT='Task [^ ]+: complete \(commits [^)]*[0-9]+ parked\)'
-HOMED='#[0-9]+|declined:[[:space:]]*[^[:space:]]|landed:[[:space:]]*[0-9a-f]{7,}([^0-9A-Za-z]|$)'
-n=0 lines=0 unhomed=0
+HEADING='^#{1,6}([[:space:]]|$)'
+HOMED='home:[[:space:]]*(#[0-9]+|declined:[[:space:]]*[^[:space:]]|landed:[[:space:]]*[0-9a-f]{7,}([^0-9A-Za-z]|$))'
+n=0 lines=0 missing=0
 while IFS= read -r line || [ -n "$line" ]; do
   n=$((n + 1))
+  [[ ! $line =~ $HEADING ]] || continue
   probe="$line"
   [[ ! $probe =~ $COUNT ]] || probe="${probe/"${BASH_REMATCH[0]}"/}"
   [[ $probe =~ $DEFERS ]] || continue
   lines=$((lines + 1))
   [[ ! $line =~ $HOMED ]] || continue
-  unhomed=$((unhomed + 1))
+  missing=$((missing + 1))
   printf 'FAIL: %s:%s: no home: %s\n' "$ledger" "$n" "${line:0:100}" >&2
 done <"$ledger"
-if [ "$unhomed" -gt 0 ]; then
-  printf 'sdd-close: %s of %s line(s) without a home; file each as an issue, decline it, or name the commit that landed it\n' "$unhomed" "$lines" >&2
+if [ "$missing" -gt 0 ]; then
+  printf 'sdd-close: %s of %s line(s) without a home; write home: #<issue>, home: declined: <reason> or home: landed: <sha>\n' "$missing" "$lines" >&2
   exit 1
 fi
 printf 'sdd-close: %s line(s), every one homed; the workspace may close\n' "$lines"

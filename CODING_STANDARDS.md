@@ -18,9 +18,9 @@ Three shapes end a script, or let it run on, with no line saying why:
 
 - a `grep` in a captured pipeline: its no-match exit 1 fails the capture, and `set -e` ends the script. Add `|| true` only where an empty result is legitimate.
 - a `fail` inside `$(...)`: it ends only that subshell, and where `set -e` is suspended (a function called under `||`, `&&` or `if`) the script runs on. The caller adds `|| exit 1`.
-- a command captured with no status check: its failure ends the script, or is masked by a `local` on the same line. Declare the `local` first, then capture with `x="$(cmd)" || fail "<what failed>"`.
+- a command captured with no status check: its failure ends the script with no FAIL line. Capture with `x="$(cmd)" || fail "<what failed>"`.
 
-Rung: shellcheck has no rule for these, and a test cannot enumerate them.
+Rung: shellcheck's default checks have no rule for these. It does hold the related `local x="$(cmd)"`, whose `local` masks the status (SC2155, which `tests/test-lint-shell.sh` enforces), so that case is not a rule here. Its optional `check-set-e-suppressed` (SC2310) was tried: it flags every function called under `||`, the `|| exit 1` this rule prescribes included, so it stays off. A test cannot enumerate the shapes.
 
 ## The suite rule
 

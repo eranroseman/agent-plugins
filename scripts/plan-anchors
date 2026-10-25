@@ -2,25 +2,29 @@
 # Check one task's anchors in an implementation plan against the tree the
 # plan edits (docs/agents/plans.md). An anchor is a fenced block whose info
 # string is `old <path>`, the path relative to the repository root, holding
-# the exact text an edit replaces; a `new` block beside it is not read.
+# the exact text an edit replaces; a `new` block beside it is read only as a
+# fence.
 #
 #   scripts/plan-anchors PLAN TASK
 #
-# Only the section headed `Task TASK` is checked, since a later task's anchor
-# may exist only once the earlier tasks have run: the controller runs this at
+# The anchors' text is checked only in the section headed `Task TASK`, since
+# a later task's anchor may exist only once the earlier tasks have run; the
+# block form is checked across the whole plan. The controller runs this at
 # Task 1's hand-off and at each later task's start. TASK matches exactly, so
 # 7 does not select `### Task 7b:` and 7b does. The tree is the git working
 # tree that holds PLAN.
 #
 #   exit 0   every anchor in the section names a tracked file that holds its
-#            text exactly once; or the section has no anchor and describes
-#            no edit without one
+#            text exactly once; or the section has no anchor and its prose
+#            says neither "becomes" nor "as it stands"
 #   exit 1   each failure on its own line, with its plan line where it has
-#            one: a fence that never closes, a missing or repeated section,
-#            an anchor fence not at column 0, an anchor with no path, an
-#            untracked path, an empty anchor, text not found or found more
-#            than once, or no anchor in a section whose prose says "becomes"
-#            or "as it stands"
+#            one. Anywhere in the plan: a fence that never closes, an anchor
+#            fence not at column 0, or one whose info string is not `old`
+#            and a plain path (no backtick, quote, angle bracket or space;
+#            `Old` and a path in backticks both fail). For the section: no
+#            heading or two, an untracked path, an empty anchor, text not
+#            found or found more than once, or no anchor while the prose says
+#            "becomes" or "as it stands"
 #   exit 2   usage, or the check could not run
 #
 # A fence closes on a bare fence of its own character at least as long as it
@@ -50,7 +54,8 @@ import sys
 
 root, plan, task = sys.argv[1:4]
 FENCE = re.compile(rb"^(`{3,}|~{3,})(.*)$")
-INDENTED_OLD = re.compile(rb"^[ \t]+(`{3,}|~{3,})[ \t]*old([ \t]|$)")
+INDENTED_OLD = re.compile(rb"^[ \t]+(`{3,}|~{3,})[ \t]*old", re.IGNORECASE)
+ANCHOR = re.compile(rb"old[ \t]+([^\s`'\"<>]+)")
 HEADING = re.compile(rb"^(#{1,6})[ \t]")
 TASK = re.compile(rb"^#{1,6}[ \t]+Task[ \t]+" + re.escape(task.encode()) + rb"([^0-9A-Za-z]|$)")
 EDIT = re.compile(rb"\b(becomes|as it stands)\b", re.IGNORECASE)
@@ -70,11 +75,15 @@ def main():
     lines = open(plan, "rb").read().split(b"\n")
     for n, line in enumerate(lines, 1):
         m = FENCE.match(line)
-        # CommonMark: a backtick fence's info string holds no backtick.
-        if m and line[:1] == b"`" and b"`" in m.group(2):
+        info = m.group(2).strip() if m else b""
+        oldish = info[:3].lower() == b"old"
+        # CommonMark: a backtick fence's info string holds no backtick. An
+        # anchor's fence is read as one anyway, so that a path in backticks
+        # fails by name rather than turning the anchor into prose.
+        if m and line[:1] == b"`" and b"`" in info and not oldish:
             m = None
         if m:
-            run, info = m.group(1), m.group(2).strip()
+            run = m.group(1)
             ch, ln = run[:1], len(run)
             if not info:
                 outer = [i for i, f in enumerate(stack) if f[0] == ch and f[1] <= ln]
@@ -84,19 +93,21 @@ def main():
                         fails.append(f"{plan}:{f[2]}: the fence opened here is still open at line {n}, which closes the fence opened at line {stack[i][2]}")
                     f = stack[i]
                     del stack[i:]
-                    if f[3] == "old" and level:
+                    if f[3] == "old" and level and f[4]:
                         anchors.append((f[2], f[4], b"\n".join(f[5])))
                     continue
             top = stack[-1] if stack else None
             if top is None or (top[3] == "quote" and (ch != top[0] or ln < top[1])):
-                word, path = (info.split(None, 1) + [b"", b""])[:2]
-                kind = text(word) if word in (b"old", b"new") else ("quote" if ln > 3 else "code")
-                stack.append([ch, ln, n, kind, path, []])
+                a = ANCHOR.fullmatch(info) if oldish else None
+                if oldish and not a:
+                    fails.append(f"{plan}:{n}: an anchor's info string must be old and a plain path (no backtick, quote, angle bracket or space), not: {text(info)}")
+                kind = "old" if oldish else "new" if info.split(None, 1)[:1] == [b"new"] else "quote" if ln > 3 else "code"
+                stack.append([ch, ln, n, kind, a.group(1) if a else b"", []])
                 continue
         if stack and stack[-1][3] != "quote":
             stack[-1][5].append(line)
             continue
-        if level and INDENTED_OLD.match(line):
+        if INDENTED_OLD.match(line):
             fails.append(f"{plan}:{n}: an old block's fence must start at column 0, or it is not read as an anchor")
         if stack:
             continue
@@ -123,9 +134,7 @@ def main():
     tracked = set(tracked.stdout.split(b"\0")) - {b""}
     for n, path, body in anchors:
         where = f"{plan}:{n}: old {text(path)}"
-        if not path:
-            fails.append(f"{plan}:{n}: the old block names no path; write old <path>")
-        elif path not in tracked:
+        if path not in tracked:
             fails.append(f"{where}: the path is not tracked")
         elif not body:
             fails.append(f"{where}: the block is empty")

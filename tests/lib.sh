@@ -237,10 +237,10 @@ checked() {
 }
 
 # The shell files: every checked file whose first line is the bash shebang.
-# By shebang, not extension: the two scripts have none. Arguments narrow the
-# list the same way checked's do. A tracked file absent from the working tree
-# is a FAIL by name, not a silently shorter list: head's failure is not
-# swallowed (#61 M4).
+# By shebang, not extension: the scripts under scripts/ have none. Arguments
+# narrow the list the same way checked's do. A tracked file absent from the
+# working tree is a FAIL by name, not a silently shorter list: head's failure
+# is not swallowed (#61 M4).
 checked_shell() {
   local f line
   while IFS= read -r f; do

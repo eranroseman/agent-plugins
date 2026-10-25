@@ -279,7 +279,7 @@ plugins it installed.
 ## Layout
 
 ```text
-scripts/           what CI, the maintainer and a plan's controller run: the upstream watch, the formatter, and the checks docs/agents/plans.md names
+scripts/           what CI, the maintainer and a plan's controller run: the upstream watch, the formatter, and the plan gates docs/agents/plans.md names
 plugins/           the one plugin, software-dev
 vendored.json      one record per upstream repository copied or forked from, with its copies and forks
 .claude-plugin/    the marketplace manifest both agent CLIs read: the plugins and the subset entries, with their pins
