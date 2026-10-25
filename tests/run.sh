@@ -16,11 +16,13 @@
 # knows is exit 2, so a misspelled need cannot skip a test quietly.
 #
 # A file git neither tracks nor ignores is exit 2 too, before any test runs
-# (#72): the checks read tracked files and the loop below reads the working
-# tree, so a green run would vouch for checks that never read such a file.
+# (#72): the checks take their file lists from git, while the loop below, the
+# agent CLIs' validators and the tests' plugin loops read the working tree, so
+# a green run would vouch for a file the listed checks never read.
 #
-# Every run writes tests/results.tsv (gitignored, rewritten): a header naming
-# the tree, then one row per test. A report cites the file (spec §5.4).
+# Every run that is not refused writes tests/results.tsv (gitignored,
+# rewritten): a header naming the tree, then one row per test. A report cites
+# the file (spec §5.4).
 set -uo pipefail
 cd "$(dirname "$0")/.." || {
   printf 'FAIL: could not cd to the repository root\n' >&2
@@ -82,13 +84,16 @@ dup="$(grep -vE '^[[:space:]]*(#|$)' "$REGISTRY" | awk '{ print $1 }' | sort | u
 # file that is not ignored is tracked. The whole tree, not a list of
 # directories: a file staged anywhere joins a check. A tracked file absent
 # from the tree needs no line here; the checks already fail it by name
-# (checked_shell, #61 M4).
+# (checked_shell, #61 M4). This file does not source tests/lib.sh, so git
+# reads the index the environment names: under a git hook it may be a
+# partial commit's, and the run may then refuse on files that commit leaves
+# out.
 untracked="$(git ls-files --others --exclude-standard)" || {
   printf 'FAIL: could not list the untracked files\n' >&2
   exit 2
 }
 [ -z "$untracked" ] || {
-  printf 'FAIL: git neither tracks nor ignores these, and the checks read tracked files only; stage each with git add, ignore it, or delete it:\n%s\n' "$untracked" >&2
+  printf 'FAIL: git neither tracks nor ignores these; the checks list their files from git, but this run reads the working tree; stage each with git add, ignore it, or delete it:\n%s\n' "$untracked" >&2
   exit 2
 }
 

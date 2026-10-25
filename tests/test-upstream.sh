@@ -264,7 +264,8 @@ rows="$(record_rows)"
 while IFS=$'\t' read -r repo ref sha; do
   [ -n "$repo" ] || continue
   url="https://github.com/$repo.git"
-  U="$(fetch_pinned "$url" "$sha" "$(cache_for "$repo")")"
+  dir="$(cache_for "$repo")" || exit 1
+  U="$(fetch_pinned "$url" "$sha" "$dir")"
   heads="$(git ls-remote "$url" "refs/heads/$ref")" || fail "$repo: could not list the refs of $url (no network?)"
   if [ -z "$heads" ]; then
     peeled="$(peel_tag "$url" "$ref")"
@@ -303,7 +304,8 @@ while IFS=$'\t' read -r name url path ref sha version; do
   [ -n "$name" ] || continue
   repo="${url#https://github.com/}"
   repo="${repo%.git}"
-  U="$(fetch_pinned "$url" "$sha" "$(cache_for "$repo")")"
+  dir="$(cache_for "$repo")" || exit 1
+  U="$(fetch_pinned "$url" "$sha" "$dir")"
   [ "$(jq -r --arg n "$name" '.plugins[] | select(.name == $n) | .strict' "$MARKETPLACE")" = false ] \
     || fail "$name: strict must be false; see the header comment"
   heads="$(git ls-remote "$url" "refs/heads/$ref")" || fail "$name: could not list the refs of $url (no network?)"

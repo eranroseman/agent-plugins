@@ -89,16 +89,20 @@ expect_equal() {
 # Every git clone under the scratch HOME has an HTTPS or local origin, as on
 # CI (#82); an SSH origin means a clone reached this machine's SSH keys. The
 # clones that keep a .git are the agent CLIs' marketplaces and Codex's plugin
-# cache, whose origin is a local path; a plugin cloned on its own keeps no
-# .git, so its transport is not seen here. Scratch runs only: a real HOME may
-# clone over SSH.
+# cache, whose origin is a local path. Not seen here: a plugin cloned on its
+# own, which keeps no .git, and a clone with no origin; a clone whose origin
+# git cannot read fails. Scratch runs only: a real HOME may clone over SSH.
 https_clones() {
   local gits g d url n=0
   gits="$(find "$HOME" -name .git -prune -print | sort)" || fail "could not list the clones under $HOME"
   while IFS= read -r g; do
     [ -n "$g" ] || continue
     d="${g%/.git}"
-    url="$(git -C "$d" config --get remote.origin.url)" || continue
+    # Exit 1 is no origin key; any other status is a config git cannot read.
+    url="$(git -C "$d" config --get remote.origin.url)" || {
+      [ "$?" -ne 1 ] || continue
+      fail "could not read the origin of ${d#"$HOME"/}"
+    }
     case "$url" in
       https://* | /*) n=$((n + 1)) ;;
       *) fail "the scratch run cloned ${d#"$HOME"/} from $url; CI clones over HTTPS" ;;

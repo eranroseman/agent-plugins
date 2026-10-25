@@ -254,18 +254,19 @@ them, or re-run `/setup-matt-pocock-skills` there
 
 `tests/run.sh` runs every `tests/test-*.sh`. It needs `bash` 4.4 or later,
 `jq` and `git`, and refuses with the list otherwise. It also refuses, naming
-them, while any files are neither tracked nor ignored, since the checks read
-tracked files only. Some checks need a tool this machine may lack: each such
-check is skipped with a line naming the tool, and the run ends by summing
-what it did not verify. The versions those checks are held to are declared
-in `tests/tools.txt`; the three npm tools install with
-`npm install -g <tool>@<version>`, the three binaries from their release
-pages. The Codex manifest check needs `python3` with `pyyaml` and fetches
-Codex's validator from GitHub at a pinned commit, as the upstream test
-fetches each pin; offline, they fail rather than skip.
+them, while any files are neither tracked nor ignored, since the checks take
+their file lists from git while the tests run over the working tree. Some
+checks need a tool this machine may lack: each such check is skipped with a
+line naming the tool, and the run ends by summing what it did not verify.
+The versions those checks are held to are declared in `tests/tools.txt`; the
+three npm tools install with `npm install -g <tool>@<version>`, the three
+binaries from their release pages. The Codex manifest check needs `python3`
+with `pyyaml` and fetches Codex's validator from GitHub at a pinned commit,
+as the upstream test fetches each pin; offline, they fail rather than skip.
 
-Every run writes `tests/results.tsv`, one row per check under a header naming
-the commit; a report cites that file rather than pasting output.
+Every run that is not refused writes `tests/results.tsv`, one row per check
+under a header naming the commit; a report cites that file rather than
+pasting output.
 `scripts/format` rewrites what the format checks check. CI runs
 `tests/run.sh` with `--no-skip`, so nothing is skipped there, uploads the
 result file as an artifact, and, in a second job that also runs daily,

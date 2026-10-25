@@ -4,8 +4,8 @@
 # registry tool at the wrong version is unmet and the line names both
 # versions; a need no probe knows is exit 2; a file git neither tracks nor
 # ignores, or a git that cannot list such files, is exit 2 before any test
-# runs; and every run writes
-# tests/results.tsv with a header naming the tree and one row per test.
+# runs; and every run that is not refused writes tests/results.tsv with a
+# header naming the tree and one row per test.
 # Proved on a scratch repository carrying synthetic tests, never on this one.
 # Needs no network.
 . "$(dirname "$0")/lib.sh"
@@ -15,8 +15,8 @@ trap 'rm -rf "$T"' EXIT
 
 # The scratch repository: the runner and the registry copied in, the result
 # file and a worktree directory ignored, one commit so the header has a sha,
-# four synthetic tests, and a file in the ignored worktree directory, which no
-# run may refuse.
+# synthetic tests, and a file in the ignored worktree directory, which no run
+# may refuse.
 R="$T/repo"
 mkdir -p "$R/tests" || fail "could not create $R/tests"
 cp "$REPO_ROOT/tests/run.sh" "$R/tests/run.sh" || fail "could not copy run.sh"

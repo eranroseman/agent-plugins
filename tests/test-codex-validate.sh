@@ -40,7 +40,7 @@ else
   # A depth-1 fetch without blobs and a checkout of the two paths: 2 seconds and
   # 464 KB (measured 2026-10-01). Kept under the user's cache directory, and
   # reused while this user owns it and both files still match (#73).
-  CACHE="$(cache_dir "codex-validator-${PIN:0:7}")"
+  CACHE="$(cache_dir "codex-validator-${PIN:0:7}")" || exit 1
   VDIR="$CACHE/$UPSTREAM_DIR"
   if ! { [ -O "$CACHE" ] && pinned_copy "$VDIR"; }; then
     rm -rf "$CACHE" || fail "could not remove $CACHE to fetch it again; a cache this user cannot clear, or does not own, is never reused"

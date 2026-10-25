@@ -2,8 +2,9 @@
 # Shared helpers for tests/*.sh and scripts/format. Source this file; do not execute it.
 set -euo pipefail
 # A git hook can export an absolute GIT_DIR and GIT_INDEX_FILE (measured
-# 2026-10-25); every git call in the suite and scripts/format means REPO_ROOT
-# or a scratch repository.
+# 2026-10-25); every git call in a file that sources this one (the tests,
+# tests/install-check.sh and scripts/format) means REPO_ROOT or a scratch
+# repository. tests/run.sh does not source it.
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -72,8 +73,23 @@ fork_keys() { jq -r '.records[].forks | keys[]' "$VENDORED_JSON"; }
 # tests/test-upstream.sh keeps its checkouts and tests/test-codex-validate.sh
 # its validator: not under ${TMPDIR:-/tmp}, a predictable path another local
 # user can pre-create (#73, #81). Each caller still refuses a cache this user
-# does not own.
-cache_dir() { printf '%s/software-dev/%s\n' "${XDG_CACHE_HOME:-$HOME/.cache}" "$1"; }
+# does not own. XDG_CACHE_HOME counts only when absolute, as the XDG spec
+# says: a relative one would put the caches inside the checkout, where
+# tests/run.sh refuses the next run. A fail here ends only the caller's
+# command substitution, so each capture exits on the status.
+cache_dir() {
+  local base
+  case "${XDG_CACHE_HOME:-}" in
+    /*) base="$XDG_CACHE_HOME" ;;
+    *)
+      case "${HOME:-}" in
+        /*) base="$HOME/.cache" ;;
+        *) fail "no HOME and no absolute XDG_CACHE_HOME; nowhere to keep the cache" ;;
+      esac
+      ;;
+  esac
+  printf '%s/software-dev/%s\n' "$base" "$1"
+}
 
 # Shallow-fetch $1 (a git URL) at commit $2 into $3 and print the path.
 # Reuses an existing checkout only when this user owns it, its HEAD is the pin
