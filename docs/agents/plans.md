@@ -1,6 +1,6 @@
 # Plans
 
-How a plan in `docs/superpowers/plans/` marks the text each edit replaces, how those anchors are checked before the edit runs, and how a plan's workspace closes.
+How a plan in `docs/superpowers/plans/` marks the text each edit replaces, how those anchors are checked before the edit runs, how a task's diff is reviewed, and how a plan's workspace closes.
 
 ## Anchors
 
@@ -25,6 +25,10 @@ The anchor's fence starts at column 0. A fence closes only on a bare fence of it
 Run it at Task 1's hand-off and again at the start of each later task. A later task's anchor may quote text an earlier task writes, so it cannot pass before that task has run, and an edit made since the plan was written can move an anchor out from under it.
 
 TASK matches exactly: `7` does not select `### Task 7b:`. Superpowers' `task-brief` does, since it accepts any non-digit after the number. Until that is fixed upstream, a plan avoids letter-suffixed task numbers, or gives every task in the series its full suffix (7a and 7b, never 7 beside 7b).
+
+## Reviewing a task
+
+`Workflow({name: 'task-review', args})` runs `.claude/workflows/task-review.js` on one task's diff. Its args are `brief`, `report`, `base`, `head`, `worktree`, `workspace` and `changed`, the paths `git diff --name-only BASE..HEAD` prints, with `rulings`, `context` and `readme_blocks` optional; set `readme_blocks` to true when the diff touches a fenced `sh` block in the README. It returns `{ lenses, findings, reports }`: findings keyed by lens, each Critical or Important one with its refuter's verdict, and the path of each lens's full report in the workspace.
 
 ## Closing the workspace
 

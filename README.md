@@ -284,6 +284,7 @@ plugins/           the one plugin, software-dev
 vendored.json      one record per upstream repository copied or forked from, with its copies and forks
 .claude-plugin/    the marketplace manifest both agent CLIs read: the plugins and the subset entries, with their pins
 .github/           the CI workflows, and dependabot.yml, which moves their action pins
+.claude/workflows/ the saved Workflow scripts a plan's controller runs, which docs/agents/plans.md names
 tests/             every check; tests/run.sh runs them, tests/install-check.sh is the install job's, and tests/tools.txt pins the tools
 docs/agents/       the conventions the agents read: issue tracker, triage labels, domain docs, plans
 docs/Professional-Editorial-Standards-2024.md   the editorial reference
