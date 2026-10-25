@@ -206,9 +206,11 @@ EXCLUDED="$(jq -r '[.records[].trees | keys[]] | map("^" + . + "/") | join("|")'
 # is cwd-relative and this file never changes directory. Tracked, not
 # present: a new file joins when it is staged, which is also the moment
 # anything else in the repository notices it, and a branch's worktree under
-# .claude/worktrees/ that a `find` would see is not listed. Every caller
-# asserts the list is non-empty: an empty list is a false green for most
-# tools.
+# .claude/worktrees/ that a `find` would see is not listed. tests/run.sh
+# refuses to run while a file is neither tracked nor ignored (#72), so nothing
+# it runs notices a new file that is not ignored before it is staged. Every
+# caller asserts the list is non-empty: an empty list is a false green for
+# most tools.
 checked() {
   git -C "$REPO_ROOT" ls-files "$@" | { grep -vE "$EXCLUDED" || true; }
 }

@@ -15,6 +15,10 @@
 # version that differs is unmet, and the line names both. A need no probe
 # knows is exit 2, so a misspelled need cannot skip a test quietly.
 #
+# A file git neither tracks nor ignores is exit 2 too, before any test runs
+# (#72): the checks read tracked files and the loop below reads the working
+# tree, so a green run would vouch for checks that never read such a file.
+#
 # Every run writes tests/results.tsv (gitignored, rewritten): a header naming
 # the tree, then one row per test. A report cites the file (spec §5.4).
 set -uo pipefail
@@ -68,6 +72,23 @@ done <"$REGISTRY"
 dup="$(grep -vE '^[[:space:]]*(#|$)' "$REGISTRY" | awk '{ print $1 }' | sort | uniq -d)"
 [ -z "$dup" ] || {
   printf 'FAIL: %s declares a tool twice: %s\n' "$REGISTRY" "$dup" >&2
+  exit 2
+}
+
+# The tree the checks read is the tree this run reads (#72). Every list of
+# the files we own comes from git ls-files (tests/lib.sh's checked()), but
+# the test loop's glob below, the agent CLIs' validators and the tests'
+# plugin loops read the working tree, and the two agree only while every
+# file that is not ignored is tracked. The whole tree, not a list of
+# directories: a file staged anywhere joins a check. A tracked file absent
+# from the tree needs no line here; the checks already fail it by name
+# (checked_shell, #61 M4).
+untracked="$(git ls-files --others --exclude-standard)" || {
+  printf 'FAIL: could not list the untracked files\n' >&2
+  exit 2
+}
+[ -z "$untracked" ] || {
+  printf 'FAIL: git neither tracks nor ignores these, and the checks read tracked files only; stage each with git add, ignore it, or delete it:\n%s\n' "$untracked" >&2
   exit 2
 }
 
