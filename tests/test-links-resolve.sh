@@ -47,7 +47,8 @@ cd "$REPO_ROOT" || fail "could not cd to the repository root"
 
 # Paths named because they must not exist, or absent by a recorded decision.
 # An entry whose only referents sit under docs/superpowers has no reader left
-# and goes (T18).
+# and goes (T18): the scan fails on an entry it never reaches, one no
+# scanned reference names or whose every referent resolves or is ignored.
 DECLARED_ABSENT=(
   'docs/adr/' # docs/agents/domain.md names it; this repository keeps no ADRs (#26, #37)
   'bin/setup' # retired by the standalone spec (§13); the README's cleanup names the script it undoes
@@ -117,6 +118,7 @@ history_tier_walk() {
 }
 
 n_ok=0 n_url=0 n_shape=0 n_glob=0 n_slug=0 n_ns=0 n_ignored=0 n_declared=0 n_syntax=0
+absent_used=""
 failures=""
 
 # classify()'s two shape checks and the main loop's word check, kept in
@@ -192,6 +194,7 @@ classify() {
   for r in "${DECLARED_ABSENT[@]}"; do
     if [ "$tok" = "$r" ]; then
       n_declared=$((n_declared + 1))
+      absent_used="$absent_used $r"
       return
     fi
   done
@@ -276,5 +279,8 @@ for f in $docs; do
 done
 
 [ -z "$failures" ] || fail "these references do not resolve:$failures"
+for r in "${DECLARED_ABSENT[@]}"; do
+  case "$absent_used " in *" $r "*) ;; *) fail "the DECLARED_ABSENT entry $r was never reached: no reference outside docs/superpowers names it, or each one that does resolves or is ignored; drop it (T18)" ;; esac
+done
 printf 'links-resolve: %s link(s) and %s backticked path(s) resolve across %s document(s); skipped %s URL(s), %s by shape, %s placeholder(s), %s slug(s), %s namespaced, %s ignored, %s declared absent, %s command word(s)\n' \
   "$links" "$n_ok" "$scanned" "$n_url" "$n_shape" "$n_glob" "$n_slug" "$n_ns" "$n_ignored" "$n_declared" "$n_syntax"

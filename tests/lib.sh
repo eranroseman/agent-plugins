@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Shared helpers for tests/*.sh and scripts/format. Source this file; do not execute it.
 set -euo pipefail
+# A git hook can export an absolute GIT_DIR and GIT_INDEX_FILE (measured
+# 2026-10-25); every git call in the suite and scripts/format means REPO_ROOT
+# or a scratch repository.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MARKETPLACE="$REPO_ROOT/.claude-plugin/marketplace.json"
@@ -193,7 +197,7 @@ user_invocable_only() { [ -f "$1" ] && grep -qx '  allow_implicit_invocation: fa
 # vendored.json, so a copy that leaves the records joins the linters the same
 # moment, and tests/test-ownership.sh holds the derivation: every trees key a
 # tracked directory checked() does not list, every forks key one it lists.
-EXCLUDED="$(jq -r '[.records[].trees | keys[]] | map("^" + . + "/") | join("|")' "$REPO_ROOT/vendored.json")" \
+EXCLUDED="$(jq -r '[.records[].trees | keys[]] | map("^" + . + "/") | join("|")' "$VENDORED_JSON")" \
   || {
     printf 'FAIL: could not derive the excluded trees from vendored.json\n' >&2
     exit 1

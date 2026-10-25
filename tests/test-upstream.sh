@@ -180,7 +180,7 @@ license_section() {
 check_copyright() {
   local repo="$1" U="$2" want got p lic section
   [ -f "$U/LICENSE" ] || fail "$repo ships no LICENSE at its pin; nothing then grants the copy"
-  want="$(grep '^Copyright' "$U/LICENSE" | sort -u)"
+  want="$({ grep '^Copyright' "$U/LICENSE" || true; } | sort -u)"
   [ -n "$want" ] || fail "$repo's LICENSE at the pin carries no Copyright line"
   while IFS= read -r p; do
     [ -n "$p" ] || continue
@@ -188,7 +188,7 @@ check_copyright() {
     [ -f "$lic" ] || fail "plugins/$p has no LICENSE"
     section="$(license_section "$lic" "https://github.com/$repo")"
     [ -n "$section" ] || fail "plugins/$p/LICENSE has no section opening with https://github.com/$repo"
-    got="$(grep '^Copyright' <<<"$section" | sort -u)"
+    got="$({ grep '^Copyright' <<<"$section" || true; } | sort -u)"
     diff <(printf '%s\n' "$want") <(printf '%s\n' "$got") \
       || fail "plugins/$p/LICENSE's section for $repo does not carry upstream's Copyright line(s) at the pin (upstream above, ours below)"
     SECTIONS=$((SECTIONS + 1))
@@ -220,7 +220,7 @@ sibling_names() {
       record_map forks "$repo"
     } | cut -f1 | while IFS= read -r k; do
       tracked="$(git -C "$REPO_ROOT" -c core.quotePath=false ls-files -- "$k")" || fail "git ls-files failed for $k"
-      printf '%s\n' "$tracked" | { grep '\.md$' || true; } | sed "s#^#$REPO_ROOT/#"
+      printf '%s\n' "$tracked" | { grep '\.md$' || true; } | while IFS= read -r p; do printf '%s/%s\n' "$REPO_ROOT" "$p"; done
     done
   })"
   while IFS= read -r f; do
@@ -265,7 +265,8 @@ while IFS=$'\t' read -r repo ref sha; do
   [ -n "$repo" ] || continue
   url="https://github.com/$repo.git"
   U="$(fetch_pinned "$url" "$sha" "$(cache_for "$repo")")"
-  if ! git ls-remote "$url" "refs/heads/$ref" | grep -q .; then
+  heads="$(git ls-remote "$url" "refs/heads/$ref")" || fail "$repo: could not list the refs of $url (no network?)"
+  if [ -z "$heads" ]; then
     peeled="$(peel_tag "$url" "$ref")"
     [ -n "$peeled" ] || fail "$repo: $ref is neither a branch nor a tag at $url"
     [ "$peeled" = "$sha" ] || fail "$repo: the tag $ref names $peeled, not the pinned $sha; move ref and sha together"
@@ -305,7 +306,8 @@ while IFS=$'\t' read -r name url path ref sha version; do
   U="$(fetch_pinned "$url" "$sha" "$(cache_for "$repo")")"
   [ "$(jq -r --arg n "$name" '.plugins[] | select(.name == $n) | .strict' "$MARKETPLACE")" = false ] \
     || fail "$name: strict must be false; see the header comment"
-  if ! git ls-remote "$url" "refs/heads/$ref" | grep -q .; then
+  heads="$(git ls-remote "$url" "refs/heads/$ref")" || fail "$name: could not list the refs of $url (no network?)"
+  if [ -z "$heads" ]; then
     peeled="$(peel_tag "$url" "$ref")"
     [ -n "$peeled" ] || fail "$name: $ref is neither a branch nor a tag at $url"
     [ "$peeled" = "$sha" ] || fail "$name: the tag $ref names $peeled, not the pinned $sha; move ref and sha together"
