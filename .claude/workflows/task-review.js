@@ -135,7 +135,7 @@ const reports = []
 LENSES.forEach((l, k) => {
   const run = runs[k] || { rev: null }
   if (!run.rev) {
-    log(`${l.key}: ${run.error ? `the reviewer failed: ${run.error}` : 'the reviewer returned nothing'}; this lens did not run`)
+    log(`${l.key}: ${run.error ? `the reviewer failed: ${run.error}` : 'the reviewer returned nothing'}; this lens produced no result`)
     lenses.push({ lens: l.key, verdict: 'no result' })
     return
   }
