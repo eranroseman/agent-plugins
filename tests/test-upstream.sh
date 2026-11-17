@@ -76,8 +76,7 @@ writing-beats\tnever evaluated; surfaced by the complement check on 2026-09-16
 writing-fragments\tnever evaluated; surfaced by the complement check on 2026-09-16
 writing-shape\tnever evaluated; surfaced by the complement check on 2026-09-16
 implement-spec\timplements the output of /to-spec and /to-tickets, which superpowers\' slot excludes (Q85)
-pr\tnever evaluated; new at v1.3.0, surfaced by the v1.3.1 complement; a candidate on #48 (Q85)
-retro\tnever evaluated; new at v1.3.0, surfaced by the v1.3.1 complement; a candidate on #48 (Q85)'
+pr\tnever evaluated; new at v1.3.0, surfaced by the v1.3.1 complement; a candidate on #48 (Q85)'
 )
 
 cache_for() { cache_dir "upstream-$(tr / - <<<"$1")"; }

@@ -38,6 +38,7 @@
         "./engineering/grill-with-docs",
         "./engineering/improve-codebase-architecture",
         "./engineering/prototype",
+        "./engineering/retro",
         "./engineering/triage"
       ]
     }
