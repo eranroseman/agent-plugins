@@ -167,7 +167,7 @@ compare_tree() {
 # next line of dashes (T26). Empty when there is none.
 license_section() {
   awk -v u="$2" '
-    /^-{10,}$/ { if (inside) exit; expect = 1; next }
+    /^----------+$/ { if (inside) exit; expect = 1; next }
     expect && $0 == u { inside = 1 }
     { expect = 0 }
     inside { print }
@@ -290,7 +290,7 @@ for lic in "$REPO_ROOT"/plugins/*/LICENSE; do
     [ -n "$url" ] || continue
     record_rows | cut -f1 | grep -qxF -- "${url#https://github.com/}" \
       || fail "${lic#"$REPO_ROOT"/} has a section for $url, which no record holds"
-  done < <(awk '/^-{10,}$/ { expect = 1; next } expect && /^https:\/\/github\.com\// { print } { expect = 0 }' "$lic")
+  done < <(awk '/^----------+$/ { expect = 1; next } expect && /^https:\/\/github\.com\// { print } { expect = 0 }' "$lic")
 done
 
 # ---- The entries -------------------------------------------------------------
